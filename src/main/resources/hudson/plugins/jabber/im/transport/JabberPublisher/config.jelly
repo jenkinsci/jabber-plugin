@@ -1,0 +1,5 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <f:entry title="Targets" description="Whitespace seperated list of accounts to send notifications to (like 'peter@myjabberserver.org')">
+    <f:textbox name="${descriptor.PARAMETERNAME_TARGETS}" value="${instance.targets}" />
+	</f:entry>
+</j:jelly>
