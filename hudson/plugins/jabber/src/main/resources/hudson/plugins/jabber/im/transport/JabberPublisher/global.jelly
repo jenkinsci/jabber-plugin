@@ -1,0 +1,28 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
+	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+	<f:section title="Jabber Notification">
+		
+		<f:entry title="Hostname" description="Hostname of the Jabber server">
+			<f:textbox name="${descriptor.PARAMETERNAME_HOSTNAME}"
+				value="${descriptor.hostname}"/>
+		</f:entry>
+		<f:entry title="Port"
+			description="Port of the Jabber server (Defaults to 5222)">
+			<f:textbox name="${descriptor.PARAMETERNAME_PORT}" value="${descriptor.port}"/>
+		</f:entry>
+		<f:entry title="Account"
+			description="Account/Nickname to use to send notifications">
+			<f:textbox name="${descriptor.PARAMETERNAME_NICKNAME}"
+				value="${descriptor.hudsonNickname}"/>
+		</f:entry>
+		<f:entry title="Password" description="The Account´s Password to the Jabber server">
+			<f:textbox name="${descriptor.PARAMETERNAME_PASSWORD}"
+				value="${descriptor.hudsonPassword}"/>
+		</f:entry>
+		<f:entry title="Expose presence"
+			description="Check if the Nickname should set its Status to AVAILABLE">
+			<f:checkbox name="${descriptor.PARAMETERNAME_PRESENCE}"
+				checked="${descriptor.exposePresence}"/>
+		</f:entry>
+		</f:section>
+</j:jelly>
