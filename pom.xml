@@ -10,7 +10,7 @@
     <artifactId>jabber</artifactId>
     <packaging>hpi</packaging>
     <name>Hudson Jabber notifier plugin</name>
-    <version>0.2</version>
+    <version>0.3-SNAPSHOT</version>
     
     <dependencies>
         <dependency>
@@ -24,9 +24,4 @@
             <version>2.2.1</version>
         </dependency>
     </dependencies>
-    
-
-  <scm>
-    <tag>jabber-0_2</tag>
-  </scm>
 </project>
