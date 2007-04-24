@@ -16,7 +16,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.kohsuke.stapler.StaplerRequest;
 
-public final class JabberPublisherDescriptor extends Descriptor<Publisher>
+public class JabberPublisherDescriptor extends Descriptor<Publisher>
 {
     private static final String PREFIX = "jabberPlugin.";
     public static final String PARAMETERNAME_PORT = JabberPublisherDescriptor.PREFIX + "port";
@@ -25,12 +25,30 @@ public final class JabberPublisherDescriptor extends Descriptor<Publisher>
     public static final String PARAMETERNAME_PASSWORD = JabberPublisherDescriptor.PREFIX + "password";
     public static final String PARAMETERNAME_NICKNAME = JabberPublisherDescriptor.PREFIX + "nick";
     public static final String PARAMETERNAME_TARGETS = JabberPublisherDescriptor.PREFIX + "targets";
+    public static final String PARAMETERNAME_STRATEGY = JabberPublisherDescriptor.PREFIX + "strategy";
+    public static final String PARAMETERNAME_NOTIFY_START = JabberPublisherDescriptor.PREFIX + "notifyStart";
+    public static final String PARAMETERNAME_NOTIFY_SUSPECTS = JabberPublisherDescriptor.PREFIX + "notifySuspects";
+    public static final String PARAMETERNAME_NOTIFY_FIXERS = JabberPublisherDescriptor.PREFIX + "notifyFixers";
+    public static final String PARAMETERNAME_INITIAL_GROUPCHATS = JabberPublisherDescriptor.PREFIX + "initialGroupChats";
+    public static final String PARAMETERNAME_COMMAND_PREFIX = JabberPublisherDescriptor.PREFIX + "commandPrefix";
+    public static final String PARAMETERVALUE_STRATEGY_ALL = "all";
+    public static final String PARAMETERVALUE_STRATEGY_FAILURE = "failure";
+    public static final String PARAMETERVALUE_STRATEGY_STATE_CHANGE = "change";
+    public static final String[] PARAMETERVALUE_STRATEGY_VALUES = {
+    	PARAMETERVALUE_STRATEGY_ALL,
+    	PARAMETERVALUE_STRATEGY_FAILURE,
+    	PARAMETERVALUE_STRATEGY_STATE_CHANGE
+    };
+    public static final String PARAMETERVALUE_STRATEGY_DEFAULT = PARAMETERVALUE_STRATEGY_STATE_CHANGE;
+    public static final String DEFAULT_COMMAND_PREFIX = "!";
 
     private int port = 5222;
     private String hostname = null;
     private String hudsonNickname = "hudson";
     private String hudsonPassword = "secret";
     private boolean exposePresence = true;
+    private String initialGroupChats = "";
+    private String commandPrefix = DEFAULT_COMMAND_PREFIX;
 
     public JabberPublisherDescriptor()
     {
@@ -46,7 +64,7 @@ public final class JabberPublisherDescriptor extends Descriptor<Publisher>
             dontCare.printStackTrace();
         }
     }
-
+    
     private void applyHostname(final HttpServletRequest req) throws FormException
     {
         final String s = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_HOSTNAME);
@@ -113,33 +131,20 @@ public final class JabberPublisherDescriptor extends Descriptor<Publisher>
     {
         this.exposePresence = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PRESENCE) != null;
     }
-
-    /** 
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean configure(final HttpServletRequest req) throws FormException
-    {
-        Assert.isNotNull(req, "Parameter 'req' must not be null.");
-
-        applyPresence(req);
-        applyHostname(req);
-        applyPort(req);
-        applyNickname(req);
-        applyPassword(req);
-
-        try
-        {
-            JabberIMConnectionProvider.getInstance().createConnection(this);
-        }
-        catch (final Exception e)
-        {
-            throw new FormException("Unable to create Client: " + e, null);
-        }
-        save();
-        return super.configure(req);
+    
+    private void applyInitialGroupChats(final HttpServletRequest req) {
+    	this.initialGroupChats = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_INITIAL_GROUPCHATS);
     }
-
+    
+    private void applyCommandPrefix(final HttpServletRequest req) {
+    	String commandPrefix = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_COMMAND_PREFIX);
+    	if ((commandPrefix != null) && (commandPrefix.trim().length() > 0)) {
+    		this.commandPrefix = commandPrefix;
+    	} else {
+    		this.commandPrefix = DEFAULT_COMMAND_PREFIX;
+    	}
+    }
+    
     /**
      * This human readable name is used in the configuration screen.
      */
@@ -173,6 +178,14 @@ public final class JabberPublisherDescriptor extends Descriptor<Publisher>
     {
         return this.exposePresence;
     }
+    
+    public String getInitialGroupChats() {
+    	return this.initialGroupChats;
+    }
+    
+    public String getCommandPrefix() {
+    	return this.commandPrefix;
+    }
 
     /**
      * Creates a new instance of {@link JabberPublisher} from a submitted form.
@@ -182,9 +195,30 @@ public final class JabberPublisherDescriptor extends Descriptor<Publisher>
     {
         Assert.isNotNull(req, "Parameter 'req' must not be null.");
         final String t = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_TARGETS);
+        String n = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_STRATEGY);
+        if (n == null) {
+        	n = PARAMETERVALUE_STRATEGY_DEFAULT;
+        } else {
+        	boolean foundStrategyValueMatch = false;
+        	for (final String strategyValue : PARAMETERVALUE_STRATEGY_VALUES) {
+        		if (strategyValue.equals(n)) {
+        			foundStrategyValueMatch = true;
+        			break;
+        		}
+        	}
+        	if (! foundStrategyValueMatch) {
+        		n = PARAMETERVALUE_STRATEGY_DEFAULT;
+        	}
+        }
+        final String s = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_NOTIFY_START);
+        final String ns = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_NOTIFY_SUSPECTS);
+        final String nf = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_NOTIFY_FIXERS);
         try
         {
-            return new JabberPublisher(t);
+            return new JabberPublisher(t, n,
+            		(s != null && "on".equals(s)),
+            		(ns != null && "on".equals(ns)),
+            		(nf != null && "on".equals(nf)));
         }
         catch (final IMMessageTargetConversionException e)
         {
@@ -197,5 +231,32 @@ public final class JabberPublisherDescriptor extends Descriptor<Publisher>
         final JabberIMConnectionProvider factory = JabberIMConnectionProvider.getInstance();
         factory.releaseConnection();
     }
+
+	/* (non-Javadoc)
+	 * @see hudson.model.Descriptor#configure(org.kohsuke.stapler.StaplerRequest)
+	 */
+	@Override
+	public boolean configure(StaplerRequest req) throws hudson.model.Descriptor.FormException {
+		Assert.isNotNull(req, "Parameter 'req' must not be null.");
+
+        applyPresence(req);
+        applyHostname(req);
+        applyPort(req);
+        applyNickname(req);
+        applyPassword(req);
+        applyInitialGroupChats(req);
+        applyCommandPrefix(req);
+
+        try
+        {
+            JabberIMConnectionProvider.getInstance().createConnection(this);
+        }
+        catch (final Exception e)
+        {
+            throw new FormException("Unable to create Client: " + e, null);
+        }
+        save();
+        return super.configure(req);		
+	}
 
 }

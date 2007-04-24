@@ -3,6 +3,7 @@ package hudson.plugins.jabber.im.transport;
 import hudson.model.Descriptor;
 import hudson.plugins.jabber.im.DefaultIMMessageTarget;
 import hudson.plugins.jabber.im.DefaultIMMessageTargetConverter;
+import hudson.plugins.jabber.im.GroupChatIMMessageTarget;
 import hudson.plugins.jabber.im.IMConnection;
 import hudson.plugins.jabber.im.IMException;
 import hudson.plugins.jabber.im.IMMessageTarget;
@@ -35,12 +36,24 @@ public class JabberPublisher extends IMPublisher
             String f = targetAsString.trim();
             if (f.length() > 0)
             {
-                if (!f.contains("@"))
-                {
-                    f += "@" + JabberPublisher.DESCRIPTOR.getHostname();
-                }
+            	IMMessageTarget target;
+            	if (f.startsWith("*")) {
+            		f = f.substring(1);
+            		// group chat
+            		if (! f.contains("@")) {
+            			f += "@conference." + JabberPublisher.DESCRIPTOR.getHostname();
+            		}
+            		target = new GroupChatIMMessageTarget(f);
+            	} else if (f.contains("@conference.")) {
+            		target = new GroupChatIMMessageTarget(f);
+            	} else {
+	                if (!f.contains("@")) {
+	                    f += "@" + JabberPublisher.DESCRIPTOR.getHostname();
+	                }
+	                target = new DefaultIMMessageTarget(f);
+            	}
                 checkValidity(f);
-                return new DefaultIMMessageTarget(f);
+                return target;
             }
             else
             {
@@ -52,9 +65,13 @@ public class JabberPublisher extends IMPublisher
 
     private static final IMMessageTargetConverter CONVERTER = new JabberIMMessageTargetConverter();
 
-    public JabberPublisher(final String targetsAsString) throws IMMessageTargetConversionException
+    public JabberPublisher(final String targetsAsString, final String notificationStrategy,
+    		final boolean notifyGroupChatsOnBuildStart,
+    		final boolean notifySuspects,
+    		final boolean notifyFixers) throws IMMessageTargetConversionException
     {
-        super(targetsAsString);
+        super(targetsAsString, notificationStrategy, notifyGroupChatsOnBuildStart,
+        		notifySuspects, notifyFixers);
     }
 
     public Descriptor<Publisher> getDescriptor()

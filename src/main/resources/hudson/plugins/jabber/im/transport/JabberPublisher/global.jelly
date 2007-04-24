@@ -24,5 +24,13 @@
 			<f:checkbox name="${descriptor.PARAMETERNAME_PRESENCE}"
 				checked="${descriptor.exposePresence}"/>
 		</f:entry>
+		<f:entry title="Initial group chats" description="Group chats to automatically join on startup with a bot (whitespace separated)">
+			<f:textbox name="${descriptor.PARAMETERNAME_INITIAL_GROUPCHATS}"
+				value="${descriptor.initialGroupChats}" />
+		</f:entry>
+		<f:entry title="Bot command prefix" description="Prefix for bot commands (e.g. ! or ~)">
+			<f:textbox name="${descriptor.PARAMETERNAME_COMMAND_PREFIX}"
+				value="${descriptor.commandPrefix}" />
+		</f:entry>
 		</f:section>
 </j:jelly>

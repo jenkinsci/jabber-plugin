@@ -1,6 +1,8 @@
 package hudson.plugins.jabber.im.transport;
 
 import hudson.Plugin;
+import hudson.model.UserProperties;
+import hudson.plugins.jabber.user.JabberUserProperty;
 import hudson.tasks.BuildStep;
 
 /**
@@ -19,6 +21,7 @@ public class JabberPluginImpl extends Plugin
     {
         super.start();
         BuildStep.PUBLISHERS.add(JabberPublisher.DESCRIPTOR);
+        UserProperties.LIST.add(JabberUserProperty.DESCRIPTOR);
     }
 
     /**

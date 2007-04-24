@@ -3,13 +3,19 @@
  */
 package hudson.plugins.jabber.im.transport;
 
+import hudson.plugins.jabber.im.GroupChatIMMessageTarget;
 import hudson.plugins.jabber.im.IMConnection;
 import hudson.plugins.jabber.im.IMException;
 import hudson.plugins.jabber.im.IMMessageTarget;
 import hudson.plugins.jabber.im.IMPresence;
+import hudson.plugins.jabber.im.transport.bot.Bot;
 import hudson.plugins.jabber.tools.Assert;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.jivesoftware.smack.Chat;
+import org.jivesoftware.smack.GroupChat;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Presence;
@@ -21,13 +27,33 @@ import org.jivesoftware.smack.packet.Presence;
  */
 class JabberIMConnection implements IMConnection
 {
-
-    private static final String DND_MESSAGE = "I´m busy building your software...";
+	static private class GroupChatCacheEntry {
+		private final GroupChat groupChat;
+		private final Bot bot;
+		
+		public GroupChatCacheEntry(final GroupChat groupChat, final Bot bot) {
+			this.groupChat = groupChat;
+			this.bot = bot;
+		}
+		
+		public GroupChat getGroupChat() {
+			return this.groupChat;
+		}
+		
+		public Bot getBot() {
+			return this.bot;
+		}
+	}
+	
+	
+    private static final String DND_MESSAGE = "I'm busy building your software...";
     private XMPPConnection connection;
+    private Map<String, GroupChatCacheEntry> groupChatCache = new HashMap<String, GroupChatCacheEntry>(0);
     private final int port;
     private final String nick;
     private final String passwd;
     private final String hostname;
+    private final String botCommandPrefix;
 
     JabberIMConnection(final JabberPublisherDescriptor desc) throws IMException
     {
@@ -36,9 +62,16 @@ class JabberIMConnection implements IMConnection
         this.port = desc.getPort();
         this.nick = desc.getHudsonNickname();
         this.passwd = desc.getHudsonPassword();
+        this.botCommandPrefix = desc.getCommandPrefix();
         try
         {
             createConnection();
+            
+            if (desc.getInitialGroupChats() != null) {
+            	for (String groupChatName : desc.getInitialGroupChats().trim().split("\\s")) {
+            		createGroupChatConnection(groupChatName.trim());
+            	}
+            }
         }
         catch (final XMPPException dontCare)
         {
@@ -56,6 +89,11 @@ class JabberIMConnection implements IMConnection
         {
             if ((this.connection != null) && this.connection.isConnected())
             {
+            	for (GroupChatCacheEntry entry : groupChatCache.values()) {
+					if (entry.getGroupChat().isJoined()) {
+						entry.getGroupChat().leave();
+					}
+				}
                 this.connection.close();
             }
         }
@@ -73,7 +111,27 @@ class JabberIMConnection implements IMConnection
             this.connection.login(this.nick, this.passwd);
         }
     }
+    
+    private GroupChat createGroupChatConnection(String groupChatName) throws XMPPException {
+    	createConnection();
+    	GroupChatCacheEntry cacheEntry = groupChatCache.get(groupChatName);
+    	if (cacheEntry == null) {
+        	GroupChat groupChat = this.connection.createGroupChat(groupChatName);
+        	groupChat.join(this.nick);
 
+        	// get rid of old messages:
+    		while (groupChat.pollMessage() != null) {
+    		}
+
+    		Bot bot = new Bot(groupChat, this.nick, this.botCommandPrefix);
+    		
+    		cacheEntry = new GroupChatCacheEntry(groupChat, bot);
+        	groupChatCache.put(groupChatName, cacheEntry);
+    		groupChat.addMessageListener(bot);
+    	}
+    	return cacheEntry.getGroupChat();
+    }
+    
     public void send(final IMMessageTarget target, final String text) throws IMException
     {
         Assert.isNotNull(target, "Parameter 'target' must not be null.");
@@ -81,8 +139,12 @@ class JabberIMConnection implements IMConnection
         try
         {
             createConnection();
-            final Chat chat = this.connection.createChat(target.toString());
-            chat.sendMessage(text);
+            if (target instanceof GroupChatIMMessageTarget) {
+            	createGroupChatConnection(target.toString()).sendMessage(text);
+            } else {
+	        	final Chat chat = this.connection.createChat(target.toString());
+	        	chat.sendMessage(text);
+            }
         }
         catch (final XMPPException dontCare)
         {
@@ -90,7 +152,7 @@ class JabberIMConnection implements IMConnection
             dontCare.printStackTrace();
         }
     }
-
+    
     public synchronized void setPresence(final IMPresence impresence) throws IMException
     {
         Assert.isNotNull(impresence, "Parameter 'impresence' must not be null.");
@@ -110,7 +172,7 @@ class JabberIMConnection implements IMConnection
                     break;
 
                 default:
-                    throw new IllegalStateException("Don´t know how to handle " + impresence);
+                    throw new IllegalStateException("Don't know how to handle " + impresence);
             }
             this.connection.sendPacket(presence);
         }
@@ -119,4 +181,5 @@ class JabberIMConnection implements IMConnection
             throw new IMException(e);
         }
     }
+
 }

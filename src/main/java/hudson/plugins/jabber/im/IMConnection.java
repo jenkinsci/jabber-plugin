@@ -1,5 +1,6 @@
 package hudson.plugins.jabber.im;
 
+
 /**
  * Represents a connection to an IM-Server.
  * @author Uwe Schaefer
@@ -20,9 +21,10 @@ public interface IMConnection
     void send(IMMessageTarget target, String text) throws IMException;
 
     /**
-     * Sets the current connections´ presence to a protocol specific adaption of the given presence parameter.
+     * Sets the current connectionsï¿½ presence to a protocol specific adaption of the given presence parameter.
      * @param presence the presence to set
      * @throws IMException encapsulated exception of underlying protocol/client 
      */
     void setPresence(IMPresence presence) throws IMException;
+
 }
