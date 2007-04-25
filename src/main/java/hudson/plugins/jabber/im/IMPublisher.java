@@ -14,10 +14,11 @@ import hudson.scm.ChangeLogSet.Entry;
 import hudson.tasks.Publisher;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The actual Publisher that sends notification-Messages out to the clients.
@@ -132,8 +133,16 @@ public abstract class IMPublisher extends Publisher
         	.append(build.getDurationString())
         	.append(": ")
         	.append(Hudson.getInstance().getRootUrl()).append(build.getUrl());
-        	for (Entry entry : build.getChangeSet()) {
-        		sb.append("\n").append(entry.getAuthor()).append(": ").append(entry.getMsg());
+        	
+        	if ((build.getChangeSet() != null) && (! build.getChangeSet().isEmptySet())) {
+        		boolean hasManyChangeSets = build.getChangeSet().getItems().length > 1;
+	        	for (Entry entry : build.getChangeSet()) {
+	        		sb.append("\n");
+	        		if (hasManyChangeSets) {
+	        			sb.append("* ");
+	        		}
+	        		sb.append(entry.getAuthor()).append(": ").append(entry.getMsg());
+	        	}
         	}
         	final String msg = sb.toString();
 
@@ -156,7 +165,7 @@ public abstract class IMPublisher extends Publisher
         	.append(build.getProject().getName()).append(": ")
         	.append(Hudson.getInstance().getRootUrl()).append(build.getUrl())
         	.toString();
-        	for (final IMMessageTarget target : calculateSuspectsString(build.getChangeSet())) {
+        	for (final IMMessageTarget target : calculateSuspectsTargets(build.getChangeSet())) {
         		try {
         			getIMConnection().send(target, message);
         		} catch (final Throwable e) {
@@ -171,7 +180,7 @@ public abstract class IMPublisher extends Publisher
         	.append(build.getProject().getName()).append(": ")
         	.append(Hudson.getInstance().getRootUrl()).append(build.getUrl())
         	.toString();
-        	for (final IMMessageTarget target : calculateSuspectsString(build.getChangeSet())) {
+        	for (final IMMessageTarget target : calculateSuspectsTargets(build.getChangeSet())) {
         		try {
         			getIMConnection().send(target, message);
         		} catch (final Throwable e) {
@@ -219,8 +228,8 @@ public abstract class IMPublisher extends Publisher
 		return true;
 	}
 	
-	private Collection<IMMessageTarget> calculateSuspectsString(ChangeLogSet<? extends Entry> changeLogSet) {
-		Collection<IMMessageTarget> suspects = new ArrayList<IMMessageTarget>();
+	private Collection<IMMessageTarget> calculateSuspectsTargets(ChangeLogSet<? extends Entry> changeLogSet) {
+		Set<IMMessageTarget> suspects = new HashSet<IMMessageTarget>();
 		
 		if (changeLogSet != null && (! changeLogSet.isEmptySet())) {
 			for (Entry e : changeLogSet) {
