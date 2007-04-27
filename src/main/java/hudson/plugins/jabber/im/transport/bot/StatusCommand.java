@@ -55,21 +55,26 @@ public class StatusCommand implements BotCommand {
 					first = false;
 				}
 				
-				msg.append(project.getName()).append(": ");
-				
+				msg.append(project.getName());
 				if (project.isDisabled()) {
 					msg.append("(disabled) ");
 				} else if (project.isInQueue()) {
 					msg.append("(in queue) ");
+				} else if (project.isBuilding()) {
+					msg.append("(BUILDING) ");
 				}
-				Build lastBuild = project.getLastBuild();
+				msg.append(": ");
 				
+				Build lastBuild = project.getLastBuild();
+				while ((lastBuild != null) && lastBuild.isBuilding()) {
+					lastBuild = lastBuild.getPreviousBuild();
+				}
 				if (lastBuild != null) {
 					msg.append("last build: ").append(lastBuild.getNumber())
 					.append(": ").append(lastBuild.getResult()).append(": ")
 					.append(Hudson.getInstance().getRootUrl()).append(lastBuild.getUrl());
 				} else {
-					msg.append("no build yet");
+					msg.append("no finished build yet");
 				}
 	
 			}
