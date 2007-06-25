@@ -48,7 +48,7 @@ public class StatusCommand implements BotCommand {
 				msg.append("Status of all projects:\n");
 			}
 			boolean first = true;
-			for (Project project : projects) {
+			for (Project<?,?> project : projects) {
 				if (! first) {
 					msg.append("\n");
 				} else {
@@ -65,7 +65,7 @@ public class StatusCommand implements BotCommand {
 				}
 				msg.append(": ");
 				
-				Build lastBuild = project.getLastBuild();
+				Build<?,?> lastBuild = project.getLastBuild();
 				while ((lastBuild != null) && lastBuild.isBuilding()) {
 					lastBuild = lastBuild.getPreviousBuild();
 				}

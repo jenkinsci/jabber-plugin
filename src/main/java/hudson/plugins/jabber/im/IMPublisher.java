@@ -119,7 +119,7 @@ public abstract class IMPublisher extends Publisher
     	return notifyFixers;
     }
 
-    public boolean perform(final Build build, final Launcher launcher, final BuildListener buildListener)
+    public boolean perform(final Build<?,?> build, final Launcher launcher, final BuildListener buildListener)
             throws InterruptedException, IOException
     {
         Assert.isNotNull(build, "Parameter 'build' must not be null.");
