@@ -46,7 +46,7 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
     private String hudsonNickname = "hudson";
     private String hudsonPassword = "secret";
     private boolean exposePresence = true;
-    private String initialGroupChats = "";
+    private String initialGroupChats = null;
     private String commandPrefix = DEFAULT_COMMAND_PREFIX;
 
     public JabberPublisherDescriptor()
@@ -134,7 +134,7 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
     }
     
     private void applyInitialGroupChats(final HttpServletRequest req) {
-    	this.initialGroupChats = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_INITIAL_GROUPCHATS);
+    	this.initialGroupChats = Util.fixEmptyAndTrim(req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_INITIAL_GROUPCHATS));
     }
     
     private void applyCommandPrefix(final HttpServletRequest req) {
@@ -188,9 +188,13 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
     {
         return this.exposePresence;
     }
-    
+
+    /**
+     * Gets the whitespace separated list of group chats to join,
+     * or null if nothing is configured.
+     */
     public String getInitialGroupChats() {
-    	return this.initialGroupChats;
+    	return Util.fixEmptyAndTrim(this.initialGroupChats);
     }
     
     public String getCommandPrefix() {
