@@ -48,11 +48,20 @@ class JabberIMConnection implements IMConnection
     private static final String DND_MESSAGE = "I'm busy building your software...";
     private XMPPConnection connection;
     private Map<String, GroupChatCacheEntry> groupChatCache = new HashMap<String, GroupChatCacheEntry>(0);
-    private final int port;
-    private final String nick;
     private final String passwd;
-    private final String hostname;
     private final String botCommandPrefix;
+    /**
+     * Jabber ID. It can be either 'john.doe@gmail.com' (username+service name) or just
+     * 'john.doe' (service name.)
+     */
+    private final String nick;
+    /**
+     * Optional server name. If the {@link #nick} is username+service name, this field
+     * can be omitted, in which case reverse DNS lookup and other defaulting mechanism is used
+     * to determine the server name. 
+     */
+    private final String hostname;
+    private final int port;
 
     JabberIMConnection(final JabberPublisherDescriptor desc) throws IMException
     {
@@ -128,6 +137,9 @@ class JabberIMConnection implements IMConnection
             String serviceName = getServiceName();
             if(serviceName==null)
                 this.connection = new XMPPConnection(this.hostname, this.port);
+            else
+            if(hostname==null)
+                this.connection = new XMPPConnection(serviceName);
             else
                 this.connection = new XMPPConnection(this.hostname, this.port, serviceName);
             this.connection.login(getUserName(), this.passwd);

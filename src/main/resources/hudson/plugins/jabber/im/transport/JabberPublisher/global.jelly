@@ -1,17 +1,11 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
 	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 	<f:section title="Jabber Notification">
-		
-		<f:entry title="Hostname" description="Hostname of the Jabber server">
-			<f:textbox name="${descriptor.PARAMETERNAME_HOSTNAME}"
-				value="${descriptor.hostname}"/>
-		</f:entry>
-		<f:entry title="Account"
-			description="Account/Nickname to use to send notifications">
+		<f:entry title="Jabber ID" help="${rootURL}/plugin/jabber/help-id.html">
 			<f:textbox name="${descriptor.PARAMETERNAME_NICKNAME}"
 				value="${descriptor.hudsonNickname}"/>
 		</f:entry>
-		<f:entry title="Password" description="The Account´s Password to the Jabber server">
+		<f:entry title="Password">
       <input type="password" name="${descriptor.PARAMETERNAME_PASSWORD}" class="setting-input"
 				value="${descriptor.hudsonPassword}"/>
 		</f:entry>
@@ -20,9 +14,12 @@
 				value="${descriptor.initialGroupChats}" />
 		</f:entry>
     <f:advanced>
-      <f:entry title="Port"
-        description="Port of the Jabber server (Defaults to 5222)">
-        <f:textbox name="${descriptor.PARAMETERNAME_PORT}" value="${descriptor.port}"/>
+      <f:entry title="Server" help="${rootURL}/plugin/jabber/help-server.html">
+        <f:textbox name="${descriptor.PARAMETERNAME_HOSTNAME}"
+          value="${descriptor.hostname}"/>
+      </f:entry>
+      <f:entry title="Port" help="${rootURL}/plugin/jabber/help-port.html">
+        <f:textbox name="${descriptor.PARAMETERNAME_PORT}" value="${descriptor.portString}"/>
       </f:entry>
       <f:entry title="Expose presence"
         description="Check if the Nickname should set its Status to AVAILABLE">

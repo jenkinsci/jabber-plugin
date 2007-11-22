@@ -3,18 +3,17 @@
  */
 package hudson.plugins.jabber.im.transport;
 
+import hudson.Util;
 import hudson.model.Descriptor;
 import hudson.plugins.jabber.im.IMException;
 import hudson.plugins.jabber.im.IMMessageTargetConversionException;
 import hudson.plugins.jabber.tools.Assert;
 import hudson.tasks.Publisher;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import org.kohsuke.stapler.StaplerRequest;
 
 import javax.servlet.http.HttpServletRequest;
-
-import org.kohsuke.stapler.StaplerRequest;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 public class JabberPublisherDescriptor extends Descriptor<Publisher>
 {
@@ -108,7 +107,7 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
 
     private void applyPort(final HttpServletRequest req) throws FormException
     {
-        final String p = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PORT);
+        final String p = Util.fixEmptyAndTrim(req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PORT));
         if (p != null)
         {
             try
@@ -124,6 +123,8 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
             {
                 throw new FormException("Port cannot be parsed.", JabberPublisherDescriptor.PARAMETERNAME_PORT);
             }
+        } else {
+            this.port = 5222;
         }
     }
 
@@ -172,6 +173,15 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
     public int getPort()
     {
         return this.port;
+    }
+
+    /**
+     * Returns the text to be put into the form field.
+     * If the port is default, leave it empty.
+     */
+    public String getPortString() {
+        if(port==5222)  return null;
+        else            return String.valueOf(port);
     }
 
     public boolean isExposePresence()
