@@ -10,15 +10,14 @@ import hudson.plugins.jabber.im.IMMessageTarget;
 import hudson.plugins.jabber.im.IMPresence;
 import hudson.plugins.jabber.im.transport.bot.Bot;
 import hudson.plugins.jabber.tools.Assert;
-
-import java.util.HashMap;
-import java.util.Map;
-
 import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.GroupChat;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Presence;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Smack-specific implementation of IMConnection.
@@ -27,7 +26,7 @@ import org.jivesoftware.smack.packet.Presence;
  */
 class JabberIMConnection implements IMConnection
 {
-	static private class GroupChatCacheEntry {
+    static private class GroupChatCacheEntry {
 		private final GroupChat groupChat;
 		private final Bot bot;
 		
@@ -81,6 +80,25 @@ class JabberIMConnection implements IMConnection
     }
 
     /**
+     * Returns 'gmail.com' portion of the nick name 'john.doe@gmail.com',
+     * or null if not found.
+     */
+    public String getServiceName() {
+        int idx = nick.indexOf('@');
+        if(idx<0)   return null;
+        else        return nick.substring(idx+1);
+    }
+
+    /**
+     * Returns 'john.doe' portion of the nick name 'john.doe@gmail.com'.
+     */
+    public String getUserName() {
+        int idx = nick.indexOf('@');
+        if(idx<0)   return nick;
+        else        return nick.substring(0,idx);
+    }
+
+    /**
      * 
      */
     public void close()
@@ -107,8 +125,12 @@ class JabberIMConnection implements IMConnection
     {
         if ((this.connection == null) || !this.connection.isConnected())
         {
-            this.connection = new XMPPConnection(this.hostname, this.port);
-            this.connection.login(this.nick, this.passwd);
+            String serviceName = getServiceName();
+            if(serviceName==null)
+                this.connection = new XMPPConnection(this.hostname, this.port);
+            else
+                this.connection = new XMPPConnection(this.hostname, this.port, serviceName);
+            this.connection.login(getUserName(), this.passwd);
         }
     }
     
