@@ -21,12 +21,10 @@
       <f:entry title="Port" help="${rootURL}/plugin/jabber/help-port.html">
         <f:textbox name="${descriptor.PARAMETERNAME_PORT}" value="${descriptor.portString}"/>
       </f:entry>
-      <f:entry title="Expose presence"
-        description="Check if the Nickname should set its Status to AVAILABLE">
-        <f:checkbox name="${descriptor.PARAMETERNAME_PRESENCE}"
-          checked="${descriptor.exposePresence}"/>
+      <f:entry title="Expose presence" help="${rootURL}/plugin/jabber/help-presence.html">
+        <f:checkbox name="${descriptor.PARAMETERNAME_PRESENCE}" checked="${descriptor.exposePresence}"/>
       </f:entry>
-      <f:entry title="Bot command prefix" description="Prefix for bot commands (e.g. ! or ~)">
+      <f:entry title="Bot command prefix" help="${rootURL}/plugin/jabber/help-bot.html">
         <f:textbox name="${descriptor.PARAMETERNAME_COMMAND_PREFIX}"
           value="${descriptor.commandPrefix}" />
       </f:entry>
