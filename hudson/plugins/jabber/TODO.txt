@@ -1,0 +1,12 @@
+Short term tasks:
+
+- Add logging.
+- Enhance robustness concerning user-input.
+- Add ReconnectManager to better handle communication errors.
+- Provide help-html fragments for the GUI
+- Code cleanups
+- Add URL to build that caused the notification (help needed in order not to replicate same info in different plugins).
+
+TODO
+
+- Connect to IRC-Plugin Author to maybe join efforts

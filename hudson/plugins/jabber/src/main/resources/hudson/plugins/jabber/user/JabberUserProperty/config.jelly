@@ -1,0 +1,5 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <f:entry title="Jabber ID" description="Your Jabber ID, e.g. someone@jabber.org">
+  	<f:textbox name="jabber.user.jid" value="${instance.jid}" />
+  </f:entry>
+</j:jelly>

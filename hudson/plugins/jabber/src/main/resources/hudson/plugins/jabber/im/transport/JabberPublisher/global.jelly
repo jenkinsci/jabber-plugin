@@ -1,0 +1,37 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
+	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+  <j:set var="base" value="${rootURL}/plugin/jabber"/>
+
+  <f:section title="Jabber Notification">
+		<f:entry title="Jabber ID" help="${base}/help-id.html">
+			<f:textbox name="${descriptor.PARAMETERNAME_NICKNAME}"
+				value="${descriptor.hudsonNickname}"/>
+		</f:entry>
+		<f:entry title="Password">
+      <input type="password" name="${descriptor.PARAMETERNAME_PASSWORD}" class="setting-input"
+				value="${descriptor.hudsonPassword}"/>
+		</f:entry>
+		<f:entry title="Initial group chats" description="Group chats to automatically join on startup with a bot (whitespace separated)">
+			<f:textbox name="${descriptor.PARAMETERNAME_INITIAL_GROUPCHATS}"
+				value="${descriptor.initialGroupChats}" />
+		</f:entry>
+    <f:advanced>
+      <f:entry title="Server" help="${base}/help-server.html">
+        <f:textbox name="${descriptor.PARAMETERNAME_HOSTNAME}"
+          value="${descriptor.hostname}"
+          checkUrl="'${rootURL}/publisher/JabberPublisher/serverCheck?value='+escape(this.value)"/>
+      </f:entry>
+      <f:entry title="Port" help="${base}/help-port.html">
+        <f:textbox name="${descriptor.PARAMETERNAME_PORT}" value="${descriptor.portString}" />
+      </f:entry>
+      <f:entry title="Expose presence" help="${base}/help-presence.html">
+        <f:checkbox name="${descriptor.PARAMETERNAME_PRESENCE}" checked="${descriptor.exposePresence}"/>
+      </f:entry>
+      <f:entry title="Bot command prefix" help="${base}/help-bot.html">
+        <f:textbox name="${descriptor.PARAMETERNAME_COMMAND_PREFIX}"
+          value="${descriptor.commandPrefix}" />
+      </f:entry>
+    </f:advanced>
+    </f:section>
+</j:jelly>
