@@ -4,16 +4,20 @@
 package hudson.plugins.jabber.im.transport;
 
 import hudson.Util;
+import hudson.util.FormFieldValidator;
 import hudson.model.Descriptor;
 import hudson.plugins.jabber.im.IMException;
 import hudson.plugins.jabber.im.IMMessageTargetConversionException;
 import hudson.plugins.jabber.tools.Assert;
 import hudson.tasks.Publisher;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerResponse;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.ServletException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.io.IOException;
 
 public class JabberPublisherDescriptor extends Descriptor<Publisher>
 {
@@ -273,4 +277,24 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
         return super.configure(req);		
 	}
 
+    /**
+     * Validates the server name.
+     */
+    public void doServerCheck(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException {
+        new FormFieldValidator(req, rsp, false) {
+            protected void check() throws IOException, ServletException {
+                String v = Util.fixEmptyAndTrim(request.getParameter("value"));
+                if (v == null)
+                    ok();
+                else {
+                    try {
+                        InetAddress.getByName(v);
+                        ok();
+                    } catch (UnknownHostException e) {
+                        error("Unknown host "+v);
+                    }
+                }
+            }
+        }.process();
+    }
 }
