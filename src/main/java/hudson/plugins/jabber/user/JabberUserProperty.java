@@ -3,8 +3,8 @@
  */
 package hudson.plugins.jabber.user;
 
-import hudson.model.Descriptor;
 import hudson.model.UserProperty;
+import hudson.model.UserPropertyDescriptor;
 
 /**
  * Jabber user property.
@@ -31,7 +31,7 @@ public class JabberUserProperty extends UserProperty {
 		return this.jid;
 	}
 	
-	public Descriptor<UserProperty> getDescriptor() {
+	public UserPropertyDescriptor getDescriptor() {
 		return DESCRIPTOR;
 	}
 	
