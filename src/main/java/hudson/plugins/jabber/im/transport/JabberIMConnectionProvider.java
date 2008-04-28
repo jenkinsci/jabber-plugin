@@ -32,11 +32,8 @@ final class JabberIMConnectionProvider
 
         releaseConnection();
 
-        if (desc.getHostname() != null)
-        {
-            this.imConnection = new JabberIMConnection(desc);
-            this.imConnection.setPresence(desc.isExposePresence() ? IMPresence.AVAILABLE : IMPresence.UNAVAILABLE);
-        }
+        this.imConnection = new JabberIMConnection(desc);
+        this.imConnection.setPresence(desc.isExposePresence() ? IMPresence.AVAILABLE : IMPresence.UNAVAILABLE);
         return this.imConnection;
     }
 
