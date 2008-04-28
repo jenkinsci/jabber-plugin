@@ -1,6 +1,7 @@
 package hudson.plugins.jabber.im;
 
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.Build;
 import hudson.model.BuildListener;
 import hudson.model.Hudson;
@@ -126,13 +127,16 @@ public abstract class IMPublisher extends Publisher
         Assert.isNotNull(buildListener, "Parameter 'arg2' must not be null.");
         if (getNotificationStrategy().notificationWanted(build))
         {
-        	final StringBuffer sb = new StringBuffer();
+            // Escape any spaces and non-ASCII characters in the build URL.
+            String buildUrl = Util.encode(build.getUrl());
+
+            final StringBuffer sb = new StringBuffer();
         	sb.append("Project ").append(build.getProject().getName())
         	.append(" build (").append(build.getNumber()).append("): ")
         	.append(build.getResult()).append(" in ")
         	.append(build.getDurationString())
         	.append(": ")
-        	.append(Hudson.getInstance().getRootUrl()).append(build.getUrl());
+        	.append(Hudson.getInstance().getRootUrl()).append(buildUrl);
         	
         	if ((build.getChangeSet() != null) && (! build.getChangeSet().isEmptySet())) {
         		boolean hasManyChangeSets = build.getChangeSet().getItems().length > 1;
