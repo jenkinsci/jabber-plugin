@@ -46,7 +46,11 @@ class JabberIMConnection implements IMConnection
 	
 	
     private static final String DND_MESSAGE = "I'm busy building your software...";
+
     private XMPPConnection connection;
+    // Synchronize on this to avoid concurrent access to connection.
+    private final Object connectionLock = new Object();
+
     private Map<String, GroupChatCacheEntry> groupChatCache = new HashMap<String, GroupChatCacheEntry>(0);
     private final String passwd;
     private final String botCommandPrefix;
@@ -112,58 +116,73 @@ class JabberIMConnection implements IMConnection
      */
     public void close()
     {
-        try
+        synchronized (connectionLock)
         {
-            if ((this.connection != null) && this.connection.isConnected())
+            try
             {
-            	for (GroupChatCacheEntry entry : groupChatCache.values()) {
-					if (entry.getGroupChat().isJoined()) {
-						entry.getGroupChat().leave();
-					}
-				}
-                this.connection.close();
+                if ((this.connection != null) && this.connection.isConnected())
+                {
+                    for (GroupChatCacheEntry entry : groupChatCache.values()) {
+                        if (entry.getGroupChat().isJoined()) {
+                            entry.getGroupChat().leave();
+                        }
+                    }
+                    this.connection.close();
+                }
             }
-        }
-        finally
-        {
-            this.connection = null;
+            finally
+            {
+                this.connection = null;
+            }
         }
     }
 
     private void createConnection() throws XMPPException
     {
-        if ((this.connection == null) || !this.connection.isConnected())
+        synchronized (connectionLock)
         {
-            String serviceName = getServiceName();
-            if(serviceName==null)
-                this.connection = new XMPPConnection(this.hostname, this.port);
-            else
-            if(hostname==null)
-                this.connection = new XMPPConnection(serviceName);
-            else
-                this.connection = new XMPPConnection(this.hostname, this.port, serviceName);
-            this.connection.login(getUserName(), this.passwd);
+            if ((this.connection == null) || !this.connection.isConnected())
+            {
+                String serviceName = getServiceName();
+                if(serviceName==null)
+                {
+                    this.connection = new XMPPConnection(this.hostname, this.port);
+                }
+                else if(hostname==null)
+                {
+                    this.connection = new XMPPConnection(serviceName);
+                }
+                else
+                {
+                    this.connection = new XMPPConnection(this.hostname, this.port, serviceName);
+                }
+                
+                this.connection.login(getUserName(), this.passwd);
+            }
         }
     }
     
     private GroupChat createGroupChatConnection(String groupChatName) throws XMPPException {
-    	createConnection();
-    	GroupChatCacheEntry cacheEntry = groupChatCache.get(groupChatName);
-    	if (cacheEntry == null) {
-        	GroupChat groupChat = this.connection.createGroupChat(groupChatName);
-        	groupChat.join(this.nick);
+        synchronized (connectionLock)
+        {
+            createConnection();
+            GroupChatCacheEntry cacheEntry = groupChatCache.get(groupChatName);
+            if (cacheEntry == null) {
+                GroupChat groupChat = this.connection.createGroupChat(groupChatName);
+                groupChat.join(this.nick);
 
-        	// get rid of old messages:
-    		while (groupChat.pollMessage() != null) {
-    		}
+                // get rid of old messages:
+                while (groupChat.pollMessage() != null) {
+                }
 
-    		Bot bot = new Bot(groupChat, this.nick, this.botCommandPrefix);
-    		
-    		cacheEntry = new GroupChatCacheEntry(groupChat, bot);
-        	groupChatCache.put(groupChatName, cacheEntry);
-    		groupChat.addMessageListener(bot);
-    	}
-    	return cacheEntry.getGroupChat();
+                Bot bot = new Bot(groupChat, this.nick, this.botCommandPrefix);
+
+                cacheEntry = new GroupChatCacheEntry(groupChat, bot);
+                groupChatCache.put(groupChatName, cacheEntry);
+                groupChat.addMessageListener(bot);
+            }
+            return cacheEntry.getGroupChat();
+        }
     }
     
     public void send(final IMMessageTarget target, final String text) throws IMException
@@ -172,12 +191,15 @@ class JabberIMConnection implements IMConnection
         Assert.isNotNull(text, "Parameter 'text' must not be null.");
         try
         {
-            createConnection();
-            if (target instanceof GroupChatIMMessageTarget) {
-            	createGroupChatConnection(target.toString()).sendMessage(text);
-            } else {
-	        	final Chat chat = this.connection.createChat(target.toString());
-	        	chat.sendMessage(text);
+            synchronized (connectionLock)
+            {
+                createConnection();
+                if (target instanceof GroupChatIMMessageTarget) {
+                    createGroupChatConnection(target.toString()).sendMessage(text);
+                } else {
+                    final Chat chat = this.connection.createChat(target.toString());
+                    chat.sendMessage(text);
+                }
             }
         }
         catch (final XMPPException dontCare)
@@ -193,7 +215,7 @@ class JabberIMConnection implements IMConnection
         try
         {
             createConnection();
-            Presence presence = null;
+            Presence presence;
             switch (impresence)
             {
                 case AVAILABLE:
@@ -208,7 +230,10 @@ class JabberIMConnection implements IMConnection
                 default:
                     throw new IllegalStateException("Don't know how to handle " + impresence);
             }
-            this.connection.sendPacket(presence);
+            synchronized(connectionLock)
+            {
+                this.connection.sendPacket(presence);
+            }
         }
         catch (final XMPPException e)
         {
