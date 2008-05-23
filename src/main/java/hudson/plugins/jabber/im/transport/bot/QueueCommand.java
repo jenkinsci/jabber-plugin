@@ -28,8 +28,8 @@ public class QueueCommand implements BotCommand {
 			StringBuffer msg = new StringBuffer();
 			msg.append("Build queue:");
 			for (Item item : queue.getItems()) {
-				msg.append("\n- ").append(item.id)
-				.append(" ").append(item.task.getName())
+				msg.append("\n- ")
+				.append(item.task.getName())
 				.append(": ").append(item.getWhy());
 			}
 			reply = msg.toString();

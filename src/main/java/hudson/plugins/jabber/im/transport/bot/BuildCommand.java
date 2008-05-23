@@ -6,18 +6,12 @@ package hudson.plugins.jabber.im.transport.bot;
 import hudson.model.Hudson;
 import hudson.model.Project;
 import hudson.model.Queue;
-import hudson.model.Queue.Item;
-
-import java.lang.reflect.Field;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.jivesoftware.smack.GroupChat;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Message;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Build command for the Jabber bot.
@@ -38,40 +32,9 @@ public class BuildCommand implements BotCommand {
 		this.buildNowCommand = buildNowCommand;
 	}
 	
-	/*
-	 * Evil, evil, evil hack, until bug 356 is fixed
-	 */
-	@SuppressWarnings("unchecked")
 	private boolean scheduleBuild(final Project project, final int delaySeconds) {
 		Queue queue = Hudson.getInstance().getQueue();
-		if (queue == null) {
-			return false; // huh?
-		}
-		
-		if (queue.getItem(project) != null) {
-			return false; // no double queueing
-		}
-
-		try {
-			Field queueField = queue.getClass().getDeclaredField("queue");
-			queueField.setAccessible(true);
-			Set<Item> q = (Set<Item>) queueField.get(queue);
-
-	        // put the item in the queue
-	        Calendar due = new GregorianCalendar();
-	        due.add(Calendar.SECOND, delaySeconds);
-	        
-	        Item item = queue.new Item(due, project);
-	        q.add(item);
-
-	        queue.scheduleMaintenance();   // let an executor know that a new item is in the queue.
-	        
-	        return true;
-			
-		} catch (Exception e) {
-			// fallback
-			return project.scheduleBuild();
-		}
+        return queue.add(project,delaySeconds);
 	}
 	
 	public void executeCommand(final GroupChat groupChat, final Message message, String sender,
