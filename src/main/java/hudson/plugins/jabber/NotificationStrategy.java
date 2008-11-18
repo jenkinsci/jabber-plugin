@@ -1,7 +1,6 @@
 package hudson.plugins.jabber;
 
 import hudson.model.AbstractBuild;
-import hudson.model.Build;
 import hudson.model.Result;
 import hudson.plugins.jabber.tools.Assert;
 
