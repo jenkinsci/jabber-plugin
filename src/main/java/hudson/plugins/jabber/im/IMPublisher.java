@@ -2,7 +2,7 @@ package hudson.plugins.jabber.im;
 
 import hudson.Launcher;
 import hudson.Util;
-import hudson.model.Build;
+import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Hudson;
 import hudson.model.Result;
@@ -12,6 +12,7 @@ import hudson.plugins.jabber.tools.Assert;
 import hudson.plugins.jabber.user.JabberUserProperty;
 import hudson.scm.ChangeLogSet;
 import hudson.scm.ChangeLogSet.Entry;
+import hudson.tasks.BuildStep;
 import hudson.tasks.Publisher;
 
 import java.io.IOException;
@@ -26,7 +27,7 @@ import java.util.Set;
  * @author Uwe Schaefer
  *
  */
-public abstract class IMPublisher extends Publisher
+public abstract class IMPublisher extends Publisher implements BuildStep
 {
     private static final IMMessageTargetConverter CONVERTER = new DefaultIMMessageTargetConverter();
     private final List<IMMessageTarget> targets = new LinkedList<IMMessageTarget>();
@@ -120,7 +121,7 @@ public abstract class IMPublisher extends Publisher
     	return notifyFixers;
     }
 
-    public boolean perform(final Build<?,?> build, final Launcher launcher, final BuildListener buildListener)
+    public boolean perform(final AbstractBuild<?,?> build, final Launcher launcher, final BuildListener buildListener)
             throws InterruptedException, IOException
     {
         Assert.isNotNull(build, "Parameter 'build' must not be null.");
@@ -200,7 +201,7 @@ public abstract class IMPublisher extends Publisher
 	 * @see hudson.tasks.Publisher#prebuild(hudson.model.Build, hudson.model.BuildListener)
 	 */
 	@Override
-	public boolean prebuild(Build build, BuildListener buildListener) {
+	public boolean prebuild(AbstractBuild<?, ?> build, BuildListener buildListener) {
 		try {
 			if (notifyOnBuildStart) {
 				final StringBuffer sb = new StringBuffer("Starting build ").append(build.getNumber())

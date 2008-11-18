@@ -28,7 +28,7 @@ public class JabberPublisher extends IMPublisher
             {
                 throw new IMMessageTargetConversionException("Invalid input for target: '" + f + "'");
             }
-        }
+    }
 
         @Override
         public IMMessageTarget fromString(final String targetAsString) throws IMMessageTargetConversionException

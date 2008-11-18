@@ -3,10 +3,10 @@
  */
 package hudson.plugins.jabber.im.transport.bot;
 
-import hudson.model.Build;
-import hudson.model.Hudson;
-import hudson.model.Project;
 import hudson.Util;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Hudson;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,12 +25,13 @@ public class StatusCommand implements BotCommand {
 
 	public void executeCommand(GroupChat groupChat, Message message,
 			String sender, String[] args) throws XMPPException {
-		Collection<Project> projects = new ArrayList<Project>(0);
+		Collection<AbstractProject<?, ?>> projects = new ArrayList<AbstractProject<?, ?>>(0);
 		
 		if (args.length >= 2) {
 			String jobName = args[1];
 			
-            Project project = Hudson.getInstance().getItemByFullName(jobName, Project.class);
+			AbstractProject<?, ?> project = Hudson.getInstance()
+					.getItemByFullName(jobName, AbstractProject.class);
 			if (project != null) {
 				projects.add(project);
             } else {
@@ -38,8 +39,12 @@ public class StatusCommand implements BotCommand {
             			.append(jobName).toString());
             }
 		} else if (args.length == 1) {
-			for (Project project : Hudson.getInstance().getProjects()) {
-				projects.add(project);
+			for (AbstractProject<?, ?> project : Hudson.getInstance().getAllItems(AbstractProject.class)) {
+				// add only top level project
+				// sub project are accessible by there name but not shown for visibility
+				if (Hudson.getInstance().equals(project.getParent())) {
+					projects.add(project);
+				}
 			}
 		}
 		
@@ -49,7 +54,7 @@ public class StatusCommand implements BotCommand {
 				msg.append("Status of all projects:\n");
 			}
 			boolean first = true;
-			for (Project<?,?> project : projects) {
+			for (AbstractProject<?,?> project : projects) {
 				if (! first) {
 					msg.append("\n");
 				} else {
@@ -66,7 +71,7 @@ public class StatusCommand implements BotCommand {
 				}
 				msg.append(": ");
 				
-				Build<?,?> lastBuild = project.getLastBuild();
+				AbstractBuild<?,?> lastBuild = project.getLastBuild();
 				while ((lastBuild != null) && lastBuild.isBuilding()) {
 					lastBuild = lastBuild.getPreviousBuild();
 				}

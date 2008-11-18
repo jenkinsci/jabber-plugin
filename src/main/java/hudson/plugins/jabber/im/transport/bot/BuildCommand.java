@@ -3,15 +3,17 @@
  */
 package hudson.plugins.jabber.im.transport.bot;
 
+import hudson.model.AbstractProject;
 import hudson.model.Hudson;
-import hudson.model.Project;
+import hudson.model.Job;
 import hudson.model.Queue;
-import org.jivesoftware.smack.GroupChat;
-import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smack.packet.Message;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.jivesoftware.smack.GroupChat;
+import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.packet.Message;
 
 /**
  * Build command for the Jabber bot.
@@ -32,7 +34,7 @@ public class BuildCommand implements BotCommand {
 		this.buildNowCommand = buildNowCommand;
 	}
 	
-	private boolean scheduleBuild(final Project project, final int delaySeconds) {
+	private boolean scheduleBuild(final AbstractProject<?, ?> project, final int delaySeconds) {
 		Queue queue = Hudson.getInstance().getQueue();
         return queue.add(project,delaySeconds);
 	}
@@ -42,7 +44,7 @@ public class BuildCommand implements BotCommand {
 		if (args.length >= 2) {
 			String jobName = args[1];
 			
-            Project project = Hudson.getInstance().getItemByFullName(jobName, Project.class);
+            AbstractProject<?, ?> project = Hudson.getInstance().getItemByFullName(jobName, AbstractProject.class);
 			if (project != null) {
     			if (project.isInQueue()) {
     				Queue.Item queueItem = project.getQueueItem();
