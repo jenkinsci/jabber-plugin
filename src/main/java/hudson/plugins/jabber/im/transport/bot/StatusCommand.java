@@ -7,6 +7,7 @@ import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Hudson;
+import hudson.plugins.jabber.tools.MessageHelper;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -76,12 +77,9 @@ public class StatusCommand implements BotCommand {
 					lastBuild = lastBuild.getPreviousBuild();
 				}
 				if (lastBuild != null) {
-                    // Escape spaces and non-ASCII characters in build URL.
-                    String lastBuildUrl = Util.encode(lastBuild.getUrl());
-
-                    msg.append("last build: ").append(lastBuild.getNumber())
-					.append(": ").append(lastBuild.getResult()).append(": ")
-					.append(Hudson.getInstance().getRootUrl()).append(lastBuildUrl);
+					msg.append("last build: ").append(lastBuild.getNumber())
+						.append(": ").append(lastBuild.getResult()).append(": ")
+						.append(MessageHelper.getBuildURL(lastBuild));
 				} else {
 					msg.append("no finished build yet");
 				}

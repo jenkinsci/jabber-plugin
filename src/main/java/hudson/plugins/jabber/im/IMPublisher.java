@@ -9,6 +9,7 @@ import hudson.model.Result;
 import hudson.plugins.jabber.NotificationStrategy;
 import hudson.plugins.jabber.im.transport.JabberPublisherDescriptor;
 import hudson.plugins.jabber.tools.Assert;
+import hudson.plugins.jabber.tools.MessageHelper;
 import hudson.plugins.jabber.user.JabberUserProperty;
 import hudson.scm.ChangeLogSet;
 import hudson.scm.ChangeLogSet.Entry;
@@ -128,16 +129,13 @@ public abstract class IMPublisher extends Publisher implements BuildStep
         Assert.isNotNull(buildListener, "Parameter 'arg2' must not be null.");
         if (getNotificationStrategy().notificationWanted(build))
         {
-            // Escape any spaces and non-ASCII characters in the build URL.
-            String buildUrl = Util.encode(build.getUrl());
-
             final StringBuffer sb = new StringBuffer();
         	sb.append("Project ").append(build.getProject().getName())
         	.append(" build (").append(build.getNumber()).append("): ")
         	.append(build.getResult()).append(" in ")
         	.append(build.getDurationString())
         	.append(": ")
-        	.append(Hudson.getInstance().getRootUrl()).append(buildUrl);
+        	.append(MessageHelper.getBuildURL(build));
         	
         	if ((build.getChangeSet() != null) && (! build.getChangeSet().isEmptySet())) {
         		boolean hasManyChangeSets = build.getChangeSet().getItems().length > 1;
@@ -167,9 +165,9 @@ public abstract class IMPublisher extends Publisher implements BuildStep
         
         if (this.notifySuspects && build.getResult().isWorseThan(Result.SUCCESS)) {
         	final String message = new StringBuffer("You're suspected of having broken ")
-        	.append(build.getProject().getName()).append(": ")
-        	.append(Hudson.getInstance().getRootUrl()).append(build.getUrl())
-        	.toString();
+        		.append(build.getProject().getName()).append(": ")
+        		.append(MessageHelper.getBuildURL(build)).toString();
+        	
         	for (final IMMessageTarget target : calculateSuspectsTargets(build.getChangeSet())) {
         		try {
         			getIMConnection().send(target, message);
@@ -183,8 +181,8 @@ public abstract class IMPublisher extends Publisher implements BuildStep
         		(build.getPreviousBuild() != null) && build.getPreviousBuild().getResult().isWorseThan(Result.SUCCESS)) {
         	final String message = new StringBuffer("Seems you've fixed  ")
         	.append(build.getProject().getName()).append(": ")
-        	.append(Hudson.getInstance().getRootUrl()).append(build.getUrl())
-        	.toString();
+        	.append(MessageHelper.getBuildURL(build)).toString();
+        	
         	for (final IMMessageTarget target : calculateSuspectsTargets(build.getChangeSet())) {
         		try {
         			getIMConnection().send(target, message);
