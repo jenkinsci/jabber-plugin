@@ -12,6 +12,7 @@ import hudson.plugins.jabber.im.transport.bot.Bot;
 import hudson.plugins.jabber.tools.Assert;
 import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.GroupChat;
+import org.jivesoftware.smack.SSLXMPPConnection;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Presence;
@@ -59,6 +60,7 @@ class JabberIMConnection implements IMConnection
      * 'john.doe' (service name.)
      */
     private final String nick;
+    private final String groupChatNick;
     /**
      * Optional server name. If the {@link #nick} is username+service name, this field
      * can be omitted, in which case reverse DNS lookup and other defaulting mechanism is used
@@ -66,14 +68,17 @@ class JabberIMConnection implements IMConnection
      */
     private final String hostname;
     private final int port;
+    private final boolean legacySSL;
 
     JabberIMConnection(final JabberPublisherDescriptor desc) throws IMException
     {
         Assert.isNotNull(desc, "Parameter 'desc' must not be null.");
         this.hostname = desc.getHostname();
         this.port = desc.getPort();
+        this.legacySSL = desc.isLegacySSL();
         this.nick = desc.getHudsonNickname();
         this.passwd = desc.getHudsonPassword();
+        this.groupChatNick = desc.getGroupChatNickname() != null ? desc.getGroupChatNickname() : this.nick;
         this.botCommandPrefix = desc.getCommandPrefix();
         try
         {
@@ -146,18 +151,21 @@ class JabberIMConnection implements IMConnection
                 String serviceName = getServiceName();
                 if(serviceName==null)
                 {
-                    this.connection = new XMPPConnection(this.hostname, this.port);
+                    this.connection = this.legacySSL ? new SSLXMPPConnection(this.hostname, this.port)
+                                                     : new XMPPConnection(this.hostname, this.port);
                 }
                 else if(hostname==null)
                 {
-                    this.connection = new XMPPConnection(serviceName);
+                    this.connection = this.legacySSL ? new SSLXMPPConnection(serviceName)
+                                                     : new XMPPConnection(serviceName);
                 }
                 else
                 {
-                    this.connection = new XMPPConnection(this.hostname, this.port, serviceName);
+                    this.connection = this.legacySSL ? new SSLXMPPConnection(this.hostname, this.port, serviceName)
+                                                     : new XMPPConnection(this.hostname, this.port, serviceName);
                 }
                 
-                this.connection.login(getUserName(), this.passwd);
+                this.connection.login(getUserName(), this.passwd, "Hudson");
             }
         }
     }
@@ -169,13 +177,13 @@ class JabberIMConnection implements IMConnection
             GroupChatCacheEntry cacheEntry = groupChatCache.get(groupChatName);
             if (cacheEntry == null) {
                 GroupChat groupChat = this.connection.createGroupChat(groupChatName);
-                groupChat.join(this.nick);
+                groupChat.join(this.groupChatNick);
 
                 // get rid of old messages:
                 while (groupChat.pollMessage() != null) {
                 }
 
-                Bot bot = new Bot(groupChat, this.nick, this.botCommandPrefix);
+                Bot bot = new Bot(groupChat, this.groupChatNick, this.botCommandPrefix);
 
                 cacheEntry = new GroupChatCacheEntry(groupChat, bot);
                 groupChatCache.put(groupChatName, cacheEntry);
@@ -240,5 +248,4 @@ class JabberIMConnection implements IMConnection
             throw new IMException(e);
         }
     }
-
 }

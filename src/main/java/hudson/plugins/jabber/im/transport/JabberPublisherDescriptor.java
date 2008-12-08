@@ -24,9 +24,11 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
     private static final String PREFIX = "jabberPlugin.";
     public static final String PARAMETERNAME_PORT = JabberPublisherDescriptor.PREFIX + "port";
     public static final String PARAMETERNAME_HOSTNAME = JabberPublisherDescriptor.PREFIX + "hostname";
+    public static final String PARAMETERNAME_SSL = JabberPublisherDescriptor.PREFIX + "ssl";
     public static final String PARAMETERNAME_PRESENCE = JabberPublisherDescriptor.PREFIX + "exposePresence";
     public static final String PARAMETERNAME_PASSWORD = JabberPublisherDescriptor.PREFIX + "password";
     public static final String PARAMETERNAME_NICKNAME = JabberPublisherDescriptor.PREFIX + "nick";
+    public static final String PARAMETERNAME_GROUP_NICKNAME = JabberPublisherDescriptor.PREFIX + "groupNick";
     public static final String PARAMETERNAME_TARGETS = JabberPublisherDescriptor.PREFIX + "targets";
     public static final String PARAMETERNAME_STRATEGY = JabberPublisherDescriptor.PREFIX + "strategy";
     public static final String PARAMETERNAME_NOTIFY_START = JabberPublisherDescriptor.PREFIX + "notifyStart";
@@ -47,8 +49,10 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
 
     private int port = 5222;
     private String hostname = null;
+    private boolean legacySSL = false;
     private String hudsonNickname = "hudson";
     private String hudsonPassword = "secret";
+    private String groupChatNickname = null;
     private boolean exposePresence = true;
     private String initialGroupChats = null;
     private String commandPrefix = DEFAULT_COMMAND_PREFIX;
@@ -61,9 +65,9 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
         {
             JabberIMConnectionProvider.getInstance().createConnection(this);
         }
-        catch (final IMException dontCare)
+        catch (final Exception dontCare)
         {
-            // Server temporarily unavailable ?
+            // Server temporarily unavailable or misconfigured?
             dontCare.printStackTrace();
         }
     }
@@ -109,6 +113,15 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
         }
     }
 
+    private void applyGroupChatNickname(final HttpServletRequest req) throws FormException
+    {
+        this.groupChatNickname = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_GROUP_NICKNAME);
+        if (this.groupChatNickname != null && this.groupChatNickname.trim().length() == 0)
+        {
+            this.groupChatNickname = null;
+        }
+    }
+
     private void applyPort(final HttpServletRequest req) throws FormException
     {
         final String p = Util.fixEmptyAndTrim(req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PORT));
@@ -130,6 +143,11 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
         } else {
             this.port = 5222;
         }
+    }
+
+    private void applyLegacySSL(final HttpServletRequest req)
+    {
+        this.legacySSL = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_SSL) != null;
     }
 
     private void applyPresence(final HttpServletRequest req)
@@ -174,6 +192,11 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
         return this.hudsonPassword;
     }
 
+    public String getGroupChatNickname()
+    {
+        return this.groupChatNickname;
+    }
+
     public int getPort()
     {
         return this.port;
@@ -186,6 +209,11 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
     public String getPortString() {
         if(port==5222)  return null;
         else            return String.valueOf(port);
+    }
+
+    public boolean isLegacySSL()
+    {
+        return this.legacySSL;
     }
 
     public boolean isExposePresence()
@@ -260,8 +288,10 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
         applyPresence(req);
         applyHostname(req);
         applyPort(req);
+        applyLegacySSL(req);
         applyNickname(req);
         applyPassword(req);
+        applyGroupChatNickname(req);
         applyInitialGroupChats(req);
         applyCommandPrefix(req);
 

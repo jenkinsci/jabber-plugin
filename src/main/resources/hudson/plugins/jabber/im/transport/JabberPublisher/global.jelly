@@ -1,7 +1,7 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
 	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
-  <j:set var="base" value="${rootURL}/plugin/jabber"/>
+  <j:set var="base" value="/plugin/jabber"/>
 
   <f:section title="Jabber Notification">
 		<f:entry title="Jabber ID" help="${base}/help-id.html">
@@ -25,12 +25,19 @@
       <f:entry title="Port" help="${base}/help-port.html">
         <f:textbox name="${descriptor.PARAMETERNAME_PORT}" value="${descriptor.portString}" />
       </f:entry>
+      <f:entry title="Legacy SSL">
+        <f:checkbox name="${descriptor.PARAMETERNAME_SSL}" checked="${descriptor.legacySSL}"/>
+      </f:entry>
       <f:entry title="Expose presence" help="${base}/help-presence.html">
         <f:checkbox name="${descriptor.PARAMETERNAME_PRESENCE}" checked="${descriptor.exposePresence}"/>
       </f:entry>
       <f:entry title="Bot command prefix" help="${base}/help-bot.html">
         <f:textbox name="${descriptor.PARAMETERNAME_COMMAND_PREFIX}"
           value="${descriptor.commandPrefix}" />
+      </f:entry>
+      <f:entry title="Group chat nickname" help="${base}/help-group-nick.html">
+        <f:textbox name="${descriptor.PARAMETERNAME_GROUP_NICKNAME}"
+          value="${descriptor.groupChatNickname}" />
       </f:entry>
     </f:advanced>
     </f:section>
