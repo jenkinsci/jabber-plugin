@@ -23,4 +23,8 @@ public class MessageHelper {
 		return builder.toString();
 
 	}
+	
+	public static String[] extractCommandLine(String message) {
+		return message.split("\\s");		
+	}
 }
