@@ -45,74 +45,75 @@ public class BuildCommand implements BotCommand {
 	public void executeCommand(final GroupChat groupChat, final Message message, String sender,
 			final String[] args) throws XMPPException {
 		if (args.length >= 2) {
-			String jobName = StringUtils.join(Arrays.copyOfRange(args, 1, args.length), " ");
+			String jobName = args[1];
+			jobName = jobName.replaceAll("\"", "");
 			
-            AbstractProject<?, ?> project = Hudson.getInstance().getItemByFullName(jobName, AbstractProject.class);
+            		AbstractProject<?, ?> project = Hudson.getInstance().getItemByFullName(jobName, AbstractProject.class);
 			if (project != null) {
-    			if (project.isInQueue()) {
-    				Queue.Item queueItem = project.getQueueItem();
-					groupChat.sendMessage(new StringBuffer(sender).append(": job ")
+    				if (project.isInQueue()) {
+    					Queue.Item queueItem = project.getQueueItem();
+						groupChat.sendMessage(new StringBuffer(sender).append(": job ")
 							.append(jobName).append(" is already in the build queue (")
 							.append(queueItem.getWhy()).append(")")
 							.toString());
-            	} else {
-            		if (project.isDisabled()) {
-            			groupChat.sendMessage(new StringBuffer(sender).append(": job ")
-            					.append(jobName).append(" is disabled")
-            					.toString());
-            		} else {
-            			//project.scheduleBuild();
-            			if ((args.length <= 2) && (args[0].equals(buildNowCommand)) || "now".equalsIgnoreCase(args[2])) {
-            				if (scheduleBuild(project, 1)) {
-	                			groupChat.sendMessage(new StringBuffer(sender).append(": job ")
-	                					.append(jobName).append(" build scheduled now")
-	                					.toString());
-            				} else {
+            			} else {
+            				if (project.isDisabled()) {
             					groupChat.sendMessage(new StringBuffer(sender).append(": job ")
+            						.append(jobName).append(" is disabled")
+            						.toString());
+            				} else {
+            					//project.scheduleBuild();
+            					if ((args.length <= 2) && (args[0].equals(buildNowCommand)) || "now".equalsIgnoreCase(args[2])) {
+            						if (scheduleBuild(project, 1)) {
+	                					groupChat.sendMessage(new StringBuffer(sender).append(": job ")
+		                					.append(jobName).append(" build scheduled now")
+		                					.toString());
+      	     						} else {
+		            					groupChat.sendMessage(new StringBuffer(sender).append(": job ")
 	                					.append(jobName).append(" scheduling failed or already in build queue")
 	                					.toString());
-            				}
-            			} else if (args.length >= 3) {
-            				final String delay = args[2].trim();
-            				int factor = 1;
-            				if (delay.endsWith("m") || delay.endsWith("min")) {
-            					factor = 60;
-            				} else if (delay.endsWith("h")) {
-            					factor = 3600;
-            				}
-            				Matcher matcher = NUMERIC_EXTRACTION_REGEX.matcher(delay);
-            				if (matcher.find()) {
-            					int value = Integer.parseInt(matcher.group());
-                				if (scheduleBuild(project, value * factor)) {
-    	                			groupChat.sendMessage(new StringBuffer(sender).append(": job ")
-    	                					.append(jobName).append(" build scheduled with a quiet period of ")
-    	                					.append(value * factor).append(" seconds")
-    	                					.toString());
-                				} else {
-                					groupChat.sendMessage(new StringBuffer(sender).append(": job ")
-    	                					.append(jobName).append(" already scheduled in build queue")
-    	                					.toString());
-                				}
-            				}
+            						}
+            					} else if (args.length >= 3) {
+		            				final String delay = args[2].trim();
+		            				int factor = 1;
+		            				if (delay.endsWith("m") || delay.endsWith("min")) {
+		            					factor = 60;
+		            				} else if (delay.endsWith("h")) {
+		            					factor = 3600;
+		            				}
+		            				Matcher matcher = NUMERIC_EXTRACTION_REGEX.matcher(delay);
+		            				if (matcher.find()) {
+		            					int value = Integer.parseInt(matcher.group());
+		                				if (scheduleBuild(project, value * factor)) {
+		    	                			groupChat.sendMessage(new StringBuffer(sender).append(": job ")
+		    	                					.append(jobName).append(" build scheduled with a quiet period of ")
+		    	                					.append(value * factor).append(" seconds")
+		    	                					.toString());
+		                				} else {
+		                					groupChat.sendMessage(new StringBuffer(sender).append(": job ")
+		    	                					.append(jobName).append(" already scheduled in build queue")
+		    	                					.toString());
+		                				}
+		            				}
             				
-            			} else {
-            				if (project.scheduleBuild()) {
-	                			groupChat.sendMessage(new StringBuffer(sender).append(": job ")
-	                					.append(jobName).append(" build scheduled (quiet period: ")
-	                					.append(project.getQuietPeriod()).append(" seconds)")
-	                					.toString());
-            				} else {
-            					groupChat.sendMessage(new StringBuffer(sender).append(": job ")
-	                					.append(jobName).append(" already scheduled in build queue")
-	                					.toString());
+            					} else {
+		            				if (project.scheduleBuild()) {
+			                			groupChat.sendMessage(new StringBuffer(sender).append(": job ")
+			                					.append(jobName).append(" build scheduled (quiet period: ")
+			                					.append(project.getQuietPeriod()).append(" seconds)")
+			                					.toString());
+		            				} else {
+		            					groupChat.sendMessage(new StringBuffer(sender).append(": job ")
+			                					.append(jobName).append(" already scheduled in build queue")
+			                					.toString());
+		            				}
+            					}
             				}
             			}
+            		} else {
+            			groupChat.sendMessage(new StringBuffer(sender).append(": unknown job ")
+            				.append(jobName).toString());
             		}
-            	}
-            } else {
-            	groupChat.sendMessage(new StringBuffer(sender).append(": unknown job ")
-            			.append(jobName).toString());
-            }
 		}
 	}
 

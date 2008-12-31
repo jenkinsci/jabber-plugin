@@ -33,6 +33,7 @@ public class StatusCommand implements BotCommand {
 		
 		if (args.length >= 2) {
 			String jobName = StringUtils.join(Arrays.copyOfRange(args, 1, args.length), " ");
+			jobName = jobName.replaceAll("\"", "");
 			
 			AbstractProject<?, ?> project = Hudson.getInstance()
 					.getItemByFullName(jobName, AbstractProject.class);
