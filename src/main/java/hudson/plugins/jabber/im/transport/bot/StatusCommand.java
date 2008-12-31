@@ -10,7 +10,10 @@ import hudson.model.Hudson;
 import hudson.plugins.jabber.tools.MessageHelper;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+
+import org.apache.commons.lang.StringUtils;
 
 import org.jivesoftware.smack.GroupChat;
 import org.jivesoftware.smack.XMPPException;
@@ -29,7 +32,7 @@ public class StatusCommand implements BotCommand {
 		Collection<AbstractProject<?, ?>> projects = new ArrayList<AbstractProject<?, ?>>(0);
 		
 		if (args.length >= 2) {
-			String jobName = args[1];
+			String jobName = StringUtils.join(Arrays.copyOfRange(args, 1, args.length), " ");
 			
 			AbstractProject<?, ?> project = Hudson.getInstance()
 					.getItemByFullName(jobName, AbstractProject.class);

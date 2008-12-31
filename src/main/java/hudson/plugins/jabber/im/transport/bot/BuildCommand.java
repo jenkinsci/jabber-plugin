@@ -10,6 +10,9 @@ import hudson.model.Queue;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Arrays;
+
+import org.apache.commons.lang.StringUtils;
 
 import org.jivesoftware.smack.GroupChat;
 import org.jivesoftware.smack.XMPPException;
@@ -42,7 +45,7 @@ public class BuildCommand implements BotCommand {
 	public void executeCommand(final GroupChat groupChat, final Message message, String sender,
 			final String[] args) throws XMPPException {
 		if (args.length >= 2) {
-			String jobName = args[1];
+			String jobName = StringUtils.join(Arrays.copyOfRange(args, 1, args.length), " ");
 			
             AbstractProject<?, ?> project = Hudson.getInstance().getItemByFullName(jobName, AbstractProject.class);
 			if (project != null) {
