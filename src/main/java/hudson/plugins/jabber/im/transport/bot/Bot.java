@@ -28,6 +28,7 @@ public class Bot implements PacketListener {
 	private static final BotCommand BUILD_COMMAND = new BuildCommand("build");
 	private static final BotCommand STATUS_COMMAND = new StatusCommand();
 	private static final BotCommand QUEUE_COMMAND = new QueueCommand();
+	private static final BotCommand SNACK_COMMAND = new SnackCommand();
 	private static final BotCommand HELP_COMMAND = new BotCommand() {
 
 		public void executeCommand(GroupChat groupChat, Message message,
@@ -69,6 +70,7 @@ public class Bot implements PacketListener {
 		COMMAND_MAP.put("jobs", STATUS_COMMAND);
 		COMMAND_MAP.put("queue", QUEUE_COMMAND);
 		COMMAND_MAP.put("q", QUEUE_COMMAND);
+		COMMAND_MAP.put("botsnack", SNACK_COMMAND);
 	}
 
 	private final GroupChat groupChat;
