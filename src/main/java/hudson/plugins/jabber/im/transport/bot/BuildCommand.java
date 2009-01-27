@@ -38,8 +38,7 @@ public class BuildCommand implements BotCommand {
 	}
 	
 	private boolean scheduleBuild(final AbstractProject<?, ?> project, final int delaySeconds) {
-		Queue queue = Hudson.getInstance().getQueue();
-        return queue.add(project,delaySeconds);
+		return project.scheduleBuild(delaySeconds,"Jabber bot");
 	}
 	
 	public void executeCommand(final GroupChat groupChat, final Message message, String sender,
