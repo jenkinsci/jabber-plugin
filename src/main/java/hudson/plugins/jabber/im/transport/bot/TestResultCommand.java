@@ -1,11 +1,13 @@
 package hudson.plugins.jabber.im.transport.bot;
 
+import java.util.List;
 import org.jivesoftware.smack.GroupChat;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Message;
 
 import hudson.model.*;
 import hudson.tasks.test.AbstractTestResultAction;;
+import hudson.tasks.junit.CaseResult;
 
 /**
  * Print out the latest test results for a build
@@ -39,8 +41,15 @@ public class TestResultCommand implements BotCommand {
 				groupChat.sendMessage(new StringBuffer(sender).append(": sorry, looks like the latest build doesn't contain test results").toString());
 				return;
 			}
-			groupChat.sendMessage(new StringBuffer(sender).append(": Tabulating the results...").toString());
-			groupChat.sendMessage(String.format("Out of %s tests, %s of them failed", tests.getTotalCount(), tests.getFailCount()));
+			StringBuffer listing = new StringBuffer();
+			listing.append(String.format("%s: %s build #%s had %s of %s tests fail\n", sender, jobName, build.getNumber(), tests.getFailCount(), tests.getTotalCount()));
+			List<CaseResult> rc = tests.getFailedTests();
+			listing.append("\n");
+			if (rc.size() > 0) {
+				for (int i = 0; i < rc.size(); ++i) 
+				listing.append(String.format("%s failed in %ss\n", rc.get(i).getFullName(), rc.get(i).getDuration()));
+			}
+			groupChat.sendMessage(listing.toString());
 		} 
 		else {
 			// No job name specified
