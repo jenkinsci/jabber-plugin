@@ -10,7 +10,7 @@
     <artifactId>jabber</artifactId>
     <packaging>hpi</packaging>
     <name>Hudson Jabber notifier plugin</name>
-    <version>0.8-SNAPSHOT</version>
+    <version>0.8</version>
     <url>http://hudson.gotdns.com/wiki/display/HUDSON/Jabber+Plugin</url>
     
     <dependencies>
