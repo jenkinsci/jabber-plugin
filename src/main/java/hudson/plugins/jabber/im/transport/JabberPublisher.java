@@ -1,6 +1,5 @@
 package hudson.plugins.jabber.im.transport;
 
-import hudson.model.Descriptor;
 import hudson.plugins.jabber.im.DefaultIMMessageTarget;
 import hudson.plugins.jabber.im.DefaultIMMessageTargetConverter;
 import hudson.plugins.jabber.im.GroupChatIMMessageTarget;
@@ -10,6 +9,7 @@ import hudson.plugins.jabber.im.IMMessageTarget;
 import hudson.plugins.jabber.im.IMMessageTargetConversionException;
 import hudson.plugins.jabber.im.IMMessageTargetConverter;
 import hudson.plugins.jabber.im.IMPublisher;
+import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
 
 /**
@@ -68,13 +68,15 @@ public class JabberPublisher extends IMPublisher
     public JabberPublisher(final String targetsAsString, final String notificationStrategy,
     		final boolean notifyGroupChatsOnBuildStart,
     		final boolean notifySuspects,
-    		final boolean notifyFixers) throws IMMessageTargetConversionException
+    		final boolean notifyFixers,
+                final String defaultIdSuffix) throws IMMessageTargetConversionException
     {
         super(targetsAsString, notificationStrategy, notifyGroupChatsOnBuildStart,
-        		notifySuspects, notifyFixers);
+        		notifySuspects, notifyFixers, defaultIdSuffix);
     }
 
-    public Descriptor<Publisher> getDescriptor()
+    @Override
+    public BuildStepDescriptor<Publisher> getDescriptor()
     {
         return JabberPublisher.DESCRIPTOR;
     }

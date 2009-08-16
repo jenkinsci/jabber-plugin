@@ -1,10 +1,13 @@
 package hudson.plugins.jabber.im.transport.bot;
 
-import org.jivesoftware.smack.GroupChat;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Executor;
+import hudson.model.Hudson;
+import hudson.plugins.jabber.im.transport.JabberChat;
+
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Message;
-
-import hudson.model.*;
 
 /**
  * Abort a running job
@@ -14,7 +17,7 @@ public class AbortCommand implements BotCommand {
 	
 	private static final String HELP = " <job> - specify which job to abort";
 
-	public void executeCommand(GroupChat groupChat, Message message, String sender, String[] args) throws XMPPException {
+	public void executeCommand(JabberChat groupChat, Message message, String sender, String[] args) throws XMPPException {
 		if (args.length >= 2) {
 			String jobName = args[1];
 			jobName = jobName.replaceAll("\"", "");
@@ -29,7 +32,7 @@ public class AbortCommand implements BotCommand {
 				groupChat.sendMessage(String.format("%s: how do you intend a build that isn't building?", sender));
 				return;
 			}
-			AbstractBuild build = project.getLastBuild();
+			AbstractBuild<?, ?> build = project.getLastBuild();
 			if (build == null) {
 				// No builds? lolwut?
 				groupChat.sendMessage(new StringBuffer(sender).append(": it appears this job has never been built").toString());

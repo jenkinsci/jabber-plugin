@@ -2,7 +2,7 @@
   <f:entry title="Targets" description="Whitespace separated list of accounts to send notifications to (like 'peter@myjabberserver.org') -- for group chats, prepend a '*' (e.g. '*commitroom@conference.myjabberserver.org') -- note that JIDs that contain '@conference.' are automatically recognized as group chats (no need to prepend '*')">
     <f:textbox name="${descriptor.PARAMETERNAME_TARGETS}" value="${instance.targets}" />
 	</f:entry>
-  <f:entry title="Notification Strategy" description="When to send notifications (all = always, failure = on any failure, change = only on state change)">
+  <f:entry title="Notification Strategy" description="When to send notifications (all = always, failure = on any failure, failure and fixed = on failure and fixes, change = only on state change)">
     <select class="setting-input" name="${descriptor.PARAMETERNAME_STRATEGY}">
        <j:forEach var="value" items="${descriptor.PARAMETERVALUE_STRATEGY_VALUES}">
           <f:option selected="${instance.strategy==value}">${value}</f:option>

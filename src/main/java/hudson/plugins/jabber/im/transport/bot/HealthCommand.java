@@ -1,20 +1,16 @@
-/*
- * Created on Apr 22, 2007
- */
 package hudson.plugins.jabber.im.transport.bot;
 
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.HealthReport;
 import hudson.plugins.jabber.tools.MessageHelper;
 
-
-
-
 /**
- * Job/project status command for the jabber bot
- * @author Pascal Bleser
+ * Displays the weather resp. health for one or several jobs.
+ *
+ * @author kutzi
  */
-public class StatusCommand extends JobOverviewCommand {
+public class HealthCommand extends JobOverviewCommand {
 
     @Override
     protected CharSequence getMessageForJob(AbstractProject<?, ?> project) {
@@ -34,7 +30,10 @@ public class StatusCommand extends JobOverviewCommand {
             lastBuild = lastBuild.getPreviousBuild();
         }
         if (lastBuild != null) {
-            msg.append("last build: ").append(lastBuild.getNumber()).append(": ").append(lastBuild.getTimestampString()).append(": ").append(lastBuild.getResult()).append(": ").append(MessageHelper.getBuildURL(lastBuild));
+            HealthReport health = project.getBuildHealth();
+            msg.append(health.getDescription())
+                    .append(" (").append(health.getScore())
+                    .append("%): ").append(MessageHelper.getBuildURL(lastBuild));
         } else {
             msg.append("no finished build yet");
         }
@@ -43,6 +42,6 @@ public class StatusCommand extends JobOverviewCommand {
 
     @Override
     protected String getCommandShortName() {
-        return "status";
+        return "health";
     }
 }

@@ -4,10 +4,10 @@ import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.Hudson;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /**
@@ -16,16 +16,13 @@ import java.util.regex.Pattern;
  * @author vsellier
  */
 public class MessageHelper {
-	public final static Logger LOGGER = Logger.getLogger(MessageHelper.class
-			.toString());
-
 	private final static Pattern SPACE_PATTERN = Pattern.compile("\\s");
 	private final static String QUOTE = "\"";
 	
 	public static String getBuildURL(AbstractBuild<?, ?> lastBuild) {
 		// The hudson's base url
-		StringBuilder builder = new StringBuilder(Hudson.getInstance()
-				.getRootUrl());
+		StringBuilder builder = new StringBuilder(
+				String.valueOf(Hudson.getInstance().getRootUrl()));
 
 		// The build's url, escaped for project with space or other specials
 		// characters
@@ -57,8 +54,7 @@ public class MessageHelper {
 						firstQuote)));
 				// adding the parameter between quotes
 				int endQuoted = commandLine.indexOf(QUOTE, firstQuote + 1);
-				parameters
-						.add(commandLine.substring(firstQuote + 1, endQuoted));
+				parameters.add(commandLine.substring(firstQuote + 1, endQuoted));
 
 				// adding everything after the quoted parameter into the
 				// parameters list
@@ -73,4 +69,21 @@ public class MessageHelper {
 		}
 		return parameters;
 	}
+	
+	/**
+	 * Unfortunately in Java 5 there is no Arrays.copyOfRange.
+	 * So we have to implement it ourself.
+	 */
+	@SuppressWarnings("unchecked")
+    public static <T,U> T[] copyOfRange(U[] original, int from, int to, Class<? extends T[]> newType) {
+        int newLength = to - from;
+        if (newLength < 0)
+            throw new IllegalArgumentException(from + " > " + to);
+        T[] copy = ((Object)newType == (Object)Object[].class)
+            ? (T[]) new Object[newLength]
+            : (T[]) Array.newInstance(newType.getComponentType(), newLength);
+        System.arraycopy(original, from, copy, 0,
+                         Math.min(original.length - from, newLength));
+        return copy;
+    }
 }

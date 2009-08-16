@@ -27,8 +27,8 @@
     </dependencies>
 
   <scm>
-    <connection>scm:svn:https://guest@svn.dev.java.net/svn/hudson/tags/jabber-0.8</connection>
-    <developerConnection>scm:svn:https://svn.dev.java.net/svn/hudson/tags/jabber-0.8</developerConnection>
-    <url>https://hudson.dev.java.net/source/browse/hudson/hudson/plugins/jabber/tags/jabber-0.8</url>
+    <connection>scm:svn:https://guest@svn.dev.java.net/svn/hudson/trunk/hudson/plugins/jabber</connection>
+    <developerConnection>scm:svn:https://svn.dev.java.net/svn/hudson/trunk/hudson/plugins/jabber</developerConnection>
+    <url>http://fisheye4.atlassian.com/browse/hudson/trunk/hudson/plugins/jabber</url>
   </scm>
 </project>

@@ -3,7 +3,7 @@ package hudson.plugins.jabber.im;
 import java.io.IOException;
 
 /**
- * Reprsents any kind of protocol-level error that may occur.
+ * Represents any kind of protocol-level error that may occur.
  * @author Uwe Schaefer
  * @TODO this is obviously not fine-grained enough.
  */
@@ -14,6 +14,7 @@ public class IMException extends IOException
     public IMException(final Exception e)
     {
         super(e.getMessage());
+        initCause(e);
     }
 
 }

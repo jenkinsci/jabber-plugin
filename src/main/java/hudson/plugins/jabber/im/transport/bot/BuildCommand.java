@@ -4,17 +4,14 @@
 package hudson.plugins.jabber.im.transport.bot;
 
 import hudson.model.AbstractProject;
+import hudson.model.Cause;
 import hudson.model.Hudson;
-import hudson.model.Job;
 import hudson.model.Queue;
+import hudson.plugins.jabber.im.transport.JabberChat;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Arrays;
 
-import org.apache.commons.lang.StringUtils;
-
-import org.jivesoftware.smack.GroupChat;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Message;
 
@@ -39,10 +36,10 @@ public class BuildCommand implements BotCommand {
 	
 	private boolean scheduleBuild(final AbstractProject<?, ?> project, final int delaySeconds) {
 		Queue queue = Hudson.getInstance().getQueue();
-        return queue.add(project,delaySeconds);
+        return queue.schedule(project, delaySeconds) != null;
 	}
 	
-	public void executeCommand(final GroupChat groupChat, final Message message, String sender,
+	public void executeCommand(final JabberChat groupChat, final Message message, String sender,
 			final String[] args) throws XMPPException {
 		if (args.length >= 2) {
 			String jobName = args[1];
@@ -97,7 +94,8 @@ public class BuildCommand implements BotCommand {
 		            				}
             				
             					} else {
-		            				if (project.scheduleBuild()) {
+            						// TODO: replace this with a remoteCause or with a UserCause for the user issueing the bot command?
+		            				if (project.scheduleBuild(new Cause.LegacyCodeCause())) {
 			                			groupChat.sendMessage(new StringBuffer(sender).append(": job ")
 			                					.append(jobName).append(" build scheduled (quiet period: ")
 			                					.append(project.getQuietPeriod()).append(" seconds)")

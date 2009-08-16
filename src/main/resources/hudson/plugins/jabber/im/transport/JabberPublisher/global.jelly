@@ -16,6 +16,10 @@
 			<f:textbox name="${descriptor.PARAMETERNAME_INITIAL_GROUPCHATS}"
 				value="${descriptor.initialGroupChats}" />
 		</f:entry>
+                <f:entry title="Default ID suffix" description="This suffix will be used to determine the Jabber ID from the Hudson ID, if no Jabber ID is specified in the user settings">
+			<f:textbox name="${descriptor.PARAMETERNAME_DEFAULT_ID_SUFFIX}"
+				value="${descriptor.defaultIdSuffix}" />
+		</f:entry>
     <f:advanced>
       <f:entry title="Server" help="${base}/help-server.html">
         <f:textbox name="${descriptor.PARAMETERNAME_HOSTNAME}"

@@ -3,14 +3,15 @@
  */
 package hudson.plugins.jabber.im.transport.bot;
 
+import hudson.plugins.jabber.im.transport.JabberChat;
 import hudson.plugins.jabber.tools.MessageHelper;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 
-import org.jivesoftware.smack.GroupChat;
 import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Message;
@@ -25,15 +26,18 @@ import org.jivesoftware.smackx.packet.DelayInformation;
  */
 public class Bot implements PacketListener {
 
+	private static final Logger LOGGER = Logger.getLogger(Bot.class.getName());
+
 	private static final BotCommand BUILD_COMMAND = new BuildCommand("build");
 	private static final BotCommand STATUS_COMMAND = new StatusCommand();
+    private static final BotCommand HEALTH_COMMAND = new HealthCommand();
 	private static final BotCommand QUEUE_COMMAND = new QueueCommand();
 	private static final BotCommand SNACK_COMMAND = new SnackCommand();
 	private static final BotCommand TESTRESULTS_COMMAND =  new TestResultCommand();
 	private static final BotCommand ABORT_COMMAND = new AbortCommand();
 	private static final BotCommand HELP_COMMAND = new BotCommand() {
 
-		public void executeCommand(GroupChat groupChat, Message message,
+		public void executeCommand(JabberChat groupChat, Message message,
 				String sender, String[] args) throws XMPPException {
 			if (HELP_CACHE == null) {
 				final StringBuffer msg = new StringBuffer();
@@ -69,6 +73,8 @@ public class Bot implements PacketListener {
 		COMMAND_MAP.put("schedule", BUILD_COMMAND);
 		COMMAND_MAP.put("status", STATUS_COMMAND);
 		COMMAND_MAP.put("s", STATUS_COMMAND);
+        COMMAND_MAP.put("health", HEALTH_COMMAND);
+        COMMAND_MAP.put("h", HEALTH_COMMAND);
 		COMMAND_MAP.put("jobs", STATUS_COMMAND);
 		COMMAND_MAP.put("queue", QUEUE_COMMAND);
 		COMMAND_MAP.put("q", QUEUE_COMMAND);
@@ -77,17 +83,18 @@ public class Bot implements PacketListener {
 		COMMAND_MAP.put("botsnack", SNACK_COMMAND);
 	}
 
-	private final GroupChat groupChat;
+	private final JabberChat chat;
 	private final String nick;
 	private final String commandPrefix;
 
-	public Bot(final GroupChat groupChat, final String nick,
+	public Bot(final JabberChat chat, final String nick,
 			final String commandPrefix) {
-		this.groupChat = groupChat;
+		this.chat = chat;
 		this.nick = nick;
 		this.commandPrefix = commandPrefix;
 	}
 
+	@SuppressWarnings("unchecked")
 	public void processPacket(Packet p) {
 		if (p instanceof Message) {
 			// don't react to old messages
@@ -107,22 +114,22 @@ public class Bot implements PacketListener {
 				if (args.length > 0) {
 					// first word is the command name
 					String cmd = args[0];
-					if (COMMAND_MAP.containsKey(cmd)) {
-						String sender = msg.getFrom();
-						if (sender != null) {
-							int slashIndex = sender.indexOf('/');
-							if (slashIndex != -1) {
-								sender = sender.substring(slashIndex + 1);
-							}
-						}
-						BotCommand command = COMMAND_MAP.get(cmd);
-						try {
-							command.executeCommand(this.groupChat, msg, sender,
+					String sender = msg.getFrom();
+					if (sender != null) {
+						sender = this.chat.getNickName(sender);
+					}
+					try {
+						if (COMMAND_MAP.containsKey(cmd)) {
+							BotCommand command = COMMAND_MAP.get(cmd);
+							command.executeCommand(this.chat, msg, sender,
 									args);
-						} catch (XMPPException e) {
-							// ignore
-							e.printStackTrace();
+							
+						} else {
+							this.chat.sendMessage(sender + " did you mean me? Unknown command '" + cmd
+									+ "'\nUse " + this.commandPrefix + "help to get help!");
 						}
+					} catch (XMPPException e) {
+						LOGGER.warning(e.toString());
 					}
 				}
 			}

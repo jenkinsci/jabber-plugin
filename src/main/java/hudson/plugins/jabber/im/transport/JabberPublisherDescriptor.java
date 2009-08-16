@@ -4,22 +4,26 @@
 package hudson.plugins.jabber.im.transport;
 
 import hudson.Util;
-import hudson.util.FormFieldValidator;
-import hudson.model.Descriptor;
-import hudson.plugins.jabber.im.IMException;
+import hudson.plugins.jabber.NotificationStrategy;
 import hudson.plugins.jabber.im.IMMessageTargetConversionException;
 import hudson.plugins.jabber.tools.Assert;
+import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
+import hudson.util.FormFieldValidator;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+
+import net.sf.json.JSONObject;
+
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.ServletException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.io.IOException;
-
-public class JabberPublisherDescriptor extends Descriptor<Publisher>
+public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher>
 {
     private static final String PREFIX = "jabberPlugin.";
     public static final String PARAMETERNAME_PORT = JabberPublisherDescriptor.PREFIX + "port";
@@ -36,15 +40,16 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
     public static final String PARAMETERNAME_NOTIFY_FIXERS = JabberPublisherDescriptor.PREFIX + "notifyFixers";
     public static final String PARAMETERNAME_INITIAL_GROUPCHATS = JabberPublisherDescriptor.PREFIX + "initialGroupChats";
     public static final String PARAMETERNAME_COMMAND_PREFIX = JabberPublisherDescriptor.PREFIX + "commandPrefix";
-    public static final String PARAMETERVALUE_STRATEGY_ALL = "all";
-    public static final String PARAMETERVALUE_STRATEGY_FAILURE = "failure";
-    public static final String PARAMETERVALUE_STRATEGY_STATE_CHANGE = "change";
-    public static final String[] PARAMETERVALUE_STRATEGY_VALUES = {
-    	PARAMETERVALUE_STRATEGY_ALL,
-    	PARAMETERVALUE_STRATEGY_FAILURE,
-    	PARAMETERVALUE_STRATEGY_STATE_CHANGE
+    public static final String PARAMETERNAME_DEFAULT_ID_SUFFIX = JabberPublisherDescriptor.PREFIX + "defaultIdPostfix";
+    public static final String[] PARAMETERVALUE_STRATEGY_VALUES;
+    static {
+        PARAMETERVALUE_STRATEGY_VALUES = new String[NotificationStrategy.values().length];
+        int i = 0;
+        for (NotificationStrategy strategy : NotificationStrategy.values()) {
+            PARAMETERVALUE_STRATEGY_VALUES[i++] = strategy.getDisplayName();
+        }
     };
-    public static final String PARAMETERVALUE_STRATEGY_DEFAULT = PARAMETERVALUE_STRATEGY_STATE_CHANGE;
+    public static final String PARAMETERVALUE_STRATEGY_DEFAULT = NotificationStrategy.STATECHANGE_ONLY.getDisplayName();
     public static final String DEFAULT_COMMAND_PREFIX = "!";
 
     private int port = 5222;
@@ -56,6 +61,7 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
     private boolean exposePresence = true;
     private String initialGroupChats = null;
     private String commandPrefix = DEFAULT_COMMAND_PREFIX;
+    private String defaultIdSuffix;
 
     public JabberPublisherDescriptor()
     {
@@ -160,11 +166,20 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
     }
     
     private void applyCommandPrefix(final HttpServletRequest req) {
-    	String commandPrefix = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_COMMAND_PREFIX);
-    	if ((commandPrefix != null) && (commandPrefix.trim().length() > 0)) {
-    		this.commandPrefix = commandPrefix;
+    	String prefix = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_COMMAND_PREFIX);
+    	if ((prefix != null) && (prefix.trim().length() > 0)) {
+    		this.commandPrefix = prefix;
     	} else {
     		this.commandPrefix = DEFAULT_COMMAND_PREFIX;
+    	}
+    }
+
+     private void applyDefaultIdSuffix(final HttpServletRequest req) {
+    	String suffix = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_DEFAULT_ID_SUFFIX);
+    	if ((suffix != null) && (suffix.trim().length() > 0)) {
+    		this.defaultIdSuffix = suffix.trim();
+    	} else {
+    		this.defaultIdSuffix = "";
     	}
     }
     
@@ -228,7 +243,11 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
     public String getInitialGroupChats() {
     	return Util.fixEmptyAndTrim(this.initialGroupChats);
     }
-    
+
+    public String getDefaultIdSuffix() {
+        return this.defaultIdSuffix;
+    }
+
     public String getCommandPrefix() {
     	return this.commandPrefix;
     }
@@ -259,12 +278,13 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
         final String s = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_NOTIFY_START);
         final String ns = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_NOTIFY_SUSPECTS);
         final String nf = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_NOTIFY_FIXERS);
+        final String suffix = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_DEFAULT_ID_SUFFIX);
         try
         {
             return new JabberPublisher(t, n,
             		(s != null && "on".equals(s)),
             		(ns != null && "on".equals(ns)),
-            		(nf != null && "on".equals(nf)));
+            		(nf != null && "on".equals(nf)), suffix);
         }
         catch (final IMMessageTargetConversionException e)
         {
@@ -278,11 +298,11 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
         factory.releaseConnection();
     }
 
-	/* (non-Javadoc)
-	 * @see hudson.model.Descriptor#configure(org.kohsuke.stapler.StaplerRequest)
+	/**
+	 * {@inheritDoc}
 	 */
 	@Override
-	public boolean configure(StaplerRequest req) throws hudson.model.Descriptor.FormException {
+	public boolean configure(StaplerRequest req, JSONObject json) throws hudson.model.Descriptor.FormException {
 		Assert.isNotNull(req, "Parameter 'req' must not be null.");
 
         applyPresence(req);
@@ -294,6 +314,7 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
         applyGroupChatNickname(req);
         applyInitialGroupChats(req);
         applyCommandPrefix(req);
+        applyDefaultIdSuffix(req);
 
         try
         {
@@ -304,7 +325,7 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
             throw new FormException("Unable to create Client: " + e, null);
         }
         save();
-        return super.configure(req);		
+        return super.configure(req, json);		
 	}
 
     /**
@@ -327,4 +348,12 @@ public class JabberPublisherDescriptor extends Descriptor<Publisher>
             }
         }.process();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+	@Override
+	public boolean isApplicable(Class jobType) {
+		return true;
+	}
 }

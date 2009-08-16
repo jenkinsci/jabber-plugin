@@ -1,3 +1,13 @@
+Current ToDos
+=============
+- update to Smack 3.x (Note: on hold until Smack 3.x supports legacy SSL http://www.igniterealtime.org/issues/browse/SMACK-274)
+- add support for aliases in bot commands
+- chat modes for Bot (e.g. chatty, praising, grumpy, ...)
+- changes plugin settings via bot commands
+
+
+Old ToDos (from before 2007/04/24). TODO: clean these up!
+=========================================================
 Short term tasks:
 
 - Add logging.

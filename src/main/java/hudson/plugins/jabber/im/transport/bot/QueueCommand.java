@@ -6,8 +6,8 @@ package hudson.plugins.jabber.im.transport.bot;
 import hudson.model.Hudson;
 import hudson.model.Queue;
 import hudson.model.Queue.Item;
+import hudson.plugins.jabber.im.transport.JabberChat;
 
-import org.jivesoftware.smack.GroupChat;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Message;
 
@@ -19,7 +19,7 @@ public class QueueCommand implements BotCommand {
 	
 	private static final String HELP = " - show the state of the build queue";
 
-	public void executeCommand(GroupChat groupChat, Message message,
+	public void executeCommand(JabberChat groupChat, Message message,
 			String sender, String[] args) throws XMPPException {
 		Queue queue = Hudson.getInstance().getQueue();
 		Item[] items = queue.getItems();
