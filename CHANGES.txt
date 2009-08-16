@@ -8,6 +8,7 @@ Bot:
 - bot now also works in single-user chat [HUDSON-4057]
 
 General:
+- reconnection thread to automatically reconnect
 - new notification strategy: "fails and fixes"
 - default suffix for Jabber IDs. When entered Jabber IDs can be inferred from Hudson user ids
 I.e. Jabber ID = <hudson_id><extension> [HUDSON-1527]

@@ -2,7 +2,6 @@ package hudson.plugins.jabber.im.transport;
 
 import hudson.plugins.jabber.im.IMConnection;
 import hudson.plugins.jabber.im.IMException;
-import hudson.plugins.jabber.im.IMPresence;
 import hudson.plugins.jabber.tools.Assert;
 
 /**
@@ -33,7 +32,6 @@ final class JabberIMConnectionProvider
         releaseConnection();
 
         this.imConnection = new JabberIMConnection(desc);
-        this.imConnection.setPresence(desc.isExposePresence() ? IMPresence.AVAILABLE : IMPresence.UNAVAILABLE);
         return this.imConnection;
     }
 

@@ -28,7 +28,7 @@ public class Bot implements PacketListener {
 
 	private static final Logger LOGGER = Logger.getLogger(Bot.class.getName());
 
-	private static final BotCommand BUILD_COMMAND = new BuildCommand("build");
+	private final BotCommand BUILD_COMMAND;
 	private static final BotCommand STATUS_COMMAND = new StatusCommand();
     private static final BotCommand HEALTH_COMMAND = new HealthCommand();
 	private static final BotCommand QUEUE_COMMAND = new QueueCommand();
@@ -69,8 +69,6 @@ public class Bot implements PacketListener {
 	static {
 		COMMAND_MAP = new HashMap<String, BotCommand>();
 		COMMAND_MAP.put("help", HELP_COMMAND);
-		COMMAND_MAP.put("build", BUILD_COMMAND);
-		COMMAND_MAP.put("schedule", BUILD_COMMAND);
 		COMMAND_MAP.put("status", STATUS_COMMAND);
 		COMMAND_MAP.put("s", STATUS_COMMAND);
         COMMAND_MAP.put("health", HEALTH_COMMAND);
@@ -85,13 +83,18 @@ public class Bot implements PacketListener {
 
 	private final JabberChat chat;
 	private final String nick;
+	private final String jabberServer;
 	private final String commandPrefix;
 
-	public Bot(final JabberChat chat, final String nick,
+	public Bot(final JabberChat chat, final String nick, final String jabberServer,
 			final String commandPrefix) {
 		this.chat = chat;
 		this.nick = nick;
+		this.jabberServer = jabberServer;
 		this.commandPrefix = commandPrefix;
+		this.BUILD_COMMAND  = new BuildCommand(this.nick + "@" + this.jabberServer);
+		COMMAND_MAP.put("build", BUILD_COMMAND);
+		COMMAND_MAP.put("schedule", BUILD_COMMAND);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -121,7 +124,8 @@ public class Bot implements PacketListener {
 					try {
 						if (COMMAND_MAP.containsKey(cmd)) {
 							BotCommand command = COMMAND_MAP.get(cmd);
-							command.executeCommand(this.chat, msg, sender,
+							command.executeCommand(
+									this.chat, msg, sender,
 									args);
 							
 						} else {

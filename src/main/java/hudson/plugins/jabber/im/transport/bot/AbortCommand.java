@@ -25,31 +25,45 @@ public class AbortCommand implements BotCommand {
 			AbstractProject<?, ?> project = Hudson.getInstance().getItemByFullName(jobName, AbstractProject.class);
 			if (project == null) {
 				// Invalid job name
-				groupChat.sendMessage(new StringBuffer(sender).append(": that doesn't look like a valid job").toString());
+				groupChat.sendMessage(sender + ": that doesn't look like a valid job");
 				return;
 			}
 			if ( (project.isInQueue() == false) && (project.isBuilding() == false) ) {
 				groupChat.sendMessage(String.format("%s: how do you intend a build that isn't building?", sender));
 				return;
 			}
-			AbstractBuild<?, ?> build = project.getLastBuild();
-			if (build == null) {
-				// No builds? lolwut?
-				groupChat.sendMessage(new StringBuffer(sender).append(": it appears this job has never been built").toString());
-				return;
-			}	
+			
+			boolean aborted = false;
+			if (project.isInQueue()) {
+				aborted = Hudson.getInstance().getQueue().cancel(project);
+			}
+			
+			if (!aborted) {
+				// must be already building
+				AbstractBuild<?, ?> build = project.getLastBuild();
+				if (build == null) {
+					// No builds? lolwut?
+					groupChat.sendMessage(sender + ": it appears this job has never been built");
+					return;
+				}	
+	
+				Executor ex = build.getExecutor();
+				if (ex == null) {
+					aborted = false; // how the hell does this happen o_O
+				} else {
+					ex.interrupt();
+				}
+			}
 
-			Executor ex = build.getExecutor();
-			if (ex == null)
-				return; // how the hell does this happen o_O
-
-			ex.interrupt();
-
-			groupChat.sendMessage(String.format("%s aborted, I hope you're happy!", jobName));
+			if (aborted) {
+				groupChat.sendMessage(jobName + " aborted, I hope you're happy!");
+			} else {
+				groupChat.sendMessage(sender + ": " + " couldn't abort " + jobName + ". I don't know why this happened.");
+			}
 		} 
 		else {
 			// No job name specified
-			groupChat.sendMessage(new StringBuffer(sender).append(": you need to specify a job name").toString());
+			groupChat.sendMessage(sender + ": you need to specify a job name");
 			return; 
 		}
 	}

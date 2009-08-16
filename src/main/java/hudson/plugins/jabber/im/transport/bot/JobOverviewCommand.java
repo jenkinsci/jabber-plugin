@@ -9,7 +9,6 @@ import hudson.plugins.jabber.tools.MessageHelper;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.apache.commons.lang.StringUtils;
 
 /**
  * Abstract command which gives an overview about several jobs.
@@ -39,11 +38,11 @@ public abstract class JobOverviewCommand extends AbstractTextSendingCommand {
             if (args.length >= 2) {
                 if ("-v".equals(args[1])) {
                 	mode = Mode.VIEW;
-                	view = join(args, 2);
+                	view = MessageHelper.join(args, 2);
                     getProjectsForView(projects, view);
                 } else {
                 	mode = Mode.SINGLE;
-                    String jobName = join(args, 1);
+                    String jobName = MessageHelper.join(args, 1);
                     jobName = jobName.replaceAll("\"", "");
 
                     AbstractProject<?, ?> project = Hudson.getInstance().getItemByFullName(jobName, AbstractProject.class);
@@ -119,11 +118,5 @@ public abstract class JobOverviewCommand extends AbstractTextSendingCommand {
         } else {
             throw new IllegalArgumentException(UNKNOWN_VIEW_STR + ": " + viewName);
         }
-    }
-    
-    private String join(String[] array, int startIndex) {
-    	String joined = StringUtils.join(MessageHelper.copyOfRange(array, startIndex, array.length, String[].class), " ");
-        joined = joined.replaceAll("\"", "");
-        return joined;
     }
 }

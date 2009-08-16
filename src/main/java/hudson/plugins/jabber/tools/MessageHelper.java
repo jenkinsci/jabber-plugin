@@ -10,6 +10,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
+
 /**
  * Utility class to help message creation
  * 
@@ -86,4 +88,14 @@ public class MessageHelper {
                          Math.min(original.length - from, newLength));
         return copy;
     }
+
+	/**
+	 * Joins together all strings in the array - starting at startIndex - by
+	 * using a single space as separator.
+	 */
+	public static String join(String[] array, int startIndex) {
+		String joined = StringUtils.join(copyOfRange(array, startIndex, array.length, String[].class), " ");
+	    joined = joined.replaceAll("\"", "");
+	    return joined;
+	}
 }
