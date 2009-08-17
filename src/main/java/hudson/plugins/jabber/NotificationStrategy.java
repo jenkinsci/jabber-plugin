@@ -61,6 +61,20 @@ public enum NotificationStrategy {
                             return previousBuild.getResult() != Result.SUCCESS;
                         }
 		}
+		
+		@Override
+		public String getResultString(AbstractBuild<?, ?> build) {
+			if (build.getResult() != Result.SUCCESS) {
+                return build.getResult().toString();
+            }
+			final AbstractBuild<?, ?> previousBuild = build.getPreviousBuild();
+            if (previousBuild != null) {
+            	if (previousBuild.getResult().isWorseThan(Result.SUCCESS)) {
+            		return "FIXED";
+            	}
+            }
+            return build.getResult().toString();
+		}
 	},
 
         /**
@@ -98,6 +112,13 @@ public enum NotificationStrategy {
 	 */
 	public abstract boolean notificationWanted(AbstractBuild<?, ?> build);
 
+	/**
+	 * Returns a textual description of the build's result.
+	 */
+	public String getResultString(AbstractBuild<?, ?> build) {
+		return build.getResult().toString();
+	}
+	
         /**
          * Returns the name of the strategy to display in dialogs etc.
          *

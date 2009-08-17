@@ -22,10 +22,11 @@ public class StatusCommand extends JobOverviewCommand {
         msg.append(project.getName());
         if (project.isDisabled()) {
             msg.append("(disabled) ");
+        // a project which is building and additionally in queue should be reported as building
+        } else if (project.isBuilding()) {
+            msg.append("(BUILDING ").append(project.getLastBuild().getDurationString()).append(")");
         } else if (project.isInQueue()) {
             msg.append("(in queue) ");
-        } else if (project.isBuilding()) {
-            msg.append("(BUILDING) ");
         }
         msg.append(": ");
 
@@ -34,7 +35,9 @@ public class StatusCommand extends JobOverviewCommand {
             lastBuild = lastBuild.getPreviousBuild();
         }
         if (lastBuild != null) {
-            msg.append("last build: ").append(lastBuild.getNumber()).append(": ").append(lastBuild.getTimestampString()).append(": ").append(lastBuild.getResult()).append(": ").append(MessageHelper.getBuildURL(lastBuild));
+            msg.append("last build: ").append(lastBuild.getNumber()).append(" (")
+            	.append(lastBuild.getTimestampString()).append(" ago): ").append(lastBuild.getResult()).append(": ")
+            	.append(MessageHelper.getBuildURL(lastBuild));
         } else {
             msg.append("no finished build yet");
         }

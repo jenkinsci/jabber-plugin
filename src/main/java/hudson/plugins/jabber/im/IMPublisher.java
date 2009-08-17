@@ -20,6 +20,9 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
+
+import org.apache.commons.lang.StringUtils;
 
 /**
  * The actual Publisher that sends notification-Messages out to the clients.
@@ -28,19 +31,19 @@ import java.util.Set;
  */
 public abstract class IMPublisher extends Notifier implements BuildStep
 {
+	private static final Logger LOGGER = Logger.getLogger(IMPublisher.class.getName());
+	
     private static final IMMessageTargetConverter CONVERTER = new DefaultIMMessageTargetConverter();
     private final List<IMMessageTarget> targets = new LinkedList<IMMessageTarget>();
     private final NotificationStrategy notificationStrategy;
     private final boolean notifyOnBuildStart;
     private final boolean notifySuspects;
     private final boolean notifyFixers;
-    private final String defaultIdSuffix;
 
     protected IMPublisher(final String targetsAsString, final String notificationStrategyString,
     		final boolean notifyGroupChatsOnBuildStart,
     		final boolean notifySuspects,
-    		final boolean notifyFixers,
-                final String defaultIdSuffix) throws IMMessageTargetConversionException
+    		final boolean notifyFixers) throws IMMessageTargetConversionException
     {
         Assert.isNotNull(targetsAsString, "Parameter 'targetsAsString' must not be null.");
         final String[] split = targetsAsString.split("\\s");
@@ -64,11 +67,6 @@ public abstract class IMPublisher extends Notifier implements BuildStep
         this.notifyOnBuildStart = notifyGroupChatsOnBuildStart;
         this.notifySuspects = notifySuspects;
         this.notifyFixers = notifyFixers;
-        String suffix = defaultIdSuffix;
-        if(suffix != null && suffix.trim().length() == 0) {
-            suffix = null;
-        }
-        this.defaultIdSuffix = suffix;
     }
     
     protected abstract IMConnection getIMConnection() throws IMException;
@@ -90,7 +88,7 @@ public abstract class IMPublisher extends Notifier implements BuildStep
 
     public final String getTargets()
     {
-        final StringBuffer sb = new StringBuffer();
+        final StringBuilder sb = new StringBuilder();
         for (final IMMessageTarget t : this.targets)
         {
         	if ((t instanceof GroupChatIMMessageTarget) && (! t.toString().contains("@conference."))) {
@@ -126,11 +124,11 @@ public abstract class IMPublisher extends Notifier implements BuildStep
         Assert.isNotNull(buildListener, "Parameter 'buildListener' must not be null.");
         if (getNotificationStrategy().notificationWanted(build))
         {
-            final StringBuffer sb = new StringBuffer();
+            final StringBuilder sb = new StringBuilder();
         	sb.append("Project ").append(build.getProject().getName())
         	.append(" build (").append(build.getNumber()).append("): ")
-        	.append(build.getResult()).append(" in ")
-        	.append(build.getDurationString())
+        	.append(getNotificationStrategy().getResultString(build)).append(" in ")
+        	.append(build.getTimestampString())
         	.append(": ")
         	.append(MessageHelper.getBuildURL(build));
         	
@@ -161,13 +159,13 @@ public abstract class IMPublisher extends Notifier implements BuildStep
         }
         
         if (this.notifySuspects && build.getResult().isWorseThan(Result.SUCCESS)) {
-        	final String message = new StringBuffer("You're suspected of having broken ")
-        		.append(build.getProject().getName()).append(": ")
-        		.append(MessageHelper.getBuildURL(build)).toString();
+        	LOGGER.info("Notifying suspects");
+        	final String message = "You're suspected of having broken " + build.getProject().getName() + ": " + MessageHelper.getBuildURL(build);
         	
         	for (final IMMessageTarget target : calculateSuspectsTargets(build.getChangeSet(),
                         buildListener.getLogger())) {
         		try {
+        			buildListener.getLogger().append("Sending notification to suspect: " + target.toString() + "\n");
         			getIMConnection().send(target, message);
         		} catch (final Throwable e) {
         			buildListener.getLogger().append("There was an Error sending suspect notification to: " + target.toString() + "\n");
@@ -177,13 +175,13 @@ public abstract class IMPublisher extends Notifier implements BuildStep
         
         if (this.notifyFixers && (build.getResult() == Result.SUCCESS) &&
         		(build.getPreviousBuild() != null) && build.getPreviousBuild().getResult().isWorseThan(Result.SUCCESS)) {
-        	final String message = new StringBuffer("Seems you've fixed  ")
-        	.append(build.getProject().getName()).append(": ")
-        	.append(MessageHelper.getBuildURL(build)).toString();
+        	LOGGER.info("Notifying fixers");
+        	final String message = "Seems you've fixed " + build.getProject().getName() + ": " + MessageHelper.getBuildURL(build);
         	
         	for (final IMMessageTarget target : calculateSuspectsTargets(build.getChangeSet(),
                         buildListener.getLogger())) {
         		try {
+        			buildListener.getLogger().append("Sending notification to fixer: " + target.toString() + "\n");
         			getIMConnection().send(target, message);
         		} catch (final Throwable e) {
         			buildListener.getLogger().append("There was an Error sending fixer notification to: " + target.toString() + "\n");
@@ -201,8 +199,8 @@ public abstract class IMPublisher extends Notifier implements BuildStep
 	public boolean prebuild(AbstractBuild<?, ?> build, BuildListener buildListener) {
 		try {
 			if (notifyOnBuildStart) {
-				final StringBuffer sb = new StringBuffer("Starting build ").append(build.getNumber())
-				.append(" for job ").append(build.getProject().getName());
+				final StringBuilder sb = new StringBuilder("Starting build ").append(build.getNumber())
+					.append(" for job ").append(build.getProject().getName());
 				if (build.getPreviousBuild() != null) {
 					sb.append(" (previous build: ").append(build.getPreviousBuild().getResult().toString().toLowerCase());
 					if (build.getPreviousBuild().getResult().isWorseThan(Result.SUCCESS)) {
@@ -235,23 +233,35 @@ public abstract class IMPublisher extends Notifier implements BuildStep
                 PrintStream logger) {
 		Set<IMMessageTarget> suspects = new HashSet<IMMessageTarget>();
 		
+		String defaultSuffix = null;
+		try {
+			defaultSuffix = getIMConnection().getDefaultIdSuffix();
+			if (StringUtils.isBlank(defaultSuffix)) {
+				defaultSuffix = null;
+			}
+		} catch (IMException e) {
+			// ignore
+		}
+		LOGGER.info("Default Suffix: " + defaultSuffix);
+		
 		if (changeLogSet != null && (! changeLogSet.isEmptySet())) {
 			for (Entry e : changeLogSet) {
-                            String jabberId = null;
+				LOGGER.info("Possible target: " + e.getAuthor().getId() + " " + e.getAuthor().getDisplayName());
+                String jabberId = null;
 				JabberUserProperty jabberUserProperty = (JabberUserProperty) e.getAuthor().getProperties().get(JabberUserProperty.DESCRIPTOR);
 				if ((jabberUserProperty != null) && (jabberUserProperty.getJid() != null)) {
-                                    jabberId = jabberUserProperty.getJid();
-				} else if (this.defaultIdSuffix != null) {
-                                    jabberId = e.getAuthor().getId() + this.defaultIdSuffix;
-                                }
+                    jabberId = jabberUserProperty.getJid();
+				} else if (defaultSuffix != null) {
+                    jabberId = e.getAuthor().getId() + defaultSuffix;
+                }
 
-                                if (jabberId != null) {
-                                    try {
-                                            suspects.add(CONVERTER.fromString(jabberId));
-                                    } catch (final IMMessageTargetConversionException dontCare) {
-                                        logger.append("Invalid Jabber ID: " + jabberId);
-                                    }
-                                }
+                if (jabberId != null) {
+                    try {
+                            suspects.add(CONVERTER.fromString(jabberId));
+                    } catch (final IMMessageTargetConversionException dontCare) {
+                        logger.append("Invalid Jabber ID: " + jabberId + "\n");
+                    }
+                }
 			}
 		}
 		return suspects;

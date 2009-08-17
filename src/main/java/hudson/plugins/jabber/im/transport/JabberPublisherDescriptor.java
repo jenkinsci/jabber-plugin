@@ -40,7 +40,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher>
     public static final String PARAMETERNAME_NOTIFY_FIXERS = JabberPublisherDescriptor.PREFIX + "notifyFixers";
     public static final String PARAMETERNAME_INITIAL_GROUPCHATS = JabberPublisherDescriptor.PREFIX + "initialGroupChats";
     public static final String PARAMETERNAME_COMMAND_PREFIX = JabberPublisherDescriptor.PREFIX + "commandPrefix";
-    public static final String PARAMETERNAME_DEFAULT_ID_SUFFIX = JabberPublisherDescriptor.PREFIX + "defaultIdPostfix";
+    public static final String PARAMETERNAME_DEFAULT_ID_SUFFIX = JabberPublisherDescriptor.PREFIX + "defaultIdSuffix";
     public static final String[] PARAMETERVALUE_STRATEGY_VALUES;
     static {
         PARAMETERVALUE_STRATEGY_VALUES = new String[NotificationStrategy.values().length];
@@ -278,13 +278,12 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher>
         final String s = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_NOTIFY_START);
         final String ns = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_NOTIFY_SUSPECTS);
         final String nf = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_NOTIFY_FIXERS);
-        final String suffix = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_DEFAULT_ID_SUFFIX);
         try
         {
             return new JabberPublisher(t, n,
             		(s != null && "on".equals(s)),
             		(ns != null && "on".equals(ns)),
-            		(nf != null && "on".equals(nf)), suffix);
+            		(nf != null && "on".equals(nf)));
         }
         catch (final IMMessageTargetConversionException e)
         {

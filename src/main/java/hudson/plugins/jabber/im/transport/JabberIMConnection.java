@@ -79,6 +79,8 @@ class JabberIMConnection implements IMConnection {
 
 	private final Connector connector;
 	private final Thread connectorThread;
+
+	private final String defaultIdSuffix;
 	
 	JabberIMConnection(final JabberPublisherDescriptor desc) throws IMException {
 		Assert.isNotNull(desc, "Parameter 'desc' must not be null.");
@@ -96,6 +98,7 @@ class JabberIMConnection implements IMConnection {
 			this.groupChats = new String[0];
 		}
 		this.impresence = desc.isExposePresence() ? IMPresence.AVAILABLE : IMPresence.UNAVAILABLE;
+		this.defaultIdSuffix = desc.getDefaultIdSuffix();
 
 		connector = new Connector();
 		
@@ -354,6 +357,10 @@ class JabberIMConnection implements IMConnection {
 		}
 	}
 	
+	public String getDefaultIdSuffix() {
+		return this.defaultIdSuffix;
+	}
+
 	private final class IMListener implements PacketListener {
 
 		public void processPacket(Packet packet) {
@@ -389,7 +396,7 @@ class JabberIMConnection implements IMConnection {
 				}
 				
 				if (m.getBody() != null) {
-					System.out.println("Message from " + m.getFrom() + " : " + m.getBody());
+					LOGGER.info("Message from " + m.getFrom() + " : " + m.getBody());
 					
 					final String chatPartner = m.getFrom();
 					getChat(chatPartner, m);

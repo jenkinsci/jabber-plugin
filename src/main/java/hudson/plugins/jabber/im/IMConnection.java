@@ -26,5 +26,8 @@ public interface IMConnection
      * @throws IMException encapsulated exception of underlying protocol/client 
      */
     void setPresence(IMPresence presence) throws IMException;
+    
+    
+    String getDefaultIdSuffix();
 
 }
