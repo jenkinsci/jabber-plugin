@@ -4,6 +4,7 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
+import hudson.model.Run;
 import hudson.plugins.jabber.NotificationStrategy;
 import hudson.plugins.jabber.tools.Assert;
 import hudson.plugins.jabber.tools.MessageHelper;
@@ -124,7 +125,12 @@ public abstract class IMPublisher extends Notifier implements BuildStep
         Assert.isNotNull(buildListener, "Parameter 'buildListener' must not be null.");
         if (getNotificationStrategy().notificationWanted(build))
         {
-            final StringBuilder sb = new StringBuilder();
+            final StringBuilder sb;
+            if (isFix(build)) {
+            	sb = new StringBuilder("Yippie, build fixed!\n");
+            } else {
+            	sb = new StringBuilder();
+            }
         	sb.append("Project ").append(build.getProject().getName())
         	.append(" build (").append(build.getNumber()).append("): ")
         	.append(getNotificationStrategy().getResultString(build)).append(" in ")
@@ -157,10 +163,12 @@ public abstract class IMPublisher extends Notifier implements BuildStep
                 }
             }
         }
+
+        // TODO: add options to inform culprits, too!
         
         if (this.notifySuspects && build.getResult().isWorseThan(Result.SUCCESS)) {
         	LOGGER.info("Notifying suspects");
-        	final String message = "You're suspected of having broken " + build.getProject().getName() + ": " + MessageHelper.getBuildURL(build);
+        	final String message = "Oh no! You're suspected of having broken " + build.getProject().getName() + ": " + MessageHelper.getBuildURL(build);
         	
         	for (final IMMessageTarget target : calculateSuspectsTargets(build.getChangeSet(),
                         buildListener.getLogger())) {
@@ -173,10 +181,13 @@ public abstract class IMPublisher extends Notifier implements BuildStep
         	}
         }
         
+        AbstractBuild<?,?> previousBuild = getPreviousBuild(build);
         if (this.notifyFixers && (build.getResult() == Result.SUCCESS) &&
-        		(build.getPreviousBuild() != null) && build.getPreviousBuild().getResult().isWorseThan(Result.SUCCESS)) {
+        		previousBuild != null &&
+        		(previousBuild.getResult().isWorseThan(Result.SUCCESS)
+        		 && !(previousBuild.getResult() == Result.ABORTED))) {
         	LOGGER.info("Notifying fixers");
-        	final String message = "Seems you've fixed " + build.getProject().getName() + ": " + MessageHelper.getBuildURL(build);
+        	final String message = "Yippie! Seems you've fixed " + build.getProject().getName() + ": " + MessageHelper.getBuildURL(build);
         	
         	for (final IMMessageTarget target : calculateSuspectsTargets(build.getChangeSet(),
                         buildListener.getLogger())) {
@@ -190,6 +201,38 @@ public abstract class IMPublisher extends Notifier implements BuildStep
         }
         
         return true;
+    }
+
+    private static boolean isFix(AbstractBuild<?,?> build) {
+    	if (build.getResult() != Result.SUCCESS) {
+    		return false;
+    	}
+    	
+    	AbstractBuild<?,?> previousBuild = build.getPreviousBuild();
+    	while (previousBuild != null) {
+    		if (previousBuild.getResult() == Result.FAILURE
+    		    || previousBuild.getResult() == Result.UNSTABLE) {
+    			return true;
+    		}
+    		// skip ABORTED and NOT_BUILD builds
+    		previousBuild = previousBuild.getPreviousBuild();
+    	}
+    	return false;
+    }
+
+    /**
+     * Returns the previous build or null if no previous one found.
+     * Ignores build with result ABORTED or NOT_BUILT.
+     */
+    private AbstractBuild<?,?> getPreviousBuild(AbstractBuild<?,?> build) {
+    	AbstractBuild<?,?> previousBuild = build.getPreviousBuild();
+    	while (previousBuild != null) {
+    		if (previousBuild.getResult() !=  Result.ABORTED
+    		    && previousBuild.getResult() != Result.NOT_BUILT) {
+    			return previousBuild;
+    		}
+    	}
+    	return previousBuild;
     }
 
 	/* (non-Javadoc)
