@@ -5,8 +5,11 @@ import hudson.model.AbstractProject;
 import hudson.model.HealthReport;
 import hudson.plugins.jabber.tools.MessageHelper;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
- * Displays the weather resp. health for one or several jobs.
+ * Displays the health for one or several jobs.
  *
  * @author kutzi
  */
@@ -17,11 +20,11 @@ public class HealthCommand extends JobOverviewCommand {
         StringBuilder msg = new StringBuilder(32);
         msg.append(project.getName());
         if (project.isDisabled()) {
-            msg.append("(disabled) ");
-        } else if (project.isInQueue()) {
-            msg.append("(in queue) ");
+            msg.append("(disabled)");
         } else if (project.isBuilding()) {
-            msg.append("(BUILDING) ");
+            msg.append("(BUILDING ").append(project.getLastBuild().getDurationString()).append(")");
+        } else if (project.isInQueue()) {
+            msg.append("(in queue)");
         }
         msg.append(": ");
 
@@ -30,10 +33,22 @@ public class HealthCommand extends JobOverviewCommand {
             lastBuild = lastBuild.getPreviousBuild();
         }
         if (lastBuild != null) {
-            HealthReport health = project.getBuildHealth();
-            msg.append(health.getDescription())
-                    .append(" (").append(health.getScore())
-                    .append("%): ").append(MessageHelper.getBuildURL(lastBuild));
+        	msg.append("Health [");
+        	List<HealthReport> reports = project.getBuildHealthReports();
+        	if (reports.isEmpty() ) {
+        		reports = Collections.singletonList(project.getBuildHealth());
+        	}
+
+        	int i = 1;
+        	for (HealthReport health : reports) {
+        		msg.append(health.getDescription())
+        			.append("(").append(health.getScore()).append("%)");
+        		if (i<reports.size()) {
+        			msg.append(", ");
+        		}
+        		i++;
+        	}
+            msg.append(": ").append(MessageHelper.getBuildURL(lastBuild));
         } else {
             msg.append("no finished build yet");
         }
