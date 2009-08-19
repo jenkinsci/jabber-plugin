@@ -3,6 +3,7 @@ package hudson.plugins.jabber;
 import hudson.model.AbstractBuild;
 import hudson.model.Result;
 import hudson.plugins.jabber.tools.Assert;
+import hudson.plugins.jabber.tools.BuildHelper;
 
 /**
  * Represents the notification strategy.
@@ -14,7 +15,7 @@ public enum NotificationStrategy {
     // Note that the order of the constants also specifies the display order!
 
 	/**
-	 * Not matter what, notifications should always be sent.
+	 * Not matter what, notifications should always be send.
 	 */
 	ALL("all") {
 		/**
@@ -27,7 +28,7 @@ public enum NotificationStrategy {
 	},
 
 	/**
-	 * Whenever there is a failure, a Notification should be sent.
+	 * Whenever there is a failure, a notification should be send.
 	 */
 	ANY_FAILURE("failure") {
 		/**
@@ -42,7 +43,7 @@ public enum NotificationStrategy {
 	},
 
 	/**
-	 * Whenever there is a failure or a failure was fixed, a Notification should be sent.
+	 * Whenever there is a failure or a failure was fixed, a notification should be send.
 	 */
 	FAILURE_AND_FIXED("failure and fixed") {
 		/**
@@ -51,34 +52,15 @@ public enum NotificationStrategy {
 		@Override
 		public boolean notificationWanted(final AbstractBuild<?, ?> build) {
 			Assert.isNotNull(build, "Parameter 'build' must not be null.");
-                        if (build.getResult() != Result.SUCCESS) {
-                            return true;
-                        }
-                        final AbstractBuild<?, ?> previousBuild = build.getPreviousBuild();
-                        if (previousBuild == null) {
-                            return false;
-                        } else {
-                            return previousBuild.getResult() != Result.SUCCESS;
-                        }
-		}
-		
-		@Override
-		public String getResultString(AbstractBuild<?, ?> build) {
-			if (build.getResult() != Result.SUCCESS) {
-                return build.getResult().toString();
+            if (build.getResult() != Result.SUCCESS) {
+                return true;
             }
-			final AbstractBuild<?, ?> previousBuild = build.getPreviousBuild();
-            if (previousBuild != null) {
-            	if (previousBuild.getResult().isWorseThan(Result.SUCCESS)) {
-            		return "FIXED";
-            	}
-            }
-            return build.getResult().toString();
+            return BuildHelper.isFix(build);
 		}
 	},
 
-        /**
-	 * Notifications should be sent only if there was a change in the build
+    /**
+	 * Notifications should be send only if there was a change in the build
 	 * state, or this was the first build.
 	 */
 	STATECHANGE_ONLY("change") {
@@ -112,13 +94,6 @@ public enum NotificationStrategy {
 	 */
 	public abstract boolean notificationWanted(AbstractBuild<?, ?> build);
 
-	/**
-	 * Returns a textual description of the build's result.
-	 */
-	public String getResultString(AbstractBuild<?, ?> build) {
-		return build.getResult().toString();
-	}
-	
         /**
          * Returns the name of the strategy to display in dialogs etc.
          *
@@ -129,7 +104,7 @@ public enum NotificationStrategy {
         }
 
         /**
-         * Returns the notififaction strategy with the given display name.
+         * Returns the notification strategy with the given display name.
          *
          * @param displayName the display name
          * @return the notification strategy or null

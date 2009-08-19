@@ -31,7 +31,7 @@ public final class Assert
 
     /**
      * Asserts that given object is not null.
-     * @param object to check against null
+     * @param obj object to check against null
      * @throws AssertionFailedException if object was null
      */
     public static final void isNotNull(final Object obj, final String msg)

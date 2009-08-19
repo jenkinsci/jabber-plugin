@@ -4,9 +4,9 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
-import hudson.model.Run;
 import hudson.plugins.jabber.NotificationStrategy;
 import hudson.plugins.jabber.tools.Assert;
+import hudson.plugins.jabber.tools.BuildHelper;
 import hudson.plugins.jabber.tools.MessageHelper;
 import hudson.plugins.jabber.user.JabberUserProperty;
 import hudson.scm.ChangeLogSet;
@@ -126,14 +126,14 @@ public abstract class IMPublisher extends Notifier implements BuildStep
         if (getNotificationStrategy().notificationWanted(build))
         {
             final StringBuilder sb;
-            if (isFix(build)) {
+            if (BuildHelper.isFix(build)) {
             	sb = new StringBuilder("Yippie, build fixed!\n");
             } else {
             	sb = new StringBuilder();
             }
         	sb.append("Project ").append(build.getProject().getName())
         	.append(" build (").append(build.getNumber()).append("): ")
-        	.append(getNotificationStrategy().getResultString(build)).append(" in ")
+        	.append(BuildHelper.getResultDescription(build)).append(" in ")
         	.append(build.getTimestampString())
         	.append(": ")
         	.append(MessageHelper.getBuildURL(build));
@@ -181,11 +181,7 @@ public abstract class IMPublisher extends Notifier implements BuildStep
         	}
         }
         
-        AbstractBuild<?,?> previousBuild = getPreviousBuild(build);
-        if (this.notifyFixers && (build.getResult() == Result.SUCCESS) &&
-        		previousBuild != null &&
-        		(previousBuild.getResult().isWorseThan(Result.SUCCESS)
-        		 && !(previousBuild.getResult() == Result.ABORTED))) {
+        if (this.notifyFixers && BuildHelper.isFix(build)) {
         	LOGGER.info("Notifying fixers");
         	final String message = "Yippie! Seems you've fixed " + build.getProject().getName() + ": " + MessageHelper.getBuildURL(build);
         	
@@ -201,38 +197,6 @@ public abstract class IMPublisher extends Notifier implements BuildStep
         }
         
         return true;
-    }
-
-    private static boolean isFix(AbstractBuild<?,?> build) {
-    	if (build.getResult() != Result.SUCCESS) {
-    		return false;
-    	}
-    	
-    	AbstractBuild<?,?> previousBuild = build.getPreviousBuild();
-    	while (previousBuild != null) {
-    		if (previousBuild.getResult() == Result.FAILURE
-    		    || previousBuild.getResult() == Result.UNSTABLE) {
-    			return true;
-    		}
-    		// skip ABORTED and NOT_BUILD builds
-    		previousBuild = previousBuild.getPreviousBuild();
-    	}
-    	return false;
-    }
-
-    /**
-     * Returns the previous build or null if no previous one found.
-     * Ignores build with result ABORTED or NOT_BUILT.
-     */
-    private AbstractBuild<?,?> getPreviousBuild(AbstractBuild<?,?> build) {
-    	AbstractBuild<?,?> previousBuild = build.getPreviousBuild();
-    	while (previousBuild != null) {
-    		if (previousBuild.getResult() !=  Result.ABORTED
-    		    && previousBuild.getResult() != Result.NOT_BUILT) {
-    			return previousBuild;
-    		}
-    	}
-    	return previousBuild;
     }
 
 	/* (non-Javadoc)
