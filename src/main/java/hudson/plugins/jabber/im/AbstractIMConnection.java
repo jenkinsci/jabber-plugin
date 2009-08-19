@@ -1,5 +1,8 @@
 package hudson.plugins.jabber.im;
 
+import hudson.model.Computer;
+import hudson.model.Executor;
+import hudson.model.Hudson;
 import hudson.util.TimeUnit2;
 
 import java.util.concurrent.Semaphore;
@@ -12,13 +15,19 @@ public abstract class AbstractIMConnection implements IMConnection {
     
     private final Object connectionLock = new Object();
     
-    private final Connector connector = new Connector();
+    private final ConnectorRunnable connector = new ConnectorRunnable();
     
     private final Thread connectorThread = new Thread(connector, "IM-ConnectorThread");
+
+    private final Thread statusUpdater;
     
     
     protected AbstractIMConnection() {
         connectorThread.start();
+        
+        Runnable updater = new UpdaterRunnable();
+        this.statusUpdater = new Thread(updater, "IM-StatusUpdater");
+        statusUpdater.start();
     }
     
     protected final Object getLock() {
@@ -38,11 +47,66 @@ public abstract class AbstractIMConnection implements IMConnection {
     
     public final void close() {
         this.connectorThread.interrupt();
+        this.statusUpdater.interrupt();
     }
     
     protected abstract void close0();
     
-    private final class Connector implements Runnable {
+    private final class UpdaterRunnable implements Runnable {
+        public void run() {
+            try {
+                // sleep initially to give Hudson some time to startup
+                TimeUnit.MINUTES.sleep(1);
+                
+                while (true) {
+                    Computer compi = Hudson.getInstance().toComputer();
+                    if (compi != null) {
+                        try {
+                            if (compi.isIdle()) {
+                                setPresence(IMPresence.AVAILABLE, "Yawn, I'm so tired. Don't you have some work for me?");
+                            } else if (isBusy(compi)) {
+                                setPresence(IMPresence.DND, 
+                                        "Please give me some rest! All " + compi.getNumExecutors() + " executors are busy, "
+                                        + Hudson.getInstance().getQueue().getItems().length + " items in queue");
+                            } else {
+                                setPresence(IMPresence.OCCUPIED,
+                                        "Working. " + getBusyExecutors(compi) + " out of " + compi.getNumExecutors() +
+                                        " are busy.");
+                            }
+                        } catch (IMException e) {
+                            // ignore
+                        }
+                    } else {
+                        LOGGER.warning("No Hudson main computer?");
+                    }
+                    TimeUnit.MINUTES.sleep(2);
+                }
+            } catch (InterruptedException e) {
+                // shutdown
+            }
+        }
+
+        private int getBusyExecutors(Computer compi) {
+            int i = 0;
+            for (Executor executor : compi.getExecutors()) {
+                if (executor.isBusy()) {
+                    i++;
+                }
+            }
+            return i;
+        }
+
+        private boolean isBusy(Computer compi) {
+            for (Executor executor : compi.getExecutors()) {
+                if (executor.isIdle()) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    private final class ConnectorRunnable implements Runnable {
 
         private final Semaphore semaphore = new Semaphore(0);
         

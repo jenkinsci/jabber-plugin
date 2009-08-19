@@ -73,6 +73,8 @@ class JabberIMConnection extends AbstractIMConnection {
 	private IMPresence impresence;
 
 	private final String defaultIdSuffix;
+
+    private String imStatusMessage;
 	
 	JabberIMConnection(final JabberPublisherDescriptor desc) throws IMException {
 		Assert.isNotNull(desc, "Parameter 'desc' must not be null.");
@@ -303,10 +305,11 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 	}
 
-	public void setPresence(final IMPresence impresence)
+	public void setPresence(final IMPresence impresence, String statusMessage)
 			throws IMException {
 		Assert.isNotNull(impresence, "Parameter 'impresence' must not be null.");
 		this.impresence = impresence;
+		this.imStatusMessage = statusMessage;
 		sendPresence();
 	}
 	
@@ -319,11 +322,12 @@ class JabberIMConnection extends AbstractIMConnection {
 			switch (this.impresence) {
 			case AVAILABLE:
 				presence = new Presence(Presence.Type.AVAILABLE,
-						"", 1, Presence.Mode.AVAILABLE);
+						this.imStatusMessage, 1, Presence.Mode.AVAILABLE);
 				break;
 
 			case UNAVAILABLE:
-				presence = new Presence(Presence.Type.UNAVAILABLE);
+				presence = new Presence(Presence.Type.UNAVAILABLE, this.imStatusMessage,
+				        1, Presence.Mode.INVISIBLE);
 				break;
 
 			default:

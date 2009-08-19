@@ -7,6 +7,7 @@ import hudson.Util;
 import hudson.plugins.jabber.NotificationStrategy;
 import hudson.plugins.jabber.im.IMMessageTargetConversionException;
 import hudson.plugins.jabber.tools.Assert;
+import hudson.plugins.jabber.tools.ExceptionHelper;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
 import hudson.util.FormFieldValidator;
@@ -14,17 +15,21 @@ import hudson.util.FormFieldValidator;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 
 import net.sf.json.JSONObject;
 
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
 public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher>
 {
+    private static final Logger LOGGER = Logger.getLogger(JabberPublisherDescriptor.class.getName());
+    
     private static final String PREFIX = "jabberPlugin.";
     public static final String PARAMETERNAME_PORT = JabberPublisherDescriptor.PREFIX + "port";
     public static final String PARAMETERNAME_HOSTNAME = JabberPublisherDescriptor.PREFIX + "hostname";
@@ -67,14 +72,19 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher>
     {
         super(JabberPublisher.class);
         load();
-        try
-        {
-            JabberIMConnectionProvider.getInstance().createConnection(this);
-        }
-        catch (final Exception dontCare)
-        {
-            // Server temporarily unavailable or misconfigured?
-            dontCare.printStackTrace();
+        
+        if (StringUtils.isNotBlank(this.hostname)) {
+            try
+            {
+                JabberIMConnectionProvider.getInstance().createConnection(this);
+            }
+            catch (final Exception dontCare)
+            {
+                // Server temporarily unavailable or misconfigured?
+                LOGGER.warning(ExceptionHelper.dump(dontCare));
+            }
+        } else {
+            LOGGER.info("No hostname configured.");
         }
     }
     
@@ -315,13 +325,17 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher>
         applyCommandPrefix(req);
         applyDefaultIdSuffix(req);
 
-        try
-        {
-            JabberIMConnectionProvider.getInstance().createConnection(this);
-        }
-        catch (final Exception e)
-        {
-            throw new FormException("Unable to create Client: " + e, null);
+        if (StringUtils.isNotBlank(this.hostname)) {
+            try
+            {
+                JabberIMConnectionProvider.getInstance().createConnection(this);
+            }
+            catch (final Exception e)
+            {
+                throw new FormException("Unable to create Client: " + e, null);
+            }
+        } else {
+            LOGGER.info("No hostname specified.");
         }
         save();
         return super.configure(req, json);		
@@ -332,6 +346,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher>
      */
     public void doServerCheck(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException {
         new FormFieldValidator(req, rsp, false) {
+            @Override
             protected void check() throws IOException, ServletException {
                 String v = Util.fixEmptyAndTrim(request.getParameter("value"));
                 if (v == null)
