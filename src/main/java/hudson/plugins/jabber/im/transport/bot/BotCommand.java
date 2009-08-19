@@ -3,10 +3,9 @@
  */
 package hudson.plugins.jabber.im.transport.bot;
 
-import hudson.plugins.jabber.im.transport.JabberChat;
-
-import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smack.packet.Message;
+import hudson.plugins.jabber.im.IMChat;
+import hudson.plugins.jabber.im.IMException;
+import hudson.plugins.jabber.im.IMMessage;
 
 /**
  * Command pattern contract for Jabber bot commands.
@@ -19,13 +18,13 @@ public interface BotCommand {
 	/**
 	 * Execute a command.
 	 * 
-	 * @param chat the {@link JabberChat} object, may be used to send reply messages
-	 * @param message the original {@link Message}
+	 * @param chat the {@link IMChat} object, may be used to send reply messages
+	 * @param message the original {@link IMMessage}
 	 * @param sender the room nickname of the command sender
 	 * @param args arguments passed to the command, where <code>args[0]</code> is the command name itself
-	 * @throws XMPPException
+	 * @throws IMException
 	 */
-	public void executeCommand(final JabberChat chat, final Message message, String sender, final String[] args) throws XMPPException;
+	public void executeCommand(final IMChat chat, final IMMessage message, String sender, final String[] args) throws IMException;
 	
 	/**
 	 * Return the command usage text.

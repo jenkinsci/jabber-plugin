@@ -3,28 +3,24 @@
  */
 package hudson.plugins.jabber.im.transport.bot;
 
-import hudson.plugins.jabber.im.transport.JabberChat;
+import hudson.plugins.jabber.im.IMChat;
+import hudson.plugins.jabber.im.IMException;
+import hudson.plugins.jabber.im.IMMessage;
+import hudson.plugins.jabber.im.IMMessageListener;
+import hudson.plugins.jabber.tools.ExceptionHelper;
 import hudson.plugins.jabber.tools.MessageHelper;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
-import org.jivesoftware.smack.PacketListener;
-import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smack.packet.Message;
-import org.jivesoftware.smack.packet.Packet;
-import org.jivesoftware.smack.packet.PacketExtension;
-import org.jivesoftware.smackx.packet.DelayInformation;
-
 /**
- * Jabber bot.
+ * Instant messaging bot.
  * 
  * @author Pascal Bleser
  */
-public class Bot implements PacketListener {
+public class Bot implements IMMessageListener {
 
 	private static final Logger LOGGER = Logger.getLogger(Bot.class.getName());
 
@@ -37,8 +33,8 @@ public class Bot implements PacketListener {
 	private static final BotCommand ABORT_COMMAND = new AbortCommand();
 	private static final BotCommand HELP_COMMAND = new BotCommand() {
 
-		public void executeCommand(JabberChat groupChat, Message message,
-				String sender, String[] args) throws XMPPException {
+		public void executeCommand(IMChat groupChat, IMMessage message,
+				String sender, String[] args) throws IMException {
 			if (HELP_CACHE == null) {
 				final StringBuffer msg = new StringBuffer();
 				msg.append("Available commands:");
@@ -81,12 +77,12 @@ public class Bot implements PacketListener {
 		COMMAND_MAP.put("botsnack", SNACK_COMMAND);
 	}
 
-	private final JabberChat chat;
+	private final IMChat chat;
 	private final String nick;
 	private final String jabberServer;
 	private final String commandPrefix;
 
-	public Bot(final JabberChat chat, final String nick, final String jabberServer,
+	public Bot(final IMChat chat, final String nick, final String jabberServer,
 			final String commandPrefix) {
 		this.chat = chat;
 		this.nick = nick;
@@ -95,49 +91,39 @@ public class Bot implements PacketListener {
 		this.BUILD_COMMAND  = new BuildCommand(this.nick + "@" + this.jabberServer);
 		COMMAND_MAP.put("build", BUILD_COMMAND);
 		COMMAND_MAP.put("schedule", BUILD_COMMAND);
+		
+		chat.addMessageListener(this);
 	}
 
-	@SuppressWarnings("unchecked")
-	public void processPacket(Packet p) {
-		if (p instanceof Message) {
-			// don't react to old messages
-			for (Iterator iter = p.getExtensions(); iter.hasNext();) {
-				PacketExtension pe = (PacketExtension) iter.next();
-				if (pe instanceof DelayInformation) {
-					return; // simply bail out here, it's an old message
-				}
-			}
-
-			final Message msg = (Message) p;
-			// is it a command for me ? (returns null if not, the payload if so)
-			String payload = retrieveMessagePayLoad(msg.getBody());
-			if (payload != null) {
-				// split words
-				String[] args = MessageHelper.extractCommandLine(payload);
-				if (args.length > 0) {
-					// first word is the command name
-					String cmd = args[0];
-					String sender = msg.getFrom();
-					if (sender != null) {
-						sender = this.chat.getNickName(sender);
-					}
-					try {
-						if (COMMAND_MAP.containsKey(cmd)) {
-							BotCommand command = COMMAND_MAP.get(cmd);
-							command.executeCommand(
-									this.chat, msg, sender,
-									args);
-							
-						} else {
-							this.chat.sendMessage(sender + " did you mean me? Unknown command '" + cmd
-									+ "'\nUse " + this.commandPrefix + "help to get help!");
-						}
-					} catch (XMPPException e) {
-						LOGGER.warning(e.toString());
-					}
-				}
-			}
-		}
+	public void onMessage(IMMessage msg) {
+        // is it a command for me ? (returns null if not, the payload if so)
+        String payload = retrieveMessagePayLoad(msg.getBody());
+        if (payload != null) {
+            // split words
+            String[] args = MessageHelper.extractCommandLine(payload);
+            if (args.length > 0) {
+                // first word is the command name
+                String cmd = args[0];
+                String sender = msg.getFrom();
+                if (sender != null) {
+                    sender = this.chat.getNickName(sender);
+                }
+                try {
+                    if (COMMAND_MAP.containsKey(cmd)) {
+                        BotCommand command = COMMAND_MAP.get(cmd);
+                        command.executeCommand(
+                                this.chat, msg, sender,
+                                args);
+                        
+                    } else {
+                        this.chat.sendMessage(sender + " did you mean me? Unknown command '" + cmd
+                                + "'\nUse " + this.commandPrefix + "help to get help!");
+                    }
+                } catch (IMException e) {
+                    LOGGER.warning(ExceptionHelper.dump(e));
+                }
+            }
+        }
 	}
 
 	private static boolean isNickSeparator(final String candidate) {

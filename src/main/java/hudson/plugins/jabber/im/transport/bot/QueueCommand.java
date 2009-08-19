@@ -6,10 +6,9 @@ package hudson.plugins.jabber.im.transport.bot;
 import hudson.model.Hudson;
 import hudson.model.Queue;
 import hudson.model.Queue.Item;
-import hudson.plugins.jabber.im.transport.JabberChat;
-
-import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smack.packet.Message;
+import hudson.plugins.jabber.im.IMChat;
+import hudson.plugins.jabber.im.IMException;
+import hudson.plugins.jabber.im.IMMessage;
 
 /**
  * Queue command for the jabber bot.
@@ -19,8 +18,8 @@ public class QueueCommand implements BotCommand {
 	
 	private static final String HELP = " - show the state of the build queue";
 
-	public void executeCommand(JabberChat groupChat, Message message,
-			String sender, String[] args) throws XMPPException {
+	public void executeCommand(IMChat chat, IMMessage message,
+			String sender, String[] args) throws IMException {
 		Queue queue = Hudson.getInstance().getQueue();
 		Item[] items = queue.getItems();
 		String reply;
@@ -37,7 +36,7 @@ public class QueueCommand implements BotCommand {
 			reply = "build queue is empty";
 		}
 		
-		groupChat.sendMessage(reply);
+		chat.sendMessage(reply);
 	}
 
 	public String getHelp() {

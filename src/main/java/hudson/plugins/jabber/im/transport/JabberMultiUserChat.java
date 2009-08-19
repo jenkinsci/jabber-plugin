@@ -4,20 +4,16 @@ import hudson.plugins.jabber.im.IMChat;
 import hudson.plugins.jabber.im.IMException;
 import hudson.plugins.jabber.im.IMMessageListener;
 
-import org.jivesoftware.smack.Chat;
+import org.jivesoftware.smack.GroupChat;
 import org.jivesoftware.smack.XMPPException;
 
-/**
- * 1-on-1 Jabber chat.
- * 
- * @author kutzi
- */
-public class JabberChat implements IMChat {
-    private Chat chat;
+public class JabberMultiUserChat implements IMChat {
+    
+    private GroupChat chat;
 
-    public JabberChat(Chat chat) {
-        this.chat = chat;
-    }
+    public JabberMultiUserChat (GroupChat chat) {
+         this.chat = chat;
+     }
 
     public void sendMessage(String msg) throws IMException {
         try {
@@ -28,17 +24,11 @@ public class JabberChat implements IMChat {
     }
 
     public String getNickName(String sender) {
-        String s = sender;
-        int index = s.indexOf('/');
-        if (index != -1) {
-            s = s.substring(0, index);
+        int slashIndex = sender.indexOf('/');
+        if (slashIndex != -1) {
+            sender = sender.substring(slashIndex + 1);
         }
-
-        index = s.indexOf('@');
-        if (index != -1) {
-            s = s.substring(0, index);
-        }
-        return s;
+        return sender;
     }
     
     public void addMessageListener(IMMessageListener listener) {
@@ -46,6 +36,6 @@ public class JabberChat implements IMChat {
     }
 
     public boolean isMultiUserChat() {
-        return false;
+        return true;
     }
 }

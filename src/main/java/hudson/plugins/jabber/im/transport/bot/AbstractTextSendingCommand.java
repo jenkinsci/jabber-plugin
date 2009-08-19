@@ -1,11 +1,10 @@
 package hudson.plugins.jabber.im.transport.bot;
 
-import hudson.plugins.jabber.im.transport.JabberChat;
+import hudson.plugins.jabber.im.IMChat;
+import hudson.plugins.jabber.im.IMException;
+import hudson.plugins.jabber.im.IMMessage;
 
 import java.util.logging.Logger;
-
-import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smack.packet.Message;
 
 /**
  * Abstract command for sending a reply back to the sender.
@@ -19,8 +18,8 @@ public abstract class AbstractTextSendingCommand implements BotCommand {
 	/**
 	 * {@inheritDoc}
 	 */
-	public final void executeCommand(JabberChat chat, Message message,
-			String sender, String[] args) throws XMPPException {
+	public final void executeCommand(IMChat chat, IMMessage message,
+			String sender, String[] args) throws IMException {
 		String reply;
 		try {
 			reply = getReply(sender, args);

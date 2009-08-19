@@ -5,7 +5,7 @@ package hudson.plugins.jabber.im;
  * IMMessageTarget from a String and back. It will be used to create 
  * IMMessageTargets from user input and to display them back through 
  * the GUI. Note that fromString and toString should be at least 
- * semantically symetric.
+ * semantically symmetric.
  *    
  * @author Uwe Schaefer
  *

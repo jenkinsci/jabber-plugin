@@ -21,7 +21,7 @@ public interface IMConnection
     void send(IMMessageTarget target, String text) throws IMException;
 
     /**
-     * Sets the current connections� presence to a protocol specific adaption of the given presence parameter.
+     * Sets the current connection's presence to a protocol specific adaption of the given presence parameter.
      * @param presence the presence to set
      * @throws IMException encapsulated exception of underlying protocol/client 
      */

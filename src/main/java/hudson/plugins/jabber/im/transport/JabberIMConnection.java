@@ -3,22 +3,19 @@
  */
 package hudson.plugins.jabber.im.transport;
 
+import hudson.plugins.jabber.im.AbstractIMConnection;
 import hudson.plugins.jabber.im.GroupChatIMMessageTarget;
-import hudson.plugins.jabber.im.IMConnection;
 import hudson.plugins.jabber.im.IMException;
 import hudson.plugins.jabber.im.IMMessageTarget;
 import hudson.plugins.jabber.im.IMPresence;
 import hudson.plugins.jabber.im.transport.bot.Bot;
 import hudson.plugins.jabber.tools.Assert;
 import hudson.plugins.jabber.tools.ExceptionHelper;
-import hudson.util.TimeUnit2;
 
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import org.jivesoftware.smack.Chat;
@@ -46,13 +43,11 @@ import org.jivesoftware.smackx.packet.XHTMLExtension;
  * @author Uwe Schaefer
  * 
  */
-class JabberIMConnection implements IMConnection {
+class JabberIMConnection extends AbstractIMConnection {
 	
 	private static final Logger LOGGER = Logger.getLogger(JabberIMConnection.class.getName());
 	
 	private volatile XMPPConnection connection;
-	// Synchronize on this to avoid concurrent access to connection.
-	private final Object connectionLock = new Object();
 
 	private final Map<String, WeakReference<GroupChat>> groupChatCache = new HashMap<String, WeakReference<GroupChat>>();
 	private final Map<String, WeakReference<Chat>> chatCache = new HashMap<String, WeakReference<Chat>>();
@@ -77,9 +72,6 @@ class JabberIMConnection implements IMConnection {
 	
 	private IMPresence impresence;
 
-	private final Connector connector;
-	private final Thread connectorThread;
-
 	private final String defaultIdSuffix;
 	
 	JabberIMConnection(final JabberPublisherDescriptor desc) throws IMException {
@@ -100,16 +92,12 @@ class JabberIMConnection implements IMConnection {
 		this.impresence = desc.isExposePresence() ? IMPresence.AVAILABLE : IMPresence.UNAVAILABLE;
 		this.defaultIdSuffix = desc.getDefaultIdSuffix();
 
-		connector = new Connector();
-		
-		connectAll();
-
-		connectorThread = new Thread(connector, "Jabber-ConnectorThread");
-		connectorThread.start();
+		connect();
 	}
 
-	private boolean connectAll() {
-		synchronized (connectionLock) {
+	@Override
+	protected boolean connect() {
+		synchronized (getLock()) {
 			try {
 				if (!isConnected()) {
 					if (createConnection()) {
@@ -136,7 +124,7 @@ class JabberIMConnection implements IMConnection {
 			} catch (final Exception dontCare) {
 				// Server might be temporarily not available.
 				LOGGER.warning(ExceptionHelper.dump(dontCare));
-				this.connector.semaphore.release();
+				tryReconnect();
 				return false;
 			}
 		}
@@ -165,12 +153,9 @@ class JabberIMConnection implements IMConnection {
 			return nick.substring(0, idx);
 	}
 
-	/**
-     * 
-     */
-	public void close() {
-		this.connectorThread.interrupt();
-		synchronized (connectionLock) {
+	@Override
+    public void close0() {
+		synchronized (getLock()) {
 			try {
 				if (isConnected()) {
 					for (WeakReference<GroupChat> entry : groupChatCache.values()) {
@@ -188,7 +173,7 @@ class JabberIMConnection implements IMConnection {
 	}
 
 	private boolean createConnection() throws XMPPException {
-		synchronized (connectionLock) {
+		synchronized (getLock()) {
 			if (this.connection != null) {
 				try {
 					this.connection.close();
@@ -223,11 +208,11 @@ class JabberIMConnection implements IMConnection {
 				this.connection.addPacketListener(listener, filter);
 				this.connection.addConnectionListener(new ConnectionListener() {
 					public void connectionClosedOnError(Exception paramException) {
-						connector.semaphore.release();
+						tryReconnect();
 					}
 					
 					public void connectionClosed() {
-						connector.semaphore.release();
+						tryReconnect();
 					}
 				});
 			}
@@ -238,7 +223,7 @@ class JabberIMConnection implements IMConnection {
 
 	private GroupChat createGroupChatConnection(String groupChatName, boolean forceReconnect)
 			throws XMPPException {
-		synchronized (connectionLock) {
+		synchronized (getLock()) {
 			WeakReference<GroupChat> ref = groupChatCache.get(groupChatName);
 			GroupChat groupChat = null;
 			if (ref != null) {
@@ -264,12 +249,11 @@ class JabberIMConnection implements IMConnection {
 				while (groupChat.pollMessage() != null) {
 				}
 
-				Bot bot = new Bot(new JabberChat.MultiUserChat(groupChat),
+				new Bot(new JabberMultiUserChat(groupChat),
 						this.groupChatNick, this.hostname,
 						this.botCommandPrefix);
 
 				groupChatCache.put(groupChatName, new WeakReference<GroupChat>(groupChat));
-				groupChat.addMessageListener(bot);
 			}
 			return groupChat;
 		}
@@ -286,14 +270,13 @@ class JabberIMConnection implements IMConnection {
 		}
 		
 		final Chat chat = this.connection.createChat(chatPartner);
-		Bot bot = new Bot(new JabberChat.SingleChat(chat), this.groupChatNick,
+		Bot bot = new Bot(new JabberChat(chat), this.groupChatNick,
 				this.hostname, this.botCommandPrefix);
 		
 		if (msg != null) {
 			// replay original message:
-			bot.processPacket(msg);
+			bot.onMessage(new JabberMessage(msg));
 		}
-		chat.addMessageListener(bot);
 		chatCache.put(chatPartner, new WeakReference<Chat>(chat));
 		return chat;
 	}
@@ -303,7 +286,7 @@ class JabberIMConnection implements IMConnection {
 		Assert.isNotNull(target, "Parameter 'target' must not be null.");
 		Assert.isNotNull(text, "Parameter 'text' must not be null.");
 		try {
-			synchronized (connectionLock) {
+			synchronized (getLock()) {
 				if (target instanceof GroupChatIMMessageTarget) {
 					createGroupChatConnection(target.toString(), false).sendMessage(
 							text);
@@ -315,8 +298,8 @@ class JabberIMConnection implements IMConnection {
 		} catch (final XMPPException dontCare) {
 			// server unavailable ? Target-host unknown ? Well. Just skip this
 			// one.
-			dontCare.printStackTrace();
-			this.connector.semaphore.release();
+		    LOGGER.warning(ExceptionHelper.dump(dontCare));
+			tryReconnect();
 		}
 	}
 
@@ -328,7 +311,7 @@ class JabberIMConnection implements IMConnection {
 	}
 	
 	private void sendPresence() {
-		synchronized (connectionLock) {
+		synchronized (getLock()) {
 			if( !isConnected() ) {
 				return;
 			}
@@ -351,8 +334,9 @@ class JabberIMConnection implements IMConnection {
 		}
 	}
 	
-	private boolean isConnected() {
-		synchronized (connectionLock) {
+	@Override
+    protected boolean isConnected() {
+		synchronized (getLock()) {
 			return this.connection != null && this.connection.isAuthenticated();
 		}
 	}
@@ -404,46 +388,4 @@ class JabberIMConnection implements IMConnection {
 			}
 		}
 	};
-	
-	private final class Connector implements Runnable {
-
-		private final Semaphore semaphore = new Semaphore(0);
-		
-		public void run() {
-			try {
-				while (true) {
-					this.semaphore.acquire();
-					this.semaphore.drainPermits();
-					
-					LOGGER.info("Trying to reconnect");
-					// wait a little bit in case the XMPP server/network has just a 'hickup'
-					TimeUnit.SECONDS.sleep(30);
-					
-					boolean success = false;
-					int timeout = 1;
-					while (!success) {
-						synchronized (connectionLock) {
-							if (!isConnected()) {
-								success = connectAll();
-							} else {
-								success = true;
-							}
-						}
-						
-						// make sure to release connectionLock before sleeping!
-						if(!success) {
-							LOGGER.info("Reconnect failed. Next connection attempt in " + timeout + " minutes");
-							TimeUnit2.MINUTES.sleep(timeout);
-							// exponentially increase timeout
-							timeout = timeout * 2;
-						}
-					}
-				}
-			} catch (InterruptedException e) {
-				LOGGER.info("Connect thread interrupted");
-				// just bail out
-			}
-		}
-		
-	}
 }

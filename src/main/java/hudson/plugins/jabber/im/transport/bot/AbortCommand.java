@@ -4,10 +4,9 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Executor;
 import hudson.model.Hudson;
-import hudson.plugins.jabber.im.transport.JabberChat;
-
-import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smack.packet.Message;
+import hudson.plugins.jabber.im.IMChat;
+import hudson.plugins.jabber.im.IMException;
+import hudson.plugins.jabber.im.IMMessage;
 
 /**
  * Abort a running job
@@ -17,7 +16,7 @@ public class AbortCommand implements BotCommand {
 	
 	private static final String HELP = " <job> - specify which job to abort";
 
-	public void executeCommand(JabberChat groupChat, Message message, String sender, String[] args) throws XMPPException {
+	public void executeCommand(IMChat chat, IMMessage message, String sender, String[] args) throws IMException {
 		if (args.length >= 2) {
 			String jobName = args[1];
 			jobName = jobName.replaceAll("\"", "");
@@ -25,11 +24,11 @@ public class AbortCommand implements BotCommand {
 			AbstractProject<?, ?> project = Hudson.getInstance().getItemByFullName(jobName, AbstractProject.class);
 			if (project == null) {
 				// Invalid job name
-				groupChat.sendMessage(sender + ": that doesn't look like a valid job");
+				chat.sendMessage(sender + ": that doesn't look like a valid job");
 				return;
 			}
 			if ( (project.isInQueue() == false) && (project.isBuilding() == false) ) {
-				groupChat.sendMessage(String.format("%s: how do you intend a build that isn't building?", sender));
+				chat.sendMessage(String.format("%s: how do you intend a build that isn't building?", sender));
 				return;
 			}
 			
@@ -43,7 +42,7 @@ public class AbortCommand implements BotCommand {
 				AbstractBuild<?, ?> build = project.getLastBuild();
 				if (build == null) {
 					// No builds? lolwut?
-					groupChat.sendMessage(sender + ": it appears this job has never been built");
+					chat.sendMessage(sender + ": it appears this job has never been built");
 					return;
 				}	
 	
@@ -56,14 +55,14 @@ public class AbortCommand implements BotCommand {
 			}
 
 			if (aborted) {
-				groupChat.sendMessage(jobName + " aborted, I hope you're happy!");
+				chat.sendMessage(jobName + " aborted, I hope you're happy!");
 			} else {
-				groupChat.sendMessage(sender + ": " + " couldn't abort " + jobName + ". I don't know why this happened.");
+				chat.sendMessage(sender + ": " + " couldn't abort " + jobName + ". I don't know why this happened.");
 			}
 		} 
 		else {
 			// No job name specified
-			groupChat.sendMessage(sender + ": you need to specify a job name");
+			chat.sendMessage(sender + ": you need to specify a job name");
 			return; 
 		}
 	}
