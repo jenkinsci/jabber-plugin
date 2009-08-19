@@ -324,10 +324,19 @@ class JabberIMConnection extends AbstractIMConnection {
 				presence = new Presence(Presence.Type.AVAILABLE,
 						this.imStatusMessage, 1, Presence.Mode.AVAILABLE);
 				break;
+			
+			case OCCUPIED:
+			    presence = new Presence(Presence.Type.AVAILABLE,
+			            this.imStatusMessage, 1, Presence.Mode.AWAY);
+			    break;
+			    
+			case DND:
+			    presence = new Presence(Presence.Type.AVAILABLE,
+                        this.imStatusMessage, 1, Presence.Mode.DO_NOT_DISTURB);
+                break;
 
 			case UNAVAILABLE:
-				presence = new Presence(Presence.Type.UNAVAILABLE, this.imStatusMessage,
-				        1, Presence.Mode.INVISIBLE);
+				presence = new Presence(Presence.Type.UNAVAILABLE);
 				break;
 
 			default:

@@ -73,6 +73,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher>
         super(JabberPublisher.class);
         load();
         
+        // FIXME: check servicename (from nick), too:
         if (StringUtils.isNotBlank(this.hostname)) {
             try
             {
@@ -325,6 +326,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher>
         applyCommandPrefix(req);
         applyDefaultIdSuffix(req);
 
+        // FIXME: check servicename (from nick), too:
         if (StringUtils.isNotBlank(this.hostname)) {
             try
             {

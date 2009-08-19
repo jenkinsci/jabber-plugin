@@ -56,7 +56,7 @@ public abstract class AbstractIMConnection implements IMConnection {
         public void run() {
             try {
                 // sleep initially to give Hudson some time to startup
-                TimeUnit.MINUTES.sleep(1);
+                TimeUnit2.MINUTES.sleep(1);
                 
                 while (true) {
                     Computer compi = Hudson.getInstance().toComputer();
@@ -79,7 +79,7 @@ public abstract class AbstractIMConnection implements IMConnection {
                     } else {
                         LOGGER.warning("No Hudson main computer?");
                     }
-                    TimeUnit.MINUTES.sleep(2);
+                    TimeUnit2.MINUTES.sleep(2);
                 }
             } catch (InterruptedException e) {
                 // shutdown
