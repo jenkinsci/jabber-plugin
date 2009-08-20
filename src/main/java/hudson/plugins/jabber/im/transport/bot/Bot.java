@@ -93,6 +93,20 @@ public class Bot implements IMMessageListener {
 		COMMAND_MAP.put("schedule", BUILD_COMMAND);
 		
 		chat.addMessageListener(this);
+		
+		addShutdownHook();
+	}
+
+	private void addShutdownHook() {
+		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+			public void run() {
+				try {
+					chat.sendMessage("Oops, seems like Hudson is going down now. See ya!");
+				} catch (Exception e) {
+					// ignore
+				}
+			}
+		}));
 	}
 
 	public void onMessage(IMMessage msg) {

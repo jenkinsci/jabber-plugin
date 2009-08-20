@@ -24,7 +24,7 @@ public class StatusCommand extends JobOverviewCommand {
             msg.append("(disabled) ");
         // a project which is building and additionally in queue should be reported as building
         } else if (project.isBuilding()) {
-            msg.append("(BUILDING ").append(project.getLastBuild().getDurationString()).append(")");
+            msg.append("(BUILDING: ").append(project.getLastBuild().getDurationString()).append(")");
         } else if (project.isInQueue()) {
             msg.append("(in queue) ");
         }

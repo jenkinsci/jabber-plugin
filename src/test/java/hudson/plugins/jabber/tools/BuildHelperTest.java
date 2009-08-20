@@ -82,6 +82,17 @@ public class BuildHelperTest extends HudsonTestCase {
             project.getBuildersList().remove(FailureBuilder.class);
             build = project.scheduleBuild2(0).get(10, TimeUnit.SECONDS);
             assertEquals("FIXED", BuildHelper.getResultDescription(build));
+            
+//            project.getBuildersList().add(new UnstableBuilder());
+//            build = project.scheduleBuild2(0).get(10, TimeUnit.SECONDS);
+//            assertEquals("UNSTABLE", BuildHelper.getResultDescription(build));
+//            
+//            build = project.scheduleBuild2(0).get(10, TimeUnit.SECONDS);
+//            assertEquals("STILL UNSTABLE", BuildHelper.getResultDescription(build));
+//            
+//            project.getBuildersList().remove(UnstableBuilder.class);
+//            build = project.scheduleBuild2(0).get(10, TimeUnit.SECONDS);
+//            assertEquals("FIXED", BuildHelper.getResultDescription(build));
         }
         
         // TODO: test some more

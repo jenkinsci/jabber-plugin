@@ -9,7 +9,7 @@ import hudson.plugins.jabber.tools.Assert;
 public class DefaultIMMessageTarget implements IMMessageTarget
 {
     private static final long serialVersionUID = 1L;
-    private String value;
+    private final String value;
 
     public DefaultIMMessageTarget(final String value)
     {
@@ -18,24 +18,20 @@ public class DefaultIMMessageTarget implements IMMessageTarget
     }
 
     @Override
-    public boolean equals(final Object arg0)
+    public boolean equals(final Object o)
     {
-        if (arg0 == null)
+        if (o == null)
         {
             return false;
         }
-        if (arg0 == this)
+        if (o == this)
         {
             return true;
         }
-        if (arg0 instanceof DefaultIMMessageTarget)
+        if (o instanceof DefaultIMMessageTarget)
         {
-            final DefaultIMMessageTarget other = (DefaultIMMessageTarget) arg0;
-            boolean retval = true;
-
-            retval &= this.value.equals(other.value);
-
-            return retval;
+            final DefaultIMMessageTarget other = (DefaultIMMessageTarget) o;
+            return this.value.equals(other.value);
         }
         else
         {

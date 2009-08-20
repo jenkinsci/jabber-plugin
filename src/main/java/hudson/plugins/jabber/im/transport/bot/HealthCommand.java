@@ -22,7 +22,7 @@ public class HealthCommand extends JobOverviewCommand {
         if (project.isDisabled()) {
             msg.append("(disabled)");
         } else if (project.isBuilding()) {
-            msg.append("(BUILDING ").append(project.getLastBuild().getDurationString()).append(")");
+            msg.append("(BUILDING: ").append(project.getLastBuild().getDurationString()).append(")");
         } else if (project.isInQueue()) {
             msg.append("(in queue)");
         }

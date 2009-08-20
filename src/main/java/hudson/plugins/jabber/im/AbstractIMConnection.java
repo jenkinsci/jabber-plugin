@@ -63,15 +63,15 @@ public abstract class AbstractIMConnection implements IMConnection {
                     if (compi != null) {
                         try {
                             if (compi.isIdle()) {
-                                setPresence(IMPresence.AVAILABLE, "Yawn, I'm so tired. Don't you have some work for me?");
+                                setPresence(IMPresence.AVAILABLE, "Yawn, I'm so bored. Don't you have some work for me?");
                             } else if (isBusy(compi)) {
                                 setPresence(IMPresence.DND, 
                                         "Please give me some rest! All " + compi.getNumExecutors() + " executors are busy, "
                                         + Hudson.getInstance().getQueue().getItems().length + " items in queue");
                             } else {
                                 setPresence(IMPresence.OCCUPIED,
-                                        "Working. " + getBusyExecutors(compi) + " out of " + compi.getNumExecutors() +
-                                        " are busy.");
+                                        "Working: " + getBusyExecutors(compi) + " out of " + compi.getNumExecutors() +
+                                        " executors are busy.");
                             }
                         } catch (IMException e) {
                             // ignore

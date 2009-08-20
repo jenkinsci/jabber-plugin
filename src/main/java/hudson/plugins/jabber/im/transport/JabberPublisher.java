@@ -10,6 +10,7 @@ import hudson.plugins.jabber.im.IMMessageTargetConversionException;
 import hudson.plugins.jabber.im.IMMessageTargetConverter;
 import hudson.plugins.jabber.im.IMPublisher;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 
 /**
@@ -91,4 +92,8 @@ public class JabberPublisher extends IMPublisher
     {
         return JabberPublisher.CONVERTER;
     }
+
+	public BuildStepMonitor getRequiredMonitorService() {
+		return BuildStepMonitor.BUILD;
+	}
 }
