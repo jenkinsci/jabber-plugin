@@ -31,7 +31,8 @@ public class JabberUserProperty extends UserProperty {
 		return this.jid;
 	}
 	
-	public UserPropertyDescriptor getDescriptor() {
+	@Override
+    public UserPropertyDescriptor getDescriptor() {
 		return DESCRIPTOR;
 	}
 	

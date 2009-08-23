@@ -32,6 +32,7 @@ final class JabberIMConnectionProvider
         releaseConnection();
 
         this.imConnection = new JabberIMConnection(desc);
+        this.imConnection.connect();
         return this.imConnection;
     }
 

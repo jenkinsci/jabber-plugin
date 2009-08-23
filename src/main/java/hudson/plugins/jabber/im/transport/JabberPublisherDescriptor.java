@@ -4,8 +4,10 @@
 package hudson.plugins.jabber.im.transport;
 
 import hudson.Util;
+import hudson.model.AbstractProject;
 import hudson.plugins.jabber.NotificationStrategy;
 import hudson.plugins.jabber.im.IMMessageTargetConversionException;
+import hudson.plugins.jabber.im.IMPublisherDescriptor;
 import hudson.plugins.jabber.tools.Assert;
 import hudson.plugins.jabber.tools.ExceptionHelper;
 import hudson.tasks.BuildStepDescriptor;
@@ -26,7 +28,7 @@ import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
-public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher>
+public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> implements IMPublisherDescriptor
 {
     private static final Logger LOGGER = Logger.getLogger(JabberPublisherDescriptor.class.getName());
     
@@ -73,8 +75,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher>
         super(JabberPublisher.class);
         load();
         
-        // FIXME: check servicename (from nick), too:
-        if (StringUtils.isNotBlank(this.hostname)) {
+        if (StringUtils.isNotBlank(this.hostname)
+            || StringUtils.isNotBlank(getServiceName())) {
             try
             {
                 JabberIMConnectionProvider.getInstance().createConnection(this);
@@ -207,13 +209,21 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher>
     {
         return this.hostname;
     }
+    
+    public String getHost() {
+        if (StringUtils.isNotBlank(this.hostname)) {
+            return this.hostname;
+        } else {
+            return getServiceName();
+        }
+    }
 
     public String getHudsonNickname()
     {
         return this.hudsonNickname;
     }
 
-    public String getHudsonPassword()
+    public String getPassword()
     {
         return this.hudsonPassword;
     }
@@ -326,8 +336,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher>
         applyCommandPrefix(req);
         applyDefaultIdSuffix(req);
 
-        // FIXME: check servicename (from nick), too:
-        if (StringUtils.isNotBlank(this.hostname)) {
+        if (StringUtils.isNotBlank(this.hostname)
+            || StringUtils.isNotBlank(getServiceName())) {
             try
             {
                 JabberIMConnectionProvider.getInstance().createConnection(this);
@@ -369,7 +379,27 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher>
      * {@inheritDoc}
      */
 	@Override
-	public boolean isApplicable(Class jobType) {
+	public boolean isApplicable(Class<? extends AbstractProject> jobType) {
 		return true;
 	}
+	
+	public String getUserName() {
+	    int idx = this.hudsonNickname.indexOf('@');
+        if (idx < 0)
+            return this.hudsonNickname;
+        else
+            return this.hudsonNickname.substring(0, idx);
+	}
+	
+	/**
+     * Returns 'gmail.com' portion of the nick name 'john.doe@gmail.com', or
+     * null if not found.
+     */
+    public String getServiceName() {
+        int idx = this.hudsonNickname.indexOf('@');
+        if (idx < 0)
+            return null;
+        else
+            return hudsonNickname.substring(idx + 1);
+    }
 }

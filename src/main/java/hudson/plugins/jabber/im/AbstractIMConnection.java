@@ -3,11 +3,16 @@ package hudson.plugins.jabber.im;
 import hudson.model.Computer;
 import hudson.model.Executor;
 import hudson.model.Hudson;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import hudson.model.listeners.RunListener;
 import hudson.util.TimeUnit2;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+
+import org.apache.commons.lang.StringUtils;
 
 public abstract class AbstractIMConnection implements IMConnection {
 
@@ -19,16 +24,22 @@ public abstract class AbstractIMConnection implements IMConnection {
     
     private final Thread connectorThread = new Thread(connector, "IM-ConnectorThread");
 
-    private final Thread statusUpdater;
-    
-    
-    protected AbstractIMConnection() {
-        connectorThread.start();
-        
-        Runnable updater = new UpdaterRunnable();
-        this.statusUpdater = new Thread(updater, "IM-StatusUpdater");
-        statusUpdater.start();
+    private final IMPublisherDescriptor desc;
+
+    protected AbstractIMConnection(IMPublisherDescriptor desc) {
+        this.desc = desc;
     }
+    
+    public final boolean connect() {
+        boolean result = connect0();
+        if (StringUtils.isNotBlank(desc.getHost())) {
+            new BusyListener().register(); // TODO: cannot use @Extension as BusyListener must be non-static
+            connectorThread.start();
+        }
+        return result;
+    }
+    
+    protected abstract boolean connect0();
     
     protected final Object getLock() {
         return this.connectionLock;
@@ -41,71 +52,102 @@ public abstract class AbstractIMConnection implements IMConnection {
         this.connector.semaphore.release();
     }
     
-    protected abstract boolean isConnected();
+    protected void updateIMStatus() {
+        updateIMStatus(null);
+    }
     
-    protected abstract boolean connect();
+    private void updateIMStatus(Executor exec) {
+        int totalExecutors = getTotalExecutors();
+        int busyExecutors = getBusyExecutors(exec);
+        
+        try {
+            if (busyExecutors == 0) {
+                setPresence(IMPresence.AVAILABLE, "Yawn, I'm so bored. Don't you have some work for me?");
+            } else if (busyExecutors == totalExecutors) {
+                setPresence(IMPresence.DND, 
+                        "Please give me some rest! All " + totalExecutors + " executors are busy, "
+                        + Hudson.getInstance().getQueue().getItems().length + " jobs in queue.");
+            } else {
+                String msg = "Working: " + busyExecutors + " out of " + totalExecutors +
+                    " executors are busy.";
+                int queueItems = Hudson.getInstance().getQueue().getItems().length;
+                if (queueItems > 0) {
+                    msg += " " + queueItems + " jobs in queue.";
+                }
+                setPresence(IMPresence.OCCUPIED, msg);
+            }
+        } catch (IMException e) {
+            // ignore
+        }
+    }
+    
+    private int getBusyExecutors(Executor exec) {
+        int busyExecutors = 0;
+        Computer[] computers = Hudson.getInstance().getComputers();
+        for (Computer compi : computers) {
+            
+            for (Executor executor : compi.getExecutors()) {
+                if (executor.isBusy()) {
+                    if (isNotEqual(executor, exec)) {
+                        busyExecutors++;
+                    }
+                }
+            }
+        }
+        
+        return busyExecutors;
+    }
+    
+    private int getTotalExecutors() {
+        int totalExecutors = 0;
+        Computer[] computers = Hudson.getInstance().getComputers();
+        for (Computer compi : computers) {
+            totalExecutors += compi.getNumExecutors();
+        }
+        return totalExecutors;
+    }
+        
+    private static boolean isNotEqual(Executor executor, Executor exec) {
+        if (exec == null) {
+            return true;
+        }
+        return !(executor.getOwner().equals(exec.getOwner())
+            && executor.getNumber() == exec.getNumber());
+    }
+    
+    protected abstract boolean isConnected();
     
     public final void close() {
         this.connectorThread.interrupt();
-        this.statusUpdater.interrupt();
     }
     
     protected abstract void close0();
     
-    private final class UpdaterRunnable implements Runnable {
-        public void run() {
-            try {
-                // sleep initially to give Hudson some time to startup
-                TimeUnit2.MINUTES.sleep(1);
-                
-                while (true) {
-                    Computer compi = Hudson.getInstance().toComputer();
-                    if (compi != null) {
-                        try {
-                            if (compi.isIdle()) {
-                                setPresence(IMPresence.AVAILABLE, "Yawn, I'm so bored. Don't you have some work for me?");
-                            } else if (isBusy(compi)) {
-                                setPresence(IMPresence.DND, 
-                                        "Please give me some rest! All " + compi.getNumExecutors() + " executors are busy, "
-                                        + Hudson.getInstance().getQueue().getItems().length + " items in queue");
-                            } else {
-                                setPresence(IMPresence.OCCUPIED,
-                                        "Working: " + getBusyExecutors(compi) + " out of " + compi.getNumExecutors() +
-                                        " executors are busy.");
-                            }
-                        } catch (IMException e) {
-                            // ignore
-                        }
-                    } else {
-                        LOGGER.warning("No Hudson main computer?");
-                    }
-                    TimeUnit2.MINUTES.sleep(2);
-                }
-            } catch (InterruptedException e) {
-                // shutdown
-            }
+    @SuppressWarnings("unchecked")
+    public final class BusyListener extends RunListener<Run> {
+
+        public BusyListener() {
+            super(Run.class);
+            LOGGER.info("Executor busy listener created");
         }
 
-        private int getBusyExecutors(Computer compi) {
-            int i = 0;
-            for (Executor executor : compi.getExecutors()) {
-                if (executor.isBusy()) {
-                    i++;
-                }
-            }
-            return i;
+        @Override
+        public void onCompleted(Run r, TaskListener listener) {
+            // the executor of 'r' is still busy, we have to take that into account!
+            updateIMStatus(r.getExecutor());
         }
 
-        private boolean isBusy(Computer compi) {
-            for (Executor executor : compi.getExecutors()) {
-                if (executor.isIdle()) {
-                    return false;
-                }
-            }
-            return true;
+        @Override
+        public void onDeleted(Run r) {
+            updateIMStatus(null);
+        }
+
+        @Override
+        public void onStarted(Run r, TaskListener listener) {
+            updateIMStatus(null);
         }
     }
-
+    
     private final class ConnectorRunnable implements Runnable {
 
         private final Semaphore semaphore = new Semaphore(0);
@@ -114,7 +156,6 @@ public abstract class AbstractIMConnection implements IMConnection {
             try {
                 while (true) {
                     this.semaphore.acquire();
-                    this.semaphore.drainPermits();
                     
                     LOGGER.info("Trying to reconnect");
                     // wait a little bit in case the XMPP server/network has just a 'hickup'
@@ -137,6 +178,9 @@ public abstract class AbstractIMConnection implements IMConnection {
                             TimeUnit2.MINUTES.sleep(timeout);
                             // exponentially increase timeout
                             timeout = timeout * 2;
+                        } else {
+                            // remove any permits which came in in the mean time
+                            this.semaphore.drainPermits();
                         }
                     }
                 }

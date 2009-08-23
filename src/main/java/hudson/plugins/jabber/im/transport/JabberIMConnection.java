@@ -75,14 +75,18 @@ class JabberIMConnection extends AbstractIMConnection {
 	private final String defaultIdSuffix;
 
     private String imStatusMessage;
+
+    private JabberPublisherDescriptor desc;
 	
 	JabberIMConnection(final JabberPublisherDescriptor desc) throws IMException {
+	    super(desc);
 		Assert.isNotNull(desc, "Parameter 'desc' must not be null.");
+		this.desc = desc;
 		this.hostname = desc.getHostname();
 		this.port = desc.getPort();
 		this.legacySSL = desc.isLegacySSL();
 		this.nick = desc.getHudsonNickname();
-		this.passwd = desc.getHudsonPassword();
+		this.passwd = desc.getPassword();
 		this.groupChatNick = desc.getGroupChatNickname() != null ? desc
 				.getGroupChatNickname() : this.nick;
 		this.botCommandPrefix = desc.getCommandPrefix();
@@ -98,13 +102,15 @@ class JabberIMConnection extends AbstractIMConnection {
 	}
 
 	@Override
-	protected boolean connect() {
+	protected boolean connect0() {
 		synchronized (getLock()) {
 			try {
 				if (!isConnected()) {
 					if (createConnection()) {
 						LOGGER.info("Connected to XMPP on " + this.hostname + ":" + this.port);
 			
+						updateIMStatus();
+						
 						for (String groupChatName : this.groupChats) {
 							try {
 								groupChatName = groupChatName.trim();
@@ -117,7 +123,6 @@ class JabberIMConnection extends AbstractIMConnection {
 										+ "Message: " + e.toString());
 							}
 						}
-						sendPresence();
 					} else {
 						return false;
 					}
@@ -132,31 +137,8 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 	}
 
-	/**
-	 * Returns 'gmail.com' portion of the nick name 'john.doe@gmail.com', or
-	 * null if not found.
-	 */
-	public String getServiceName() {
-		int idx = nick.indexOf('@');
-		if (idx < 0)
-			return null;
-		else
-			return nick.substring(idx + 1);
-	}
-
-	/**
-	 * Returns 'john.doe' portion of the nick name 'john.doe@gmail.com'.
-	 */
-	public String getUserName() {
-		int idx = nick.indexOf('@');
-		if (idx < 0)
-			return nick;
-		else
-			return nick.substring(0, idx);
-	}
-
 	@Override
-    public void close0() {
+    protected void close0() {
 		synchronized (getLock()) {
 			try {
 				if (isConnected()) {
@@ -166,6 +148,8 @@ class JabberIMConnection extends AbstractIMConnection {
 							chat.leave();
 						}
 					}
+					this.groupChatCache.clear();
+					this.chatCache.clear();
 					this.connection.close();
 				}
 			} finally {
@@ -183,7 +167,7 @@ class JabberIMConnection extends AbstractIMConnection {
 					// ignore
 				}
 			}
-			String serviceName = getServiceName();
+			String serviceName = desc.getServiceName();
 			if (serviceName == null) {
 				this.connection = this.legacySSL ? new SSLXMPPConnection(
 						this.hostname, this.port) : new XMPPConnection(
@@ -199,9 +183,9 @@ class JabberIMConnection extends AbstractIMConnection {
 			}
 
 			if (this.connection.isConnected()) {
-				this.connection.login(getUserName(), this.passwd, "Hudson");
+				this.connection.login(this.desc.getUserName(), this.passwd, "Hudson");
 				
-				String fullUser = getUserName() + "@" + this.hostname;
+				String fullUser = this.desc.getUserName() + "@" + this.hostname;
 				
 				PacketFilter filter = new AndFilter(new MessageTypeFilter(Message.Type.CHAT), 
 						new ToContainsFilter(fullUser) );
@@ -235,7 +219,7 @@ class JabberIMConnection extends AbstractIMConnection {
 			
 			if (forceReconnect && groupChat != null) {
 				try {
-					groupChatCache.remove(groupChat);
+					groupChatCache.remove(groupChatName);
 					groupChat.leave();
 				} catch (Exception e) {
 					// ignore
@@ -308,8 +292,14 @@ class JabberIMConnection extends AbstractIMConnection {
 	public void setPresence(final IMPresence impresence, String statusMessage)
 			throws IMException {
 		Assert.isNotNull(impresence, "Parameter 'impresence' must not be null.");
-		this.impresence = impresence;
-		this.imStatusMessage = statusMessage;
+		if (this.desc.isExposePresence()) {
+		    this.impresence = impresence;
+		    this.imStatusMessage = statusMessage;
+		} else {
+		    // ignore set presence
+		    this.impresence = IMPresence.UNAVAILABLE;
+		    this.imStatusMessage = "";
+		}
 		sendPresence();
 	}
 	

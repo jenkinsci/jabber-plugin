@@ -3,9 +3,10 @@ package hudson.plugins.jabber.im;
 import hudson.plugins.jabber.tools.Assert;
 
 /**
- * {@inheritDoc}
- * @author doc
- *
+ * Default implementation of {@link IMMessageTargetConverter}.
+ * 
+ * Just uses the toString methods of the target resp. returns a
+ * {@link DefaultIMMessageTarget}.
  */
 public class DefaultIMMessageTargetConverter implements IMMessageTargetConverter
 {

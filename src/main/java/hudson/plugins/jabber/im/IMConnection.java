@@ -8,6 +8,11 @@ package hudson.plugins.jabber.im;
 public interface IMConnection
 {
     /**
+     * Establish the connection an login.
+     */
+    boolean connect();
+    
+    /**
      * Closes the connection (includes logout) and releases resources. 
      */
     void close();
