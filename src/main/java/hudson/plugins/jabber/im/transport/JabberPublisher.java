@@ -18,7 +18,7 @@ import hudson.tasks.Publisher;
  */
 public class JabberPublisher extends IMPublisher
 {
-    static class JabberIMMessageTargetConverter extends DefaultIMMessageTargetConverter
+    private static class JabberIMMessageTargetConverter extends DefaultIMMessageTargetConverter
     {
         private void checkValidity(final String f) throws IMMessageTargetConversionException
         {
@@ -28,7 +28,7 @@ public class JabberPublisher extends IMPublisher
             {
                 throw new IMMessageTargetConversionException("Invalid input for target: '" + f + "'");
             }
-    }
+        }
 
         @Override
         public IMMessageTarget fromString(final String targetAsString) throws IMMessageTargetConversionException

@@ -3,6 +3,7 @@
  */
 package hudson.plugins.jabber.user;
 
+import hudson.Extension;
 import hudson.model.UserProperty;
 import hudson.model.UserPropertyDescriptor;
 
@@ -10,11 +11,16 @@ import hudson.model.UserPropertyDescriptor;
  * Jabber user property.
  * @author Pascal Bleser
  */
+@Extension
 public class JabberUserProperty extends UserProperty {
 	
 	public static final JabberUserPropertyDescriptor DESCRIPTOR = new JabberUserPropertyDescriptor();
 
-	private final String jid;
+	private String jid;
+	
+	public JabberUserProperty() {
+	    // public constructor needed for @Extension parsing
+	}
 	
 	public JabberUserProperty(final String jid) {
 		if ((jid != null) && (! "".equals(jid)) && (! validateJID(jid))) {

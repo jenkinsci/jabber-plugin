@@ -97,8 +97,6 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 		this.impresence = desc.isExposePresence() ? IMPresence.AVAILABLE : IMPresence.UNAVAILABLE;
 		this.defaultIdSuffix = desc.getDefaultIdSuffix();
-
-		connect();
 	}
 
 	@Override

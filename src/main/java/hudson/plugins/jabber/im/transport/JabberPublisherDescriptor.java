@@ -3,8 +3,10 @@
  */
 package hudson.plugins.jabber.im.transport;
 
+import hudson.Extension;
 import hudson.Util;
 import hudson.model.AbstractProject;
+import hudson.model.Hudson;
 import hudson.plugins.jabber.NotificationStrategy;
 import hudson.plugins.jabber.im.IMMessageTargetConversionException;
 import hudson.plugins.jabber.im.IMPublisherDescriptor;
@@ -12,22 +14,23 @@ import hudson.plugins.jabber.tools.Assert;
 import hudson.plugins.jabber.tools.ExceptionHelper;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
-import hudson.util.FormFieldValidator;
+import hudson.util.FormValidation;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.logging.Logger;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 
 import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
 
+@Extension
 public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> implements IMPublisherDescriptor
 {
     private static final Logger LOGGER = Logger.getLogger(JabberPublisherDescriptor.class.getName());
@@ -58,8 +61,10 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     };
     public static final String PARAMETERVALUE_STRATEGY_DEFAULT = NotificationStrategy.STATECHANGE_ONLY.getDisplayName();
     public static final String DEFAULT_COMMAND_PREFIX = "!";
-
-    private int port = 5222;
+    
+    private static final int DEFAULT_PORT = 5222;
+    
+    private int port = DEFAULT_PORT;
     private String hostname = null;
     private boolean legacySSL = false;
     private String hudsonNickname = "hudson";
@@ -354,31 +359,46 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	}
 
     /**
-     * Validates the server name.
+     * Validates the connection information.
      */
-    public void doServerCheck(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException {
-        new FormFieldValidator(req, rsp, false) {
-            @Override
-            protected void check() throws IOException, ServletException {
-                String v = Util.fixEmptyAndTrim(request.getParameter("value"));
-                if (v == null)
-                    ok();
-                else {
-                    try {
-                        InetAddress.getByName(v);
-                        ok();
-                    } catch (UnknownHostException e) {
-                        error("Unknown host "+v);
-                    }
+	// TODO: also check Jabber ID + password!
+    public FormValidation doServerCheck(@QueryParameter final String hostname,
+            @QueryParameter final String port,
+            @QueryParameter final boolean legacySSL) {
+        if(!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) {
+            return FormValidation.ok();
+        }
+        String host = Util.fixEmptyAndTrim(hostname);
+        String p = Util.fixEmptyAndTrim(port);
+        if (host == null) {
+            return FormValidation.ok();
+        } else {
+            int iPort = DEFAULT_PORT;
+            try {
+                InetAddress address = InetAddress.getByName(host);
+                
+                if (p != null) {
+                    iPort = Integer.parseInt(p);
                 }
+                
+                Socket s = new Socket(address, iPort);
+                s.close();
+                return FormValidation.ok();
+            } catch (UnknownHostException e) {
+                return FormValidation.error("Unknown host " + host);
+            } catch (NumberFormatException e) {
+                return FormValidation.error("Invalid port " + port);
+            } catch (IOException e) {
+                return FormValidation.error("Unable to connect to "+hostname+":"+iPort+" : "+e.getMessage());
             }
-        }.process();
+        }
     }
 
     /**
      * {@inheritDoc}
      */
 	@Override
+	@SuppressWarnings("unchecked")
 	public boolean isApplicable(Class<? extends AbstractProject> jobType) {
 		return true;
 	}

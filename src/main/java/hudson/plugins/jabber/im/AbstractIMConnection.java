@@ -22,18 +22,23 @@ public abstract class AbstractIMConnection implements IMConnection {
     
     private final ConnectorRunnable connector = new ConnectorRunnable();
     
-    private final Thread connectorThread = new Thread(connector, "IM-ConnectorThread");
+    private volatile Thread connectorThread;
 
     private final IMPublisherDescriptor desc;
 
+    private final BusyListener busyListener;
+
     protected AbstractIMConnection(IMPublisherDescriptor desc) {
         this.desc = desc;
+        // TODO: cannot use @Extension as BusyListener must be non-static
+        this.busyListener = new BusyListener();
     }
     
     public final boolean connect() {
         boolean result = connect0();
         if (StringUtils.isNotBlank(desc.getHost())) {
-            new BusyListener().register(); // TODO: cannot use @Extension as BusyListener must be non-static
+            this.busyListener.register();
+            connectorThread = new Thread(connector, "IM-ConnectorThread");
             connectorThread.start();
         }
         return result;
@@ -119,6 +124,8 @@ public abstract class AbstractIMConnection implements IMConnection {
     
     public final void close() {
         this.connectorThread.interrupt();
+        this.connectorThread = null;
+        this.busyListener.unregister();
     }
     
     protected abstract void close0();
@@ -166,6 +173,7 @@ public abstract class AbstractIMConnection implements IMConnection {
                     while (!success) {
                         synchronized (getLock()) {
                             if (!isConnected()) {
+                                close();
                                 success = connect();
                             } else {
                                 success = true;

@@ -12,7 +12,9 @@ import hudson.plugins.jabber.user.JabberUserProperty;
 import hudson.scm.ChangeLogSet;
 import hudson.scm.ChangeLogSet.Entry;
 import hudson.tasks.BuildStep;
+import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Notifier;
+import hudson.tasks.Publisher;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -274,4 +276,7 @@ public abstract class IMPublisher extends Notifier implements BuildStep
 		return suspects;
 	}
 
+    @Override
+    public abstract BuildStepDescriptor<Publisher> getDescriptor();
+	
 }

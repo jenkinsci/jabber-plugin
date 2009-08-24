@@ -24,10 +24,11 @@
       <f:entry title="Server" help="${base}/help-server.html">
         <f:textbox name="${descriptor.PARAMETERNAME_HOSTNAME}"
           value="${descriptor.hostname}"
-          checkUrl="'${rootURL}/publisher/JabberPublisher/serverCheck?value='+escape(this.value)"/>
+          checkUrl="'${rootURL}/publisher/JabberPublisher/serverCheck?field=hostname&amp;hostname='+escape(this.value)+'&amp;port='+escape(this.form.elements['jabberPlugin.port'].value)+'&amp;legacySSL='+escape(this.form.elements['jabberPlugin.ssl'].value)"/>
       </f:entry>
       <f:entry title="Port" help="${base}/help-port.html">
-        <f:textbox name="${descriptor.PARAMETERNAME_PORT}" value="${descriptor.portString}" />
+        <f:textbox name="${descriptor.PARAMETERNAME_PORT}" value="${descriptor.portString}"
+        checkUrl="'${rootURL}/publisher/JabberPublisher/serverCheck?field=port&amp;hostname='+escape(this.form.elements['jabberPlugin.hostname'].value)+'&amp;port='+escape(this.value)"/>
       </f:entry>
       <f:entry title="Legacy SSL">
         <f:checkbox name="${descriptor.PARAMETERNAME_SSL}" checked="${descriptor.legacySSL}"/>
