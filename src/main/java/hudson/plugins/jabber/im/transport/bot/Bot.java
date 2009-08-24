@@ -94,7 +94,10 @@ public class Bot implements IMMessageListener {
 		
 		chat.addMessageListener(this);
 		
-		addShutdownHook();
+		// TODO: add one shutdown hook for all bots
+		if (chat.isMultiUserChat()) {
+			addShutdownHook();
+		}
 	}
 
 	private void addShutdownHook() {

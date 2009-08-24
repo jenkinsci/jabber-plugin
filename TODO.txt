@@ -4,6 +4,7 @@ Current ToDos
 - add support for aliases in bot commands
 - chat modes for Bot (e.g. chatty, praising, grumpy, ...)
 - changes plugin settings via bot commands
+- add listener for other user leaving 1-on-1 chat (and discard that Chat object then!)
 
 
 Old ToDos (from before 2007/04/24). TODO: clean these up!
