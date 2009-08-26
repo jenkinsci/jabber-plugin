@@ -14,7 +14,7 @@ import hudson.plugins.jabber.tools.MessageHelper;
  * Job/project status command for the jabber bot
  * @author Pascal Bleser
  */
-public class StatusCommand extends JobOverviewCommand {
+public class StatusCommand extends AbstractMultipleJobCommand {
 
     @Override
     protected CharSequence getMessageForJob(AbstractProject<?, ?> project) {

@@ -16,7 +16,7 @@ public class AliasCommand extends AbstractTextSendingCommand {
 			return "deleted alias " + args[1];
 		} else {
 			String alias = args[1];
-			String command = MessageHelper.join(args, 2);
+			String command = MessageHelper.getJoinedName(args, 2);
 			// TODO: create alias
 			return "created alias: " + alias + "='" + command + "'";
 		}

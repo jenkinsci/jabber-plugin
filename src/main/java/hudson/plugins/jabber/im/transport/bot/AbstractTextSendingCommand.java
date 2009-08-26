@@ -35,6 +35,7 @@ public abstract class AbstractTextSendingCommand implements BotCommand {
 	 * 
 	 * @param sender the room nickname of the command sender
 	 * @param args arguments passed to the command, where <code>args[0]</code> is the command name itself
+	 * @throws RuntimeException in case of invalid args. This is automatically caught and reported to the sender
 	 */
 	protected abstract String getReply(String sender, String args[]);
 

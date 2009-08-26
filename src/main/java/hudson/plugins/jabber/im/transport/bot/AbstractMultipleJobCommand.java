@@ -11,17 +11,31 @@ import java.util.Collection;
 
 
 /**
- * Abstract command which gives an overview about several jobs.
+ * Abstract command which returns a result message for one or several jobs.
  *
  * @author kutzi
  */
-public abstract class JobOverviewCommand extends AbstractTextSendingCommand {
+abstract class AbstractMultipleJobCommand extends AbstractTextSendingCommand {
 	
 	static final String UNKNOWN_JOB_STR = "unknown job";
 	static final String UNKNOWN_VIEW_STR = "unknown view";
 
+	/**
+	 * Returns the message to return for this job.
+	 * Note that {@link AbstractMultipleJobCommand} already inserts one newline after each job's
+	 * message so you don't have to do it yourself.
+	 * 
+	 * @param job The job
+	 * @return the result message for this job
+	 */
     protected abstract CharSequence getMessageForJob(AbstractProject<?, ?> job);
 
+    /**
+     * Returns a short name of the command needed for the help message
+     * and as a leading descriptor in the result message.
+     * 
+     * @return short command name
+     */
     protected abstract String getCommandShortName();
     
     private enum Mode {
@@ -38,12 +52,11 @@ public abstract class JobOverviewCommand extends AbstractTextSendingCommand {
             if (args.length >= 2) {
                 if ("-v".equals(args[1])) {
                 	mode = Mode.VIEW;
-                	view = MessageHelper.join(args, 2);
+                	view = MessageHelper.getJoinedName(args, 2);
                     getProjectsForView(projects, view);
                 } else {
                 	mode = Mode.SINGLE;
-                    String jobName = MessageHelper.join(args, 1);
-                    jobName = jobName.replaceAll("\"", "");
+                    String jobName = MessageHelper.getJoinedName(args, 1);
 
                     AbstractProject<?, ?> project = Hudson.getInstance().getItemByFullName(jobName, AbstractProject.class);
                     if (project != null) {

@@ -13,7 +13,7 @@ import java.util.List;
  *
  * @author kutzi
  */
-public class HealthCommand extends JobOverviewCommand {
+public class HealthCommand extends AbstractMultipleJobCommand {
 
     @Override
     protected CharSequence getMessageForJob(AbstractProject<?, ?> project) {
