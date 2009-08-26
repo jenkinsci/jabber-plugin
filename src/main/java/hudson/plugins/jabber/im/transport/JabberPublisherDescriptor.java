@@ -41,7 +41,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public static final String PARAMETERNAME_SSL = JabberPublisherDescriptor.PREFIX + "ssl";
     public static final String PARAMETERNAME_PRESENCE = JabberPublisherDescriptor.PREFIX + "exposePresence";
     public static final String PARAMETERNAME_PASSWORD = JabberPublisherDescriptor.PREFIX + "password";
-    public static final String PARAMETERNAME_NICKNAME = JabberPublisherDescriptor.PREFIX + "nick";
+    public static final String PARAMETERNAME_JABBERID = JabberPublisherDescriptor.PREFIX + "jabberId";
     public static final String PARAMETERNAME_GROUP_NICKNAME = JabberPublisherDescriptor.PREFIX + "groupNick";
     public static final String PARAMETERNAME_TARGETS = JabberPublisherDescriptor.PREFIX + "targets";
     public static final String PARAMETERNAME_STRATEGY = JabberPublisherDescriptor.PREFIX + "strategy";
@@ -120,11 +120,11 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 
     private void applyNickname(final HttpServletRequest req) throws FormException
     {
-        this.hudsonNickname = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_NICKNAME);
+        this.hudsonNickname = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_JABBERID);
         if ((this.hostname != null) && ((this.hudsonNickname == null) || (this.hudsonNickname.trim().length() == 0)))
         {
             throw new FormException("Account/Nickname cannot be empty.",
-                    JabberPublisherDescriptor.PARAMETERNAME_NICKNAME);
+                    JabberPublisherDescriptor.PARAMETERNAME_JABBERID);
         }
     }
 
@@ -223,7 +223,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         }
     }
 
-    public String getHudsonNickname()
+    public String getJabberId()
     {
         return this.hudsonNickname;
     }
@@ -358,6 +358,30 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         return super.configure(req, json);		
 	}
 
+	
+	public FormValidation doJabberIdCheck(@QueryParameter String jabberId, @QueryParameter final String port) {
+	    if(!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) {
+            return FormValidation.ok();
+        }
+	    
+	    if (jabberId == null || jabberId.trim().length() == 0) {
+	        return FormValidation.error("Jabber ID must not be empty!");
+	    } else if (getHostPart(jabberId) != null) {
+	        String host = getHostPart(jabberId);
+	        try {
+                checkHostAccessibility(host, port);
+                return FormValidation.ok();
+            } catch (UnknownHostException e) {
+                return FormValidation.error("Unknown host " + host);
+            } catch (NumberFormatException e) {
+                return FormValidation.error("Invalid port " + port);
+            } catch (IOException e) {
+                return FormValidation.error("Unable to connect to "+hostname+":"+port+" : "+e.getMessage());
+            }
+	    }
+	    return FormValidation.ok();
+	}
+	
     /**
      * Validates the connection information.
      */
@@ -373,25 +397,32 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         if (host == null) {
             return FormValidation.ok();
         } else {
-            int iPort = DEFAULT_PORT;
             try {
-                InetAddress address = InetAddress.getByName(host);
-                
-                if (p != null) {
-                    iPort = Integer.parseInt(p);
-                }
-                
-                Socket s = new Socket(address, iPort);
-                s.close();
+                checkHostAccessibility(host, port);
                 return FormValidation.ok();
             } catch (UnknownHostException e) {
                 return FormValidation.error("Unknown host " + host);
             } catch (NumberFormatException e) {
                 return FormValidation.error("Invalid port " + port);
             } catch (IOException e) {
-                return FormValidation.error("Unable to connect to "+hostname+":"+iPort+" : "+e.getMessage());
+                return FormValidation.error("Unable to connect to "+hostname+":"+p+" : "+e.getMessage());
             }
         }
+    }
+    
+    private static void checkHostAccessibility(String hostname, String port)
+        throws UnknownHostException, IOException, NumberFormatException {
+        hostname = Util.fixEmptyAndTrim(hostname);
+        port = Util.fixEmptyAndTrim(port);
+        int iPort = DEFAULT_PORT;
+        InetAddress address = InetAddress.getByName(hostname);
+        
+        if (port != null) {
+            iPort = Integer.parseInt(port);
+        }
+        
+        Socket s = new Socket(address, iPort);
+        s.close();
     }
 
     /**
@@ -416,10 +447,20 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      * null if not found.
      */
     public String getServiceName() {
-        int idx = this.hudsonNickname.indexOf('@');
-        if (idx < 0)
+        return getHostPart(this.hudsonNickname);
+    }
+    
+    /**
+     * Returns the host part from a jabber id or null.
+     * @param jabberId
+     * @return
+     */
+    private static String getHostPart(String jabberId) {
+        int idx = jabberId.indexOf('@');
+        if (idx < 0) {
             return null;
-        else
-            return hudsonNickname.substring(idx + 1);
+        } else {
+            return jabberId.substring(idx + 1);
+        }
     }
 }
