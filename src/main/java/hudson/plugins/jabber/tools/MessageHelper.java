@@ -99,9 +99,23 @@ public class MessageHelper {
 	 * Joins together all strings in the array - starting at startIndex - by
 	 * using a single space as separator.
 	 */
-	public static String join(String[] array, int startIndex) {
+	private static String join(String[] array, int startIndex) {
 		String joined = StringUtils.join(copyOfRange(array, startIndex, array.length, String[].class), " ");
 	    joined = joined.replaceAll("\"", "");
 	    return joined;
+	}
+	
+	/**
+	 * Extracts a name from an argument array starting at a start index and removing
+	 * quoting ".
+	 *
+	 * @param args the arguments
+	 * @param startIndex the start index
+	 * @return the job name as a single String
+	 * @throws IndexOutOfBoundsException if startIndex > args length
+	 */
+	public static String getJoinedName(String[] args, int startIndex) {
+	    String joined = join(args, startIndex);
+	    return joined.replaceAll("\"", "");
 	}
 }
