@@ -44,7 +44,7 @@ public class HealthCommandTest extends HudsonTestCase {
 		String reply = cmd.getReply(sender, args);
 		System.out.println(reply);
 		
-		assertFalse(reply.contains(JobOverviewCommand.UNKNOWN_JOB_STR));
+		assertFalse(reply.contains(AbstractMultipleJobCommand.UNKNOWN_JOB_STR));
 		assertTrue(reply.contains("fsProject"));
 		Matcher m = percentagePattern.matcher(reply);
 		assertTrue(m.find());
@@ -65,7 +65,7 @@ public class HealthCommandTest extends HudsonTestCase {
 			String reply = cmd.getReply(sender, args);
 			System.out.println(reply);
 		
-			assertFalse(reply.contains(JobOverviewCommand.UNKNOWN_JOB_STR));
+			assertFalse(reply.contains(AbstractMultipleJobCommand.UNKNOWN_JOB_STR));
 			assertTrue(reply.contains("fsProject"));
 			Matcher m = percentagePattern.matcher(reply);
 			assertTrue(m.find());
@@ -80,7 +80,7 @@ public class HealthCommandTest extends HudsonTestCase {
 			String reply = cmd.getReply(sender, args);
 			System.out.println(reply);
 		
-			assertFalse(reply.contains(JobOverviewCommand.UNKNOWN_JOB_STR));
+			assertFalse(reply.contains(AbstractMultipleJobCommand.UNKNOWN_JOB_STR));
 			assertTrue(reply.contains("fsProject"));
 			Matcher m = percentagePattern.matcher(reply);
 			assertTrue(m.find());
@@ -113,14 +113,14 @@ public class HealthCommandTest extends HudsonTestCase {
 			
 			String reply = cmd.getReply(sender, args);
 			System.out.println(reply);
-			assertFalse(reply.contains(JobOverviewCommand.UNKNOWN_JOB_STR));
+			assertFalse(reply.contains(AbstractMultipleJobCommand.UNKNOWN_JOB_STR));
 			assertTrue(reply.contains(projectName));
 		}
 		
 		{
 			String[] args = { "health", "project", "with", "foo" };
 			String reply = cmd.getReply(sender, args);
-			assertTrue(reply.contains(JobOverviewCommand.UNKNOWN_JOB_STR));
+			assertTrue(reply.contains(AbstractMultipleJobCommand.UNKNOWN_JOB_STR));
 		}
 	}
 	
@@ -135,7 +135,7 @@ public class HealthCommandTest extends HudsonTestCase {
 		HealthCommand cmd = new HealthCommand();
 		String reply = cmd.getReply("sender", args);
 		
-		assertFalse(reply.contains(JobOverviewCommand.UNKNOWN_VIEW_STR));
+		assertFalse(reply.contains(AbstractMultipleJobCommand.UNKNOWN_VIEW_STR));
 		assertTrue(reply.contains(projectName));
 		
 	}

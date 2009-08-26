@@ -16,6 +16,7 @@ import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import org.jivesoftware.smack.Chat;
@@ -85,7 +86,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.hostname = desc.getHostname();
 		this.port = desc.getPort();
 		this.legacySSL = desc.isLegacySSL();
-		this.nick = desc.getHudsonNickname();
+		this.nick = desc.getJabberId();
 		this.passwd = desc.getPassword();
 		this.groupChatNick = desc.getGroupChatNickname() != null ? desc
 				.getGroupChatNickname() : this.nick;
@@ -101,7 +102,8 @@ class JabberIMConnection extends AbstractIMConnection {
 
 	@Override
 	protected boolean connect0() {
-		synchronized (getLock()) {
+	    lock();
+	    try {
 			try {
 				if (!isConnected()) {
 					if (createConnection()) {
@@ -132,12 +134,15 @@ class JabberIMConnection extends AbstractIMConnection {
 				tryReconnect();
 				return false;
 			}
+		} finally {
+		    unlock();
 		}
 	}
 
 	@Override
     protected void close0() {
-		synchronized (getLock()) {
+	    lock();
+	    try {
 			try {
 				if (isConnected()) {
 					for (WeakReference<GroupChat> entry : groupChatCache.values()) {
@@ -153,94 +158,92 @@ class JabberIMConnection extends AbstractIMConnection {
 			} finally {
 				this.connection = null;
 			}
+		} finally {
+		    unlock();
 		}
 	}
 
 	private boolean createConnection() throws XMPPException {
-		synchronized (getLock()) {
-			if (this.connection != null) {
-				try {
-					this.connection.close();
-				} catch (Exception ignore) {
-					// ignore
-				}
+		if (this.connection != null) {
+			try {
+				this.connection.close();
+			} catch (Exception ignore) {
+				// ignore
 			}
-			String serviceName = desc.getServiceName();
-			if (serviceName == null) {
-				this.connection = this.legacySSL ? new SSLXMPPConnection(
-						this.hostname, this.port) : new XMPPConnection(
-						this.hostname, this.port);
-			} else if (hostname == null) {
-				this.connection = this.legacySSL ? new SSLXMPPConnection(
-						serviceName) : new XMPPConnection(serviceName);
-			} else {
-				this.connection = this.legacySSL ? new SSLXMPPConnection(
-						this.hostname, this.port, serviceName)
-						: new XMPPConnection(this.hostname, this.port,
-								serviceName);
-			}
-
-			if (this.connection.isConnected()) {
-				this.connection.login(this.desc.getUserName(), this.passwd, "Hudson");
-				
-				String fullUser = this.desc.getUserName() + "@" + this.hostname;
-				
-				PacketFilter filter = new AndFilter(new MessageTypeFilter(Message.Type.CHAT), 
-						new ToContainsFilter(fullUser) );
-				
-				PacketListener listener = new IMListener();
-				this.connection.addPacketListener(listener, filter);
-				this.connection.addConnectionListener(new ConnectionListener() {
-					public void connectionClosedOnError(Exception paramException) {
-						tryReconnect();
-					}
-					
-					public void connectionClosed() {
-						tryReconnect();
-					}
-				});
-			}
-			
-			return this.connection.isAuthenticated();
 		}
+		String serviceName = desc.getServiceName();
+		if (serviceName == null) {
+			this.connection = this.legacySSL ? new SSLXMPPConnection(
+					this.hostname, this.port) : new XMPPConnection(
+					this.hostname, this.port);
+		} else if (hostname == null) {
+			this.connection = this.legacySSL ? new SSLXMPPConnection(
+					serviceName) : new XMPPConnection(serviceName);
+		} else {
+			this.connection = this.legacySSL ? new SSLXMPPConnection(
+					this.hostname, this.port, serviceName)
+					: new XMPPConnection(this.hostname, this.port,
+							serviceName);
+		}
+
+		if (this.connection.isConnected()) {
+			this.connection.login(this.desc.getUserName(), this.passwd, "Hudson");
+			
+			String fullUser = this.desc.getUserName() + "@" + this.hostname;
+			
+			PacketFilter filter = new AndFilter(new MessageTypeFilter(Message.Type.CHAT), 
+					new ToContainsFilter(fullUser));
+			
+			PacketListener listener = new IMListener();
+			this.connection.addPacketListener(listener, filter);
+			this.connection.addConnectionListener(new ConnectionListener() {
+				public void connectionClosedOnError(Exception paramException) {
+					tryReconnect();
+				}
+				
+				public void connectionClosed() {
+					tryReconnect();
+				}
+			});
+		}
+		
+		return this.connection.isAuthenticated();
 	}
 
 	private GroupChat createGroupChatConnection(String groupChatName, boolean forceReconnect)
 			throws XMPPException {
-		synchronized (getLock()) {
-			WeakReference<GroupChat> ref = groupChatCache.get(groupChatName);
-			GroupChat groupChat = null;
-			if (ref != null) {
-				groupChat = ref.get();
-			}
-			boolean create = (ref == null) || (groupChat == null) || forceReconnect;
-			
-			if (forceReconnect && groupChat != null) {
-				try {
-					groupChatCache.remove(groupChatName);
-					groupChat.leave();
-				} catch (Exception e) {
-					// ignore
-				}
-			}
-			
-			if (create) {
-				groupChat = this.connection
-						.createGroupChat(groupChatName);
-				groupChat.join(this.groupChatNick);
-
-				// get rid of old messages:
-				while (groupChat.pollMessage() != null) {
-				}
-
-				new Bot(new JabberMultiUserChat(groupChat),
-						this.groupChatNick, this.hostname,
-						this.botCommandPrefix);
-
-				groupChatCache.put(groupChatName, new WeakReference<GroupChat>(groupChat));
-			}
-			return groupChat;
+		WeakReference<GroupChat> ref = groupChatCache.get(groupChatName);
+		GroupChat groupChat = null;
+		if (ref != null) {
+			groupChat = ref.get();
 		}
+		boolean create = (groupChat == null) || forceReconnect;
+		
+		if (forceReconnect && groupChat != null) {
+			try {
+				groupChatCache.remove(groupChatName);
+				groupChat.leave();
+			} catch (Exception e) {
+				// ignore
+			}
+		}
+		
+		if (create) {
+			groupChat = this.connection
+					.createGroupChat(groupChatName);
+			groupChat.join(this.groupChatNick);
+
+			// get rid of old messages:
+			while (groupChat.pollMessage() != null) {
+			}
+
+			new Bot(new JabberMultiUserChat(groupChat),
+					this.groupChatNick, this.hostname,
+					this.botCommandPrefix);
+
+			groupChatCache.put(groupChatName, new WeakReference<GroupChat>(groupChat));
+		}
+		return groupChat;
 	}
 	
 	private Chat getChat(String chatPartner, Message msg) {
@@ -270,21 +273,30 @@ class JabberIMConnection extends AbstractIMConnection {
 		Assert.isNotNull(target, "Parameter 'target' must not be null.");
 		Assert.isNotNull(text, "Parameter 'text' must not be null.");
 		try {
-			synchronized (getLock()) {
-				if (target instanceof GroupChatIMMessageTarget) {
-					createGroupChatConnection(target.toString(), false).sendMessage(
-							text);
-				} else {
-					final Chat chat = getChat(target.toString(), null);
-					chat.sendMessage(text);
-				}
-			}
-		} catch (final XMPPException dontCare) {
-			// server unavailable ? Target-host unknown ? Well. Just skip this
-			// one.
-		    LOGGER.warning(ExceptionHelper.dump(dontCare));
-			tryReconnect();
-		}
+		    // prevent long waits for lock
+            if (!tryLock(5, TimeUnit.SECONDS)) {
+                return;
+            }
+            try {
+            		if (target instanceof GroupChatIMMessageTarget) {
+            			createGroupChatConnection(target.toString(), false).sendMessage(
+            					text);
+            		} else {
+            			final Chat chat = getChat(target.toString(), null);
+            			chat.sendMessage(text);
+            		}
+            } catch (final XMPPException dontCare) {
+            	// server unavailable ? Target-host unknown ? Well. Just skip this
+            	// one.
+                LOGGER.warning(ExceptionHelper.dump(dontCare));
+            	tryReconnect();
+            } finally {
+                unlock();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            // ignore
+        }
 	}
 
 	public void setPresence(final IMPresence impresence, String statusMessage)
@@ -302,43 +314,58 @@ class JabberIMConnection extends AbstractIMConnection {
 	}
 	
 	private void sendPresence() {
-		synchronized (getLock()) {
-			if( !isConnected() ) {
-				return;
-			}
-			Presence presence;
-			switch (this.impresence) {
-			case AVAILABLE:
-				presence = new Presence(Presence.Type.AVAILABLE,
-						this.imStatusMessage, 1, Presence.Mode.AVAILABLE);
-				break;
-			
-			case OCCUPIED:
-			    presence = new Presence(Presence.Type.AVAILABLE,
-			            this.imStatusMessage, 1, Presence.Mode.AWAY);
-			    break;
-			    
-			case DND:
-			    presence = new Presence(Presence.Type.AVAILABLE,
-                        this.imStatusMessage, 1, Presence.Mode.DO_NOT_DISTURB);
-                break;
+	    
+	    try {
+	        // prevent long waits for lock
+            if (!tryLock(5, TimeUnit.SECONDS)) {
+                return;
+            }
+            try {
+            	if( !isConnected() ) {
+            		return;
+            	}
+            	Presence presence;
+            	switch (this.impresence) {
+            	case AVAILABLE:
+            		presence = new Presence(Presence.Type.AVAILABLE,
+            				this.imStatusMessage, 1, Presence.Mode.AVAILABLE);
+            		break;
+            	
+            	case OCCUPIED:
+            	    presence = new Presence(Presence.Type.AVAILABLE,
+            	            this.imStatusMessage, 1, Presence.Mode.AWAY);
+            	    break;
+            	    
+            	case DND:
+            	    presence = new Presence(Presence.Type.AVAILABLE,
+                            this.imStatusMessage, 1, Presence.Mode.DO_NOT_DISTURB);
+                    break;
 
-			case UNAVAILABLE:
-				presence = new Presence(Presence.Type.UNAVAILABLE);
-				break;
+            	case UNAVAILABLE:
+            		presence = new Presence(Presence.Type.UNAVAILABLE);
+            		break;
 
-			default:
-				throw new IllegalStateException("Don't know how to handle "
-						+ impresence);
-			}
-			this.connection.sendPacket(presence);
-		}
+            	default:
+            		throw new IllegalStateException("Don't know how to handle "
+            				+ impresence);
+            	}
+            	this.connection.sendPacket(presence);
+            } finally {
+                unlock();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            // ignore
+        }
 	}
 	
 	@Override
     protected boolean isConnected() {
-		synchronized (getLock()) {
+	    lock();
+		try {
 			return this.connection != null && this.connection.isAuthenticated();
+		} finally {
+		    unlock();
 		}
 	}
 	

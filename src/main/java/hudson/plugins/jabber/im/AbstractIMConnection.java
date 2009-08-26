@@ -10,6 +10,8 @@ import hudson.util.TimeUnit2;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
@@ -18,7 +20,7 @@ public abstract class AbstractIMConnection implements IMConnection {
 
     private static final Logger LOGGER = Logger.getLogger(AbstractIMConnection.class.getName());
     
-    private final Object connectionLock = new Object();
+    private final Lock connectionLock = new ReentrantLock();
     
     private final ConnectorRunnable connector = new ConnectorRunnable();
     
@@ -46,8 +48,16 @@ public abstract class AbstractIMConnection implements IMConnection {
     
     protected abstract boolean connect0();
     
-    protected final Object getLock() {
-        return this.connectionLock;
+    protected final void lock() {
+        this.connectionLock.lock();
+    }
+    
+    protected final boolean tryLock(long time, TimeUnit timeUnit) throws InterruptedException {
+        return this.connectionLock.tryLock(time, timeUnit);
+    }
+
+    protected final void unlock() {
+        this.connectionLock.unlock();
     }
     
     /**
@@ -171,13 +181,16 @@ public abstract class AbstractIMConnection implements IMConnection {
                     boolean success = false;
                     int timeout = 1;
                     while (!success) {
-                        synchronized (getLock()) {
+                        lock();
+                        try {
                             if (!isConnected()) {
                                 close();
                                 success = connect();
                             } else {
                                 success = true;
                             }
+                        } finally {
+                            unlock();
                         }
                         
                         // make sure to release connectionLock before sleeping!
