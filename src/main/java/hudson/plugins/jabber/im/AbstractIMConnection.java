@@ -3,6 +3,7 @@ package hudson.plugins.jabber.im;
 import hudson.model.Computer;
 import hudson.model.Executor;
 import hudson.model.Hudson;
+import hudson.model.Queue;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
@@ -71,9 +72,9 @@ public abstract class AbstractIMConnection implements IMConnection {
         updateIMStatus(null);
     }
     
-    private void updateIMStatus(Executor exec) {
+    private void updateIMStatus(Run<?, ?> run) {
         int totalExecutors = getTotalExecutors();
-        int busyExecutors = getBusyExecutors(exec);
+        int busyExecutors = getBusyExecutors(run);
         
         try {
             if (busyExecutors == 0) {
@@ -96,15 +97,15 @@ public abstract class AbstractIMConnection implements IMConnection {
         }
     }
     
-    private int getBusyExecutors(Executor exec) {
+    private int getBusyExecutors(Run<?, ?> run) {
         int busyExecutors = 0;
-        boolean stillRunningExecutorFound = (exec == null);
+        boolean stillRunningExecutorFound = (run == null);
         Computer[] computers = Hudson.getInstance().getComputers();
         for (Computer compi : computers) {
             
             for (Executor executor : compi.getExecutors()) {
                 if (executor.isBusy()) {
-                    if (isNotEqual(executor, exec)) {
+                    if (isNotEqual(executor.getCurrentExecutable(), run)) {
                         busyExecutors++;
                     } else {
                     	stillRunningExecutorFound = true;
@@ -114,7 +115,7 @@ public abstract class AbstractIMConnection implements IMConnection {
         }
         
         if (!stillRunningExecutorFound) {
-        	LOGGER.warning("Didn't find executor " + exec + " among the list of busy executors.");
+        	LOGGER.warning("Didn't find executor for run " + run + " among the list of busy executors.");
         }
         
         return busyExecutors;
@@ -129,12 +130,17 @@ public abstract class AbstractIMConnection implements IMConnection {
         return totalExecutors;
     }
         
-    private static boolean isNotEqual(Executor executor, Executor exec) {
-        if (exec == null) {
+    private static boolean isNotEqual(Queue.Executable executable, Run<?, ?> run) {
+        if (run == null) {
             return true;
         }
-        return !(executor.getOwner().equals(exec.getOwner())
-            && executor.getNumber() == exec.getNumber());
+        
+        if (executable instanceof Run<?, ?>) {
+        	return !((Run<?, ?>)executable).getId().equals(run.getId());
+        } else {
+        	// don't know if that would work:
+        	return !executable.equals(run);
+        }
     }
     
     protected abstract boolean isConnected();
@@ -160,10 +166,15 @@ public abstract class AbstractIMConnection implements IMConnection {
         @Override
         public void onCompleted(Run r, TaskListener listener) {
             // the executor of 'r' is still busy, we have to take that into account!
-            updateIMStatus(r.getExecutor());
+            updateIMStatus(r);
         }
 
-        @Override
+//        @Override
+//		public void onFinalized(Run r) {
+//			updateIMStatus(null);
+//		}
+
+		@Override
         public void onDeleted(Run r) {
             updateIMStatus(null);
         }
@@ -172,6 +183,8 @@ public abstract class AbstractIMConnection implements IMConnection {
         public void onStarted(Run r, TaskListener listener) {
             updateIMStatus(null);
         }
+        
+        
     }
     
     private final class ConnectorRunnable implements Runnable {
