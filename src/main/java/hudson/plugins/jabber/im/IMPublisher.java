@@ -233,7 +233,7 @@ public abstract class IMPublisher extends Notifier implements BuildStep
 			}
 		} catch (Throwable t) {
 			// ignore: never, ever cancel a build because a notification fails
-                        buildListener.getLogger().append("There was an Error in the Jabber plugin: " + t.toString() + "\n");
+            buildListener.getLogger().append("There was an Error in the Jabber plugin: " + t.toString() + "\n");
 		}
 		return true;
 	}
@@ -251,11 +251,11 @@ public abstract class IMPublisher extends Notifier implements BuildStep
 		} catch (IMException e) {
 			// ignore
 		}
-		LOGGER.info("Default Suffix: " + defaultSuffix);
+		LOGGER.fine("Default Suffix: " + defaultSuffix);
 		
 		if (changeLogSet != null && (! changeLogSet.isEmptySet())) {
 			for (Entry e : changeLogSet) {
-				LOGGER.info("Possible target: " + e.getAuthor().getId() + " " + e.getAuthor().getDisplayName());
+				LOGGER.fine("Possible target: " + e.getAuthor().getId());
                 String jabberId = null;
 				JabberUserProperty jabberUserProperty = (JabberUserProperty) e.getAuthor().getProperties().get(JabberUserProperty.DESCRIPTOR);
 				if ((jabberUserProperty != null) && (jabberUserProperty.getJid() != null)) {

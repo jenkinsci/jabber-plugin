@@ -1,5 +1,6 @@
 package hudson.plugins.jabber.im.transport;
 
+import hudson.Extension;
 import hudson.plugins.jabber.im.DefaultIMMessageTarget;
 import hudson.plugins.jabber.im.DefaultIMMessageTargetConverter;
 import hudson.plugins.jabber.im.GroupChatIMMessageTarget;
@@ -61,7 +62,8 @@ public class JabberPublisher extends IMPublisher
             }
         }
     }
-    static final JabberPublisherDescriptor DESCRIPTOR = new JabberPublisherDescriptor();
+    @Extension
+    public static final JabberPublisherDescriptor DESCRIPTOR = new JabberPublisherDescriptor();
 
     private static final IMMessageTargetConverter CONVERTER = new JabberIMMessageTargetConverter();
 

@@ -81,13 +81,13 @@ public abstract class AbstractIMConnection implements IMConnection {
             } else if (busyExecutors == totalExecutors) {
                 setPresence(IMPresence.DND, 
                         "Please give me some rest! All " + totalExecutors + " executors are busy, "
-                        + Hudson.getInstance().getQueue().getItems().length + " jobs in queue.");
+                        + Hudson.getInstance().getQueue().getItems().length + " job(s) in queue.");
             } else {
                 String msg = "Working: " + busyExecutors + " out of " + totalExecutors +
                     " executors are busy.";
                 int queueItems = Hudson.getInstance().getQueue().getItems().length;
                 if (queueItems > 0) {
-                    msg += " " + queueItems + " jobs in queue.";
+                    msg += " " + queueItems + " job(s) in queue.";
                 }
                 setPresence(IMPresence.OCCUPIED, msg);
             }
@@ -98,6 +98,7 @@ public abstract class AbstractIMConnection implements IMConnection {
     
     private int getBusyExecutors(Executor exec) {
         int busyExecutors = 0;
+        boolean stillRunningExecutorFound = (exec == null);
         Computer[] computers = Hudson.getInstance().getComputers();
         for (Computer compi : computers) {
             
@@ -105,9 +106,15 @@ public abstract class AbstractIMConnection implements IMConnection {
                 if (executor.isBusy()) {
                     if (isNotEqual(executor, exec)) {
                         busyExecutors++;
+                    } else {
+                    	stillRunningExecutorFound = true;
                     }
                 }
             }
+        }
+        
+        if (!stillRunningExecutorFound) {
+        	LOGGER.warning("Didn't find executor " + exec + " among the list of busy executors.");
         }
         
         return busyExecutors;
@@ -133,8 +140,10 @@ public abstract class AbstractIMConnection implements IMConnection {
     protected abstract boolean isConnected();
     
     public final void close() {
-        this.connectorThread.interrupt();
-        this.connectorThread = null;
+    	if (this.connectorThread != null) {
+	        this.connectorThread.interrupt();
+	        this.connectorThread = null;
+    	}
         this.busyListener.unregister();
     }
     

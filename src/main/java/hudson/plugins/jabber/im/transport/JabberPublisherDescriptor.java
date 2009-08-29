@@ -3,7 +3,6 @@
  */
 package hudson.plugins.jabber.im.transport;
 
-import hudson.Extension;
 import hudson.Util;
 import hudson.model.AbstractProject;
 import hudson.model.Hudson;
@@ -30,7 +29,6 @@ import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-@Extension
 public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> implements IMPublisherDescriptor
 {
     private static final Logger LOGGER = Logger.getLogger(JabberPublisherDescriptor.class.getName());
