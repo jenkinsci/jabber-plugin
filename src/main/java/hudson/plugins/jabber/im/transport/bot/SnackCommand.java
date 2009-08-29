@@ -33,7 +33,7 @@ public class SnackCommand extends AbstractTextSendingCommand {
 	protected String getReply(String sender, String[] args) {
         String snack = null;
         if (args.length > 1) {
-            snack = StringUtils.join(MessageHelper.copyOfRange(args, 1, args.length, String[].class), " ");
+            snack = StringUtils.join(MessageHelper.copyOfRange(args, 1, args.length), " ");
         }
 
         StringBuilder msg = new StringBuilder(sender).append(": ");

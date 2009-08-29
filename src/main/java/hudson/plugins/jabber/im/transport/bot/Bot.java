@@ -7,11 +7,14 @@ import hudson.plugins.jabber.im.IMChat;
 import hudson.plugins.jabber.im.IMException;
 import hudson.plugins.jabber.im.IMMessage;
 import hudson.plugins.jabber.im.IMMessageListener;
+import hudson.plugins.jabber.im.transport.bot.SetAliasCommand.AliasCommand;
 import hudson.plugins.jabber.tools.ExceptionHelper;
 import hudson.plugins.jabber.tools.MessageHelper;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
@@ -31,15 +34,13 @@ public class Bot implements IMMessageListener {
 	private static final BotCommand SNACK_COMMAND = new SnackCommand();
 	private static final BotCommand TESTRESULTS_COMMAND =  new TestResultCommand();
 	private static final BotCommand ABORT_COMMAND = new AbortCommand();
-	private static final BotCommand HELP_COMMAND = new BotCommand() {
+	private final BotCommand HELP_COMMAND = new BotCommand() {
 
 		public void executeCommand(IMChat groupChat, IMMessage message,
 				String sender, String[] args) throws IMException {
 			if (HELP_CACHE == null) {
-				final StringBuffer msg = new StringBuffer();
-				msg.append("Available commands:");
-				for (final Entry<String, BotCommand> item : COMMAND_MAP
-						.entrySet()) {
+				final StringBuilder msg = new StringBuilder("Available commands:");
+				for (final Entry<String, BotCommand> item : cmdsAndAliases.entrySet()) {
 					// skip myself
 					if ((item.getValue() != this)
 							&& (item.getValue().getHelp() != null)) {
@@ -59,12 +60,11 @@ public class Bot implements IMMessageListener {
 
 	};
 
-	private static String HELP_CACHE = null;
+	private String HELP_CACHE = null;
 	private static final Map<String, BotCommand> COMMAND_MAP;
 
 	static {
 		COMMAND_MAP = new HashMap<String, BotCommand>();
-		COMMAND_MAP.put("help", HELP_COMMAND);
 		COMMAND_MAP.put("status", STATUS_COMMAND);
 		COMMAND_MAP.put("s", STATUS_COMMAND);
         COMMAND_MAP.put("health", HEALTH_COMMAND);
@@ -76,6 +76,8 @@ public class Bot implements IMMessageListener {
 		COMMAND_MAP.put("abort", ABORT_COMMAND);
 		COMMAND_MAP.put("botsnack", SNACK_COMMAND);
 	}
+	
+	private final SortedMap<String, BotCommand> cmdsAndAliases = new TreeMap<String, BotCommand>();
 
 	private final IMChat chat;
 	private final String nick;
@@ -91,6 +93,10 @@ public class Bot implements IMMessageListener {
 		this.BUILD_COMMAND  = new BuildCommand(this.nick + "@" + this.jabberServer);
 		COMMAND_MAP.put("build", BUILD_COMMAND);
 		COMMAND_MAP.put("schedule", BUILD_COMMAND);
+		COMMAND_MAP.put("help", HELP_COMMAND);
+		COMMAND_MAP.put("alias", new SetAliasCommand(this));
+		
+		this.cmdsAndAliases.putAll(COMMAND_MAP);
 		
 		chat.addMessageListener(this);
 		
@@ -126,9 +132,9 @@ public class Bot implements IMMessageListener {
                     sender = this.chat.getNickName(sender);
                 }
                 try {
-                    if (COMMAND_MAP.containsKey(cmd)) {
-                        BotCommand command = COMMAND_MAP.get(cmd);
-                        command.executeCommand(
+                	BotCommand command = this.cmdsAndAliases.get(cmd);
+                    if (command != null) {
+                    	command.executeCommand(
                                 this.chat, msg, sender,
                                 args);
                         
@@ -164,5 +170,59 @@ public class Bot implements IMMessageListener {
 
 		return null;
 	}
-
+	
+	/**
+	 * Returns the command or alias associated with the given name
+	 * or <code>null</code>.
+	 */
+	BotCommand getCommand(String name) {
+		return this.cmdsAndAliases.get(name);
+	}
+	
+	/**
+	 * Registers a new alias.
+	 * 
+	 * @return the alias previously registered under this name or <code>null</code>
+	 * if no alias was registered by that name previously
+	 * @throws IllegalArgumentException when trying to override a built-in command
+	 */
+	BotCommand addAlias(String name, BotCommand alias) {
+		BotCommand old = this.cmdsAndAliases.get(name);
+		if (old != null && ! (old instanceof AliasCommand)) {
+			throw new IllegalArgumentException("Won't override built-in command: '" + name + "'!");
+		}
+		
+		this.cmdsAndAliases.put(name, alias);
+		this.HELP_CACHE = null;
+		return old;
+	}
+	
+	/**
+	 * Removes an existing alias.
+	 *
+	 * @param name The name of the alias
+	 * @return the removed alias or <code>null</code> if no alias by that name is registered
+	 */
+	AliasCommand removeAlias(String name) {
+		BotCommand alias = this.cmdsAndAliases.get(name);
+		if (alias instanceof AliasCommand) {
+			this.cmdsAndAliases.remove(name);
+			return (AliasCommand) alias;
+		}
+		return null;
+	}
+	
+	/**
+	 * Returns a map of all currently defined aliases.
+	 * The map is sorted by the alias name.
+	 */
+	SortedMap<String, AliasCommand> getAliases() {
+		SortedMap<String, AliasCommand> result = new TreeMap<String, AliasCommand>();
+		for (Map.Entry<String, BotCommand> entry : this.cmdsAndAliases.entrySet()) {
+			if (entry.getValue() instanceof AliasCommand) {
+				result.put(entry.getKey(), (AliasCommand) entry.getValue());
+			}
+		}
+		return result;
+	}
 }

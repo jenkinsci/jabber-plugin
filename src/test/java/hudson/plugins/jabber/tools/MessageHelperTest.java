@@ -2,6 +2,7 @@ package hudson.plugins.jabber.tools;
 
 import static org.junit.Assert.assertEquals;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.jvnet.hudson.test.Bug;
 
@@ -46,5 +47,18 @@ public class MessageHelperTest {
 	    cmdLine = "a b\"";
         assertEquals(2, MessageHelper.extractCommandLine(cmdLine).length);
         assertEquals("b\"", MessageHelper.extractCommandLine(cmdLine)[1]);
+	}
+	
+	@Test
+	public void testConcat() {
+		String[] a = {"a"};
+		String[] b = {"b"};
+		String[] c = {"c"};
+		
+		String[] concat = MessageHelper.concat(a, b, c);
+		Assert.assertArrayEquals(new String[] {"a", "b", "c"}, concat);
+		
+		concat = MessageHelper.concat(a);
+		Assert.assertArrayEquals(a, concat);
 	}
 }

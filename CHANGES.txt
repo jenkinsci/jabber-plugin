@@ -1,19 +1,2 @@
-0.10
-====
--
-
-0.9
-===
-
-Bot:
-- status command can show all jobs for a view (-v <view>)
-- new 'health' command
-- botsnack command massively improved ;-)
-- bot now also works in single-user chat [HUDSON-4057]
-
-General:
-- reconnection thread to automatically reconnect
-- new notification strategy: "fails and fixes"
-- default suffix for Jabber IDs. When entered Jabber IDs can be inferred from Hudson user ids
-I.e. Jabber ID = <hudson_id><extension> [HUDSON-1527]
-- lots of refactorings and code clean up
+Please see Wiki for changes:
+http://wiki.hudson-ci.org/display/HUDSON/Jabber+Plugin#JabberPlugin-Changelog
