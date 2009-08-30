@@ -12,6 +12,19 @@
     <name>Hudson Jabber notifier plugin</name>
     <version>0.12-SNAPSHOT</version>
     <url>http://wiki.hudson-ci.org/display/HUDSON/Jabber+Plugin</url>
+    <developers>
+        <developer>
+          <id>rtyler</id>
+          <name>R. Tyler Ballance</name>
+          <email>tyler@slide.com</email>
+          <timezone>-8</timezone>
+        </developer>
+        <developer>
+            <id>kutzi</id>
+            <name>Christoph Kutzinski</name>
+            <email>kutzi@gmx.de</email>
+        </developer>
+    </developers>
     
     <dependencies>
         <dependency>
