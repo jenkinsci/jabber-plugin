@@ -138,8 +138,8 @@ public abstract class AbstractIMConnection implements IMConnection {
         if (executable instanceof Run<?, ?>) {
         	return !((Run<?, ?>)executable).getId().equals(run.getId());
         } else {
-        	// don't know if that would work:
-        	return !executable.equals(run);
+        	// can never be equal
+        	return false;
         }
     }
     

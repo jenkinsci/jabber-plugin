@@ -33,6 +33,14 @@ public class BuildHelper {
     }
 
     /**
+     * Does what the name says.
+     */
+    public static boolean isFailureOrUnstable(AbstractBuild<?,?> build) {
+    	return build.getResult() == Result.FAILURE
+    		|| build.getResult() == Result.UNSTABLE;
+    }
+
+    /**
      * Returns the previous 'completed' (i.e. ignores ABORTED and NOT_BUILT builds)
      * or null.
      */

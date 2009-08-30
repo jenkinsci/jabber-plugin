@@ -12,8 +12,11 @@
   <f:entry title="Notify on build starts" description="Whether to send notifications to group chats when a build starts">
     <f:checkbox name="${descriptor.PARAMETERNAME_NOTIFY_START}" checked="${instance.notifyOnStart}"/>
   </f:entry>
-  <f:entry title="Notify SCM suspects" description="Whether to send notifications to the users that are suspected of having broken the build">
+  <f:entry title="Notify SCM committers" description="Whether to send notifications to the users that are suspected of having broken this build">
     <f:checkbox name="${descriptor.PARAMETERNAME_NOTIFY_SUSPECTS}" checked="${instance.notifySuspects}"/>
+  </f:entry>
+  <f:entry title="Notify SCM culprits" description="Also send notifications to 'culprits' from previous unstable/failed builds">
+    <f:checkbox name="${descriptor.PARAMETERNAME_NOTIFY_CULPRITS}" checked="${instance.notifyCulprits}"/>
   </f:entry>
   <f:entry title="Notify SCM fixers" description="Whether to send notifications to the users that have fixed a broken build">
     <f:checkbox name="${descriptor.PARAMETERNAME_NOTIFY_FIXERS}" checked="${instance.notifyFixers}"/>

@@ -45,6 +45,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public static final String PARAMETERNAME_STRATEGY = JabberPublisherDescriptor.PREFIX + "strategy";
     public static final String PARAMETERNAME_NOTIFY_START = JabberPublisherDescriptor.PREFIX + "notifyStart";
     public static final String PARAMETERNAME_NOTIFY_SUSPECTS = JabberPublisherDescriptor.PREFIX + "notifySuspects";
+    public static final String PARAMETERNAME_NOTIFY_CULPRITS = JabberPublisherDescriptor.PREFIX + "notifyCulprits";
     public static final String PARAMETERNAME_NOTIFY_FIXERS = JabberPublisherDescriptor.PREFIX + "notifyFixers";
     public static final String PARAMETERNAME_INITIAL_GROUPCHATS = JabberPublisherDescriptor.PREFIX + "initialGroupChats";
     public static final String PARAMETERNAME_COMMAND_PREFIX = JabberPublisherDescriptor.PREFIX + "commandPrefix";
@@ -299,15 +300,14 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         		n = PARAMETERVALUE_STRATEGY_DEFAULT;
         	}
         }
-        final String s = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_NOTIFY_START);
-        final String ns = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_NOTIFY_SUSPECTS);
-        final String nf = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_NOTIFY_FIXERS);
+        boolean notifyStart = "on".equals(req.getParameter(PARAMETERNAME_NOTIFY_START));
+        boolean notifySuspects = "on".equals(req.getParameter(PARAMETERNAME_NOTIFY_SUSPECTS));
+        boolean notifyCulprits = "on".equals(req.getParameter(PARAMETERNAME_NOTIFY_CULPRITS));
+        boolean notifyFixers = "on".equals(req.getParameter(PARAMETERNAME_NOTIFY_FIXERS));
         try
         {
-            return new JabberPublisher(t, n,
-            		(s != null && "on".equals(s)),
-            		(ns != null && "on".equals(ns)),
-            		(nf != null && "on".equals(nf)));
+            return new JabberPublisher(t, n, notifyStart, notifySuspects, notifyCulprits,
+            		notifyFixers);
         }
         catch (final IMMessageTargetConversionException e)
         {
