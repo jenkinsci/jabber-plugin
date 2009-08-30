@@ -11,9 +11,9 @@ import hudson.model.UserPropertyDescriptor;
  * Jabber user property.
  * @author Pascal Bleser
  */
-@Extension
 public class JabberUserProperty extends UserProperty {
-	
+
+	@Extension
 	public static final JabberUserPropertyDescriptor DESCRIPTOR = new JabberUserPropertyDescriptor();
 
 	private String jid;
