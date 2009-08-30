@@ -18,7 +18,6 @@ import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -76,6 +75,11 @@ public abstract class IMPublisher extends Notifier implements BuildStep
         this.notifyFixers = notifyFixers;
     }
     
+    /**
+     * Returns a short name of the plugin to be used e.g. in log messages.
+     */
+    protected abstract String getPluginName();
+    
     protected abstract IMConnection getIMConnection() throws IMException;
 
     protected IMMessageTargetConverter getIMMessageTargetConverter()
@@ -126,6 +130,10 @@ public abstract class IMPublisher extends Notifier implements BuildStep
     public final boolean getNotifyFixers() {
     	return notifyFixers;
     }
+    
+    protected void log(BuildListener listener, String message) {
+    	listener.getLogger().append(getPluginName()).append(": ").append(message).append("\n");
+    }
 
     @Override
     public boolean perform(final AbstractBuild<?,?> build, final Launcher launcher, final BuildListener buildListener)
@@ -138,43 +146,43 @@ public abstract class IMPublisher extends Notifier implements BuildStep
         }
 
         if (this.notifySuspects && BuildHelper.isFailureOrUnstable(build)) {
-        	LOGGER.info("Notifying suspects");
+        	log(buildListener, "Notifying suspects");
         	final String message = "Oh no! You're suspected of having broken " + build.getProject().getName() + ": " + MessageHelper.getBuildURL(build);
         	
-        	for (IMMessageTarget target : calculateIMTargets(getCommitters(build), buildListener.getLogger())) {
+        	for (IMMessageTarget target : calculateIMTargets(getCommitters(build), buildListener)) {
         		try {
-        			buildListener.getLogger().append("Sending notification to suspect: " + target.toString() + "\n");
+        			log(buildListener, "Sending notification to suspect: " + target.toString());
         			getIMConnection().send(target, message);
         		} catch (final Throwable e) {
-        			buildListener.getLogger().append("There was an error sending suspect notification to: " + target.toString() + "\n");
+        			log(buildListener, "There was an error sending suspect notification to: " + target.toString());
         		}
         	}
         }
         
         if (this.notifyCulprits && BuildHelper.isFailureOrUnstable(build)) {
-        	LOGGER.info("Notifying culprits");
+        	log(buildListener, "Notifying culprits");
         	final String message = "You're still being suspected of having broken " + build.getProject().getName() + ": " + MessageHelper.getBuildURL(build);
         	
-        	for (IMMessageTarget target : calculateIMTargets(getCulpritsOnly(build), buildListener.getLogger())) {
+        	for (IMMessageTarget target : calculateIMTargets(getCulpritsOnly(build), buildListener)) {
         		try {
-        			buildListener.getLogger().append("Sending notification to culprit: " + target.toString() + "\n");
+        			log(buildListener, "Sending notification to culprit: " + target.toString());
         			getIMConnection().send(target, message);
         		} catch (final Throwable e) {
-        			buildListener.getLogger().append("There was an error sending suspect notification to: " + target.toString() + "\n");
+        			log(buildListener, "There was an error sending suspect notification to: " + target.toString());
         		}
         	}
         }
         
         if (this.notifyFixers && BuildHelper.isFix(build)) {
-        	LOGGER.info("Notifying fixers");
+        	buildListener.getLogger().append("Notifying fixers\n");
         	final String message = "Yippie! Seems you've fixed " + build.getProject().getName() + ": " + MessageHelper.getBuildURL(build);
         	
-        	for (IMMessageTarget target : calculateIMTargets(getCommitters(build), buildListener.getLogger())) {
+        	for (IMMessageTarget target : calculateIMTargets(getCommitters(build), buildListener)) {
         		try {
-        			buildListener.getLogger().append("Sending notification to fixer: " + target.toString() + "\n");
+        			log(buildListener, "Sending notification to fixer: " + target.toString());
         			getIMConnection().send(target, message);
         		} catch (final Throwable e) {
-        			buildListener.getLogger().append("There was an error sending fixer notification to: " + target.toString() + "\n");
+        			log(buildListener, "There was an error sending fixer notification to: " + target.toString());
         		}
         	}
         }
@@ -215,12 +223,12 @@ public abstract class IMPublisher extends Notifier implements BuildStep
 		{
 		    try
 		    {
-		        buildListener.getLogger().append("Sending notification to: " + target.toString() + "\n");
+		        log(buildListener, "Sending notification to: " + target.toString());
 		        getIMConnection().send(target, msg);
 		    }
 		    catch (final Throwable e)
 		    {
-		        buildListener.getLogger().append("There was an error sending notification to: " + target.toString() + "\n");
+		        log(buildListener, "There was an error sending notification to: " + target.toString());
 		    }
 		}
 	}
@@ -250,14 +258,14 @@ public abstract class IMPublisher extends Notifier implements BuildStep
 		                try {
 		                    getIMConnection().send(target, msg);
 		                } catch (final Throwable e) {
-		                    buildListener.getLogger().append("There was an error sending notification to: " + target.toString() + "\n");
+		                    log(buildListener, "There was an error sending notification to: " + target.toString());
 		                }
 					}
 	            }
 			}
 		} catch (Throwable t) {
 			// ignore: never, ever cancel a build because a notification fails
-            buildListener.getLogger().append("There was an error in the Jabber plugin: " + t.toString() + "\n");
+            log(buildListener, "There was an error in the Jabber plugin: " + t.toString());
 		}
 		return true;
 	}
@@ -280,7 +288,7 @@ public abstract class IMPublisher extends Notifier implements BuildStep
 		return culprits;
 	}
 	
-	private Collection<IMMessageTarget> calculateIMTargets(Set<User> targets, PrintStream logger) {
+	private Collection<IMMessageTarget> calculateIMTargets(Set<User> targets, BuildListener listener) {
 		Set<IMMessageTarget> suspects = new HashSet<IMMessageTarget>();
 		
 		String defaultSuffix = null;
@@ -308,10 +316,10 @@ public abstract class IMPublisher extends Notifier implements BuildStep
                 try {
                     suspects.add(CONVERTER.fromString(jabberId));
                 } catch (final IMMessageTargetConversionException e) {
-                    logger.append("Invalid Jabber ID: " + jabberId + "\n");
+                    log(listener, "Invalid Jabber ID: " + jabberId);
                 }
             } else {
-            	logger.append("No Jabber ID found for: " + target.getId() + "\n");
+            	log(listener, "No Jabber ID found for: " + target.getId());
             }
 		}
 		return suspects;

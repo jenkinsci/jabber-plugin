@@ -95,6 +95,13 @@ public class JabberPublisher extends IMPublisher
         return JabberPublisher.CONVERTER;
     }
 
+	@Override
+	protected String getPluginName() {
+		return "Jabber notifier plugin";
+	}
+    
+    
+
     // since Hudson 1.319:
 //	public BuildStepMonitor getRequiredMonitorService() {
 //		return BuildStepMonitor.BUILD;
