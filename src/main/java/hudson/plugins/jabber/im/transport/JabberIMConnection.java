@@ -14,8 +14,10 @@ import hudson.plugins.jabber.tools.ExceptionHelper;
 
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -52,6 +54,7 @@ class JabberIMConnection extends AbstractIMConnection {
 
 	private final Map<String, WeakReference<GroupChat>> groupChatCache = new HashMap<String, WeakReference<GroupChat>>();
 	private final Map<String, WeakReference<Chat>> chatCache = new HashMap<String, WeakReference<Chat>>();
+	private final Set<Bot> bots = new HashSet<Bot>();
 	private final String passwd;
 	private final String botCommandPrefix;
 	/**
@@ -100,8 +103,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.defaultIdSuffix = desc.getDefaultIdSuffix();
 	}
 
-	@Override
-	protected boolean connect0() {
+	public boolean connect() {
 	    lock();
 	    try {
 			try {
@@ -111,10 +113,11 @@ class JabberIMConnection extends AbstractIMConnection {
 			
 						updateIMStatus();
 						
+						groupChatCache.clear();
 						for (String groupChatName : this.groupChats) {
 							try {
 								groupChatName = groupChatName.trim();
-								createGroupChatConnection(groupChatName, true);
+								getGroupChat(groupChatName);
 								LOGGER.info("Joined groupchat " + groupChatName);
 							} catch (XMPPException e) {
 								// if we got here, the XMPP connection could be established, but probably the groupchat name
@@ -139,8 +142,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 	}
 
-	@Override
-    protected void close0() {
+    public void close() {
 	    lock();
 	    try {
 			try {
@@ -152,6 +154,7 @@ class JabberIMConnection extends AbstractIMConnection {
 						}
 					}
 					this.groupChatCache.clear();
+					// there seems to be no way to leave a 1-on-1 chat with Smack
 					this.chatCache.clear();
 					this.connection.close();
 				}
@@ -162,6 +165,15 @@ class JabberIMConnection extends AbstractIMConnection {
 		    unlock();
 		}
 	}
+
+    public void shutdown() {
+    	for (Bot bot : this.bots) {
+    		bot.shutdown();
+    	}
+    	close();
+    	
+    	super.shutdown();
+    }
 
 	private boolean createConnection() throws XMPPException {
 		if (this.connection != null) {
@@ -210,36 +222,26 @@ class JabberIMConnection extends AbstractIMConnection {
 		return this.connection.isAuthenticated();
 	}
 
-	private GroupChat createGroupChatConnection(String groupChatName, boolean forceReconnect)
+	private GroupChat getGroupChat(String groupChatName)
 			throws XMPPException {
 		WeakReference<GroupChat> ref = groupChatCache.get(groupChatName);
 		GroupChat groupChat = null;
 		if (ref != null) {
 			groupChat = ref.get();
 		}
-		boolean create = (groupChat == null) || forceReconnect;
-		
-		if (forceReconnect && groupChat != null) {
-			try {
-				groupChatCache.remove(groupChatName);
-				groupChat.leave();
-			} catch (Exception e) {
-				// ignore
-			}
-		}
+		boolean create = (groupChat == null);
 		
 		if (create) {
-			groupChat = this.connection
-					.createGroupChat(groupChatName);
+			groupChat = this.connection.createGroupChat(groupChatName);
 			groupChat.join(this.groupChatNick);
 
 			// get rid of old messages:
 			while (groupChat.pollMessage() != null) {
 			}
 
-			new Bot(new JabberMultiUserChat(groupChat),
+			this.bots.add(new Bot(new JabberMultiUserChat(groupChat),
 					this.groupChatNick, this.hostname,
-					this.botCommandPrefix);
+					this.botCommandPrefix));
 
 			groupChatCache.put(groupChatName, new WeakReference<GroupChat>(groupChat));
 		}
@@ -259,6 +261,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		final Chat chat = this.connection.createChat(chatPartner);
 		Bot bot = new Bot(new JabberChat(chat), this.groupChatNick,
 				this.hostname, this.botCommandPrefix);
+		this.bots.add(bot);
 		
 		if (msg != null) {
 			// replay original message:
@@ -279,7 +282,7 @@ class JabberIMConnection extends AbstractIMConnection {
             }
             try {
             		if (target instanceof GroupChatIMMessageTarget) {
-            			createGroupChatConnection(target.toString(), false).sendMessage(
+            			getGroupChat(target.toString()).sendMessage(
             					text);
             		} else {
             			final Chat chat = getChat(target.toString(), null);

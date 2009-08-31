@@ -35,7 +35,12 @@ public class JabberMultiUserChat implements IMChat {
         this.chat.addMessageListener(new JabberMessageListenerAdapter(listener));
     }
 
-    public boolean isMultiUserChat() {
+    public void removeMessageListener(IMMessageListener listener) {
+    	// doesn't work out-of the box with Smack
+    	// We would need to access the underlying connection to remove the packetListener
+	}
+
+	public boolean isMultiUserChat() {
         return true;
     }
 }

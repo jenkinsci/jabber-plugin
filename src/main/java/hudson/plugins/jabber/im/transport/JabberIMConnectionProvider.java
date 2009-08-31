@@ -32,7 +32,7 @@ final class JabberIMConnectionProvider
         releaseConnection();
 
         this.imConnection = new JabberIMConnection(desc);
-        this.imConnection.connect();
+        this.imConnection.init();
         return this.imConnection;
     }
 
@@ -42,6 +42,10 @@ final class JabberIMConnectionProvider
     synchronized IMConnection currentConnection() throws IMException
     {
         return this.imConnection != null ? this.imConnection : createConnection(this.descriptor);
+    }
+
+    synchronized IMConnection currentConnectionOrNull() {
+    	return this.imConnection;
     }
 
     /**

@@ -23,11 +23,18 @@ public class JabberPublisher extends IMPublisher
     {
         private void checkValidity(final String f) throws IMMessageTargetConversionException
         {
-            // @TODO just as a demonstration.
+        	// See: http://xmpp.org/rfcs/rfc3920.html#addressing
+        	// obviously, there is no easy regexp to validate this.
+        	// Additionally, we require the part before the @.
+            // So, just some very simple validation:
             final int i = f.indexOf('@');
-            if (f.indexOf('@', i + 1) > -1)
+            if (i == -1) {
+            	throw new IMMessageTargetConversionException("Invalid input for target: '" + f + "'." +
+            			"\nDoesn't contain a @.");
+            } else if (f.indexOf('@', i + 1) != -1)
             {
-                throw new IMMessageTargetConversionException("Invalid input for target: '" + f + "'");
+                throw new IMMessageTargetConversionException("Invalid input for target: '" + f + "'." +
+                		"\nContains more than on @.");
             }
         }
 

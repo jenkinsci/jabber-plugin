@@ -23,6 +23,7 @@
             <id>kutzi</id>
             <name>Christoph Kutzinski</name>
             <email>kutzi@gmx.de</email>
+            <timezone>1</timezone>
         </developer>
     </developers>
     

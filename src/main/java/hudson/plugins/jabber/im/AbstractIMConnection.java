@@ -37,17 +37,24 @@ public abstract class AbstractIMConnection implements IMConnection {
         this.busyListener = new BusyListener();
     }
     
-    public final boolean connect() {
-        boolean result = connect0();
-        if (StringUtils.isNotBlank(desc.getHost())) {
+    public final void init() {
+    	if (StringUtils.isNotBlank(desc.getHost())) {
+    		// TODO: busyListener and especially reconnection thread
+    		// don't really belong here. They should be moved to
+    		// ConnectionProvider o.s.l.t.
             this.busyListener.register();
             connectorThread = new Thread(connector, "IM-ConnectorThread");
             connectorThread.start();
+            tryReconnect();
         }
-        return result;
     }
     
-    protected abstract boolean connect0();
+    public void shutdown() {
+    	this.busyListener.unregister();
+    	if (this.connectorThread != null) {
+    		this.connectorThread.interrupt();
+    	}
+    }
     
     protected final void lock() {
         this.connectionLock.lock();
@@ -145,16 +152,6 @@ public abstract class AbstractIMConnection implements IMConnection {
     
     protected abstract boolean isConnected();
     
-    public final void close() {
-    	if (this.connectorThread != null) {
-	        this.connectorThread.interrupt();
-	        this.connectorThread = null;
-    	}
-        this.busyListener.unregister();
-    }
-    
-    protected abstract void close0();
-    
     @SuppressWarnings("unchecked")
     public final class BusyListener extends RunListener<Run> {
 
@@ -191,14 +188,21 @@ public abstract class AbstractIMConnection implements IMConnection {
 
         private final Semaphore semaphore = new Semaphore(0);
         
+        private boolean firstConnect = true;
+        
         public void run() {
             try {
                 while (true) {
                     this.semaphore.acquire();
                     
-                    LOGGER.info("Trying to reconnect");
-                    // wait a little bit in case the XMPP server/network has just a 'hickup'
-                    TimeUnit.SECONDS.sleep(30);
+                    if (!firstConnect) {
+                    	// wait a little bit in case the XMPP server/network has just a 'hickup'
+                    	TimeUnit.SECONDS.sleep(30);
+                    	LOGGER.info("Trying to reconnect");
+                    } else {
+                    	firstConnect = false;
+                    	LOGGER.info("Trying to connect");
+                    }
                     
                     boolean success = false;
                     int timeout = 1;

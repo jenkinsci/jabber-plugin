@@ -7,8 +7,13 @@ package hudson.plugins.jabber.im;
  */
 public interface IMConnection
 {
+	/**
+	 * Init i.e. starts asynchronous connection attempt.
+	 */
+	void init();
+	
     /**
-     * Establish the connection an login.
+     * Establish the connection and login.
      */
     boolean connect();
     
@@ -16,6 +21,12 @@ public interface IMConnection
      * Closes the connection (includes logout) and releases resources. 
      */
     void close();
+    
+    /**
+     * Called on shutdown.
+     * close() is NOT called additionally!
+     */
+    void shutdown();
 
     /**
      * Sends a Message-Text to an IMMessageTarget (aka a User ;).

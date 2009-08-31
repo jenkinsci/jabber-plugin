@@ -27,18 +27,18 @@ public class Bot implements IMMessageListener {
 
 	private static final Logger LOGGER = Logger.getLogger(Bot.class.getName());
 
-	private final BotCommand BUILD_COMMAND;
 	private static final BotCommand STATUS_COMMAND = new StatusCommand();
     private static final BotCommand HEALTH_COMMAND = new HealthCommand();
 	private static final BotCommand QUEUE_COMMAND = new QueueCommand();
 	private static final BotCommand SNACK_COMMAND = new SnackCommand();
 	private static final BotCommand TESTRESULTS_COMMAND =  new TestResultCommand();
 	private static final BotCommand ABORT_COMMAND = new AbortCommand();
-	private final BotCommand HELP_COMMAND = new BotCommand() {
+
+	private class HelpCommand implements BotCommand {
 
 		public void executeCommand(IMChat groupChat, IMMessage message,
 				String sender, String[] args) throws IMException {
-			if (HELP_CACHE == null) {
+			if (helpCache == null) {
 				final StringBuilder msg = new StringBuilder("Available commands:");
 				for (final Entry<String, BotCommand> item : cmdsAndAliases.entrySet()) {
 					// skip myself
@@ -49,9 +49,9 @@ public class Bot implements IMMessageListener {
 						msg.append(item.getValue().getHelp());
 					}
 				}
-				HELP_CACHE = msg.toString();
+				helpCache = msg.toString();
 			}
-			groupChat.sendMessage(HELP_CACHE);
+			groupChat.sendMessage(helpCache);
 		}
 
 		public String getHelp() {
@@ -60,7 +60,6 @@ public class Bot implements IMMessageListener {
 
 	};
 
-	private String HELP_CACHE = null;
 	private static final Map<String, BotCommand> COMMAND_MAP;
 
 	static {
@@ -83,6 +82,7 @@ public class Bot implements IMMessageListener {
 	private final String nick;
 	private final String jabberServer;
 	private final String commandPrefix;
+	private String helpCache = null;
 
 	public Bot(final IMChat chat, final String nick, final String jabberServer,
 			final String commandPrefix) {
@@ -90,32 +90,16 @@ public class Bot implements IMMessageListener {
 		this.nick = nick;
 		this.jabberServer = jabberServer;
 		this.commandPrefix = commandPrefix;
-		this.BUILD_COMMAND  = new BuildCommand(this.nick + "@" + this.jabberServer);
-		COMMAND_MAP.put("build", BUILD_COMMAND);
-		COMMAND_MAP.put("schedule", BUILD_COMMAND);
-		COMMAND_MAP.put("help", HELP_COMMAND);
-		COMMAND_MAP.put("alias", new SetAliasCommand(this));
 		
 		this.cmdsAndAliases.putAll(COMMAND_MAP);
+		BuildCommand buildCommand  = new BuildCommand(this.nick + "@" + this.jabberServer);
+		this.cmdsAndAliases.put("build", buildCommand);
+		this.cmdsAndAliases.put("schedule", buildCommand);
+		this.cmdsAndAliases.put("help", new HelpCommand());
+		this.cmdsAndAliases.put("alias", new SetAliasCommand(this));
+		
 		
 		chat.addMessageListener(this);
-		
-		// TODO: add one shutdown hook for all bots
-		if (chat.isMultiUserChat()) {
-			addShutdownHook();
-		}
-	}
-
-	private void addShutdownHook() {
-		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-			public void run() {
-				try {
-					chat.sendMessage("Oops, seems like Hudson is going down now. See ya!");
-				} catch (Exception e) {
-					// ignore
-				}
-			}
-		}));
 	}
 
 	public void onMessage(IMMessage msg) {
@@ -193,7 +177,7 @@ public class Bot implements IMMessageListener {
 		}
 		
 		this.cmdsAndAliases.put(name, alias);
-		this.HELP_CACHE = null;
+		this.helpCache = null;
 		return old;
 	}
 	
@@ -224,5 +208,20 @@ public class Bot implements IMMessageListener {
 			}
 		}
 		return result;
+	}
+
+	/**
+	 * Called on Hudson shutdown.
+	 */
+	public void shutdown() {
+		this.chat.removeMessageListener(this);
+		
+		if (this.chat.isMultiUserChat()) {
+			try {
+				chat.sendMessage("Oops, seems like Hudson is going down now. See ya!");
+			} catch (IMException e) {
+				// ignore
+			}
+		}
 	}
 }
