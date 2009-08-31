@@ -109,7 +109,7 @@ class JabberIMConnection extends AbstractIMConnection {
 			try {
 				if (!isConnected()) {
 					if (createConnection()) {
-						LOGGER.info("Connected to XMPP on " + this.hostname + ":" + this.port);
+						LOGGER.info("Connected to XMPP on " + this.desc.getHost() + ":" + this.port);
 			
 						updateIMStatus();
 						
@@ -131,9 +131,9 @@ class JabberIMConnection extends AbstractIMConnection {
 					}
 				}
 				return true;
-			} catch (final Exception dontCare) {
-				// Server might be temporarily not available.
-				LOGGER.warning(ExceptionHelper.dump(dontCare));
+			} catch (final Exception e) {
+				LOGGER.warning(ExceptionHelper.dump(e));
+				// Server might be just temporarily not available. Try reconnect
 				tryReconnect();
 				return false;
 			}
