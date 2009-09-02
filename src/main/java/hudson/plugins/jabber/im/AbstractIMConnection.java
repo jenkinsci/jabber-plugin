@@ -219,7 +219,7 @@ public abstract class AbstractIMConnection implements IMConnection {
                             unlock();
                         }
                         
-                        // make sure to release connectionLock before sleeping!
+                        // make sure to release the lock before sleeping!
                         if(!success) {
                             LOGGER.info("Reconnect failed. Next connection attempt in " + timeout + " minutes");
                             TimeUnit2.MINUTES.sleep(timeout);

@@ -44,10 +44,6 @@ final class JabberIMConnectionProvider
         return this.imConnection != null ? this.imConnection : createConnection(this.descriptor);
     }
 
-    synchronized IMConnection currentConnectionOrNull() {
-    	return this.imConnection;
-    }
-
     /**
      * releases (and thus closes) the current connection
      */
@@ -55,7 +51,7 @@ final class JabberIMConnectionProvider
     {
         if (this.imConnection != null)
         {
-            this.imConnection.close();
+        	this.imConnection.shutdown();
             this.imConnection = null;
         }
     }

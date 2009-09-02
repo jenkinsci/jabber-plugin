@@ -7,7 +7,6 @@ import hudson.Util;
 import hudson.model.AbstractProject;
 import hudson.model.Hudson;
 import hudson.plugins.jabber.NotificationStrategy;
-import hudson.plugins.jabber.im.IMConnection;
 import hudson.plugins.jabber.im.IMMessageTargetConversionException;
 import hudson.plugins.jabber.im.IMPublisherDescriptor;
 import hudson.plugins.jabber.tools.Assert;
@@ -324,10 +323,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public void shutdown()
     {
         final JabberIMConnectionProvider factory = JabberIMConnectionProvider.getInstance();
-        IMConnection connection = factory.currentConnectionOrNull();
-        if (connection != null) {
-        	connection.shutdown();
-        }
         factory.releaseConnection();
     }
 
