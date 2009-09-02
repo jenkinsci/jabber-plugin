@@ -127,6 +127,14 @@ class JabberIMConnection extends AbstractIMConnection {
 							}
 						}
 					} else {
+						// clean-up if needed
+						if (this.connection != null) {
+							try {
+								this.connection.close();
+							} catch (Exception e) {
+								// ignore
+							}
+						}
 						return false;
 					}
 				}
@@ -146,18 +154,20 @@ class JabberIMConnection extends AbstractIMConnection {
 	    lock();
 	    try {
 			try {
-				if (isConnected()) {
-					for (WeakReference<GroupChat> entry : groupChatCache.values()) {
-						GroupChat chat = entry.get();
-						if (chat != null && chat.isJoined()) {
-							chat.leave();
-						}
+				for (WeakReference<GroupChat> entry : groupChatCache.values()) {
+					GroupChat chat = entry.get();
+					if (chat != null && chat.isJoined()) {
+						chat.leave();
 					}
-					this.groupChatCache.clear();
-					// there seems to be no way to leave a 1-on-1 chat with Smack
-					this.chatCache.clear();
-					this.connection.close();
 				}
+				// there seems to be no way to leave a 1-on-1 chat with Smack
+				
+				this.groupChatCache.clear();
+				this.chatCache.clear();
+				this.connection.close();
+			} catch (Exception e) {
+				// ignore
+				LOGGER.fine(e.toString());
 			} finally {
 				this.connection = null;
 			}
@@ -201,10 +211,11 @@ class JabberIMConnection extends AbstractIMConnection {
 		if (this.connection.isConnected()) {
 			this.connection.login(this.desc.getUserName(), this.passwd, "Hudson");
 			
-			String fullUser = this.desc.getUserName() + "@" + this.hostname;
-			
 			PacketFilter filter = new AndFilter(new MessageTypeFilter(Message.Type.CHAT), 
-					new ToContainsFilter(fullUser));
+					new ToContainsFilter(this.desc.getUserName()));
+			// Actually, this should be the full user name (including '@server')
+			// but since via this connection only message to me should be delivered (right?)
+			// this doesn't matter anyway.
 			
 			PacketListener listener = new IMListener();
 			this.connection.addPacketListener(listener, filter);
@@ -214,7 +225,6 @@ class JabberIMConnection extends AbstractIMConnection {
 				}
 				
 				public void connectionClosed() {
-					tryReconnect();
 				}
 			});
 		}
