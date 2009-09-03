@@ -7,7 +7,7 @@
 		<f:entry title="Jabber ID" help="${base}/help-id.html">
 			<f:textbox name="${descriptor.PARAMETERNAME_JABBERID}"
 				value="${descriptor.jabberId}"
-                checkUrl="'${rootURL}/publisher/JabberPublisher/jabberIdCheck?jabberId='+escape(this.value)+'&amp;port='+escape(this.form.elements['jabberPlugin.port'].value)"/>
+                checkUrl="'${rootURL}/publisher/JabberPublisher/jabberIdCheck?jabberId='+escape(this.value)+'&amp;port='+escape(this.form.elements['jabberPlugin.port'].value)+'&amp;hostname='+escape(this.form.elements['jabberPlugin.hostname'].value)"/>
 		</f:entry>
 		<f:entry title="Password">
            <input type="password" name="${descriptor.PARAMETERNAME_PASSWORD}" class="setting-input"

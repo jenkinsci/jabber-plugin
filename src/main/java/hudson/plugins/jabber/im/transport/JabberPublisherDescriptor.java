@@ -227,6 +227,11 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         }
     }
 
+    /**
+     * Returns the jabber ID.
+     * 
+     * The jabber ID may have the syntax <user>[@<domain>[/<resource]]
+     */
     public String getJabberId()
     {
         return this.hudsonNickname;
@@ -362,13 +367,17 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	}
 
 	
-	public FormValidation doJabberIdCheck(@QueryParameter String jabberId, @QueryParameter final String port) {
+	public FormValidation doJabberIdCheck(@QueryParameter String jabberId,
+			@QueryParameter final String hostname, @QueryParameter final String port) {
 	    if(!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) {
             return FormValidation.ok();
         }
 	    
 	    if (jabberId == null || jabberId.trim().length() == 0) {
 	        return FormValidation.error("Jabber ID must not be empty!");
+	    } else if (Util.fixEmptyAndTrim(hostname) != null) {
+	    	// validation has already been done for the hostname field
+	    	return FormValidation.ok();
 	    } else if (getHostPart(jabberId) != null) {
 	        String host = getHostPart(jabberId);
 	        try {
@@ -381,14 +390,14 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
             } catch (IOException e) {
                 return FormValidation.error("Unable to connect to "+hostname+":"+port+" : "+e.getMessage());
             }
+	    } else {
+	    	return FormValidation.error("No hostname specified - neither via 'Jabber ID' nor via 'Server'!");
 	    }
-	    return FormValidation.ok();
 	}
 	
     /**
      * Validates the connection information.
      */
-	// TODO: also check Jabber ID + password!
     public FormValidation doServerCheck(@QueryParameter final String hostname,
             @QueryParameter final String port,
             @QueryParameter final boolean legacySSL) {
@@ -454,16 +463,20 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     }
     
     /**
-     * Returns the host part from a jabber id or null.
-     * @param jabberId
-     * @return
+     * Returns the host part from a jabber id or null if it contains no host part
      */
     private static String getHostPart(String jabberId) {
-        int idx = jabberId.indexOf('@');
-        if (idx < 0) {
+        int atIdx = jabberId.indexOf('@');
+        if (atIdx == -1) {
             return null;
         } else {
-            return jabberId.substring(idx + 1);
+        	int slashIdx = jabberId.indexOf('/', atIdx);
+        	if (slashIdx == -1) {
+        		return jabberId.substring(atIdx + 1);
+        	} else {
+        		// filter out 'resource' part
+        		return jabberId.substring(atIdx + 1, slashIdx);
+        	}
         }
     }
 }
