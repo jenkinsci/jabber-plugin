@@ -95,6 +95,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         }
     }
     
+    // TODO: reuse the checkHostAccessibility method for this
     private void applyHostname(final HttpServletRequest req) throws FormException
     {
         final String s = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_HOSTNAME);
@@ -164,7 +165,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
                 throw new FormException("Port cannot be parsed.", JabberPublisherDescriptor.PARAMETERNAME_PORT);
             }
         } else {
-            this.port = 5222;
+            this.port = DEFAULT_PORT;
         }
     }
 
@@ -378,8 +379,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	    } else if (Util.fixEmptyAndTrim(hostname) != null) {
 	    	// validation has already been done for the hostname field
 	    	return FormValidation.ok();
-	    } else if (getHostPart(jabberId) != null) {
-	        String host = getHostPart(jabberId);
+	    } else if (JabberUtil.getDomainPart(jabberId) != null) {
+	        String host = JabberUtil.getDomainPart(jabberId);
 	        try {
                 checkHostAccessibility(host, port);
                 return FormValidation.ok();
@@ -446,12 +447,13 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 		return true;
 	}
 	
+	/**
+	 * Returns the 'user' part of the Jabber ID. E.g. returns
+	 * 'john.doe' for 'john.doe@gmail.com' or
+	 * 'alfred.e.neumann' for 'alfred.e.neumann'.
+	 */
 	public String getUserName() {
-	    int idx = this.hudsonNickname.indexOf('@');
-        if (idx < 0)
-            return this.hudsonNickname;
-        else
-            return this.hudsonNickname.substring(0, idx);
+		return JabberUtil.getUserPart(getJabberId());
 	}
 	
 	/**
@@ -459,24 +461,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      * null if not found.
      */
     public String getServiceName() {
-        return getHostPart(this.hudsonNickname);
-    }
-    
-    /**
-     * Returns the host part from a jabber id or null if it contains no host part
-     */
-    private static String getHostPart(String jabberId) {
-        int atIdx = jabberId.indexOf('@');
-        if (atIdx == -1) {
-            return null;
-        } else {
-        	int slashIdx = jabberId.indexOf('/', atIdx);
-        	if (slashIdx == -1) {
-        		return jabberId.substring(atIdx + 1);
-        	} else {
-        		// filter out 'resource' part
-        		return jabberId.substring(atIdx + 1, slashIdx);
-        	}
-        }
+        return JabberUtil.getDomainPart(getJabberId());
     }
 }

@@ -11,6 +11,11 @@ import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smackx.packet.DelayInformation;
 
+/**
+ * Wraps an {@link IMMessageListener} in a Smack {@link PacketListener}.
+ * 
+ * @author kutzi
+ */
 class JabberMessageListenerAdapter implements PacketListener {
 
     private final IMMessageListener listener;

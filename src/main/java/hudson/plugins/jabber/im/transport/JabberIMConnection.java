@@ -139,8 +139,6 @@ class JabberIMConnection extends AbstractIMConnection {
 				return true;
 			} catch (final Exception e) {
 				LOGGER.warning(ExceptionHelper.dump(e));
-				// Server might be just temporarily not available. Try reconnect
-				tryReconnect();
 				return false;
 			}
 		} finally {

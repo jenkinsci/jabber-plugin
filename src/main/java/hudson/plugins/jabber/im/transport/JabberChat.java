@@ -28,17 +28,7 @@ public class JabberChat implements IMChat {
     }
 
     public String getNickName(String sender) {
-        String s = sender;
-        int index = s.indexOf('/');
-        if (index != -1) {
-            s = s.substring(0, index);
-        }
-
-        index = s.indexOf('@');
-        if (index != -1) {
-            s = s.substring(0, index);
-        }
-        return s;
+    	return JabberUtil.getUserPart(sender);
     }
     
     public void addMessageListener(IMMessageListener listener) {

@@ -24,9 +24,10 @@ public class JabberMultiUserChat implements IMChat {
     }
 
     public String getNickName(String sender) {
-        int slashIndex = sender.indexOf('/');
-        if (slashIndex != -1) {
-            sender = sender.substring(slashIndex + 1);
+    	// Jabber has the chosen MUC nickname in the resource part of the sender id
+    	String resource = JabberUtil.getResourcePart(sender);
+        if (resource != null) {
+            return resource;
         }
         return sender;
     }
