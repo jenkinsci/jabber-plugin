@@ -1,6 +1,7 @@
 package hudson.plugins.jabber.im;
 
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
@@ -25,8 +26,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import org.apache.commons.lang.StringUtils;
-
 /**
  * The actual Publisher that sends notification-Messages out to the clients.
  * @author Uwe Schaefer
@@ -43,12 +42,14 @@ public abstract class IMPublisher extends Notifier implements BuildStep
     private final boolean notifySuspects;
     private final boolean notifyCulprits;
     private final boolean notifyFixers;
+    private final String defaultIdSuffix;
 
     protected IMPublisher(final String targetsAsString, final String notificationStrategyString,
     		final boolean notifyGroupChatsOnBuildStart,
     		final boolean notifySuspects,
     		final boolean notifyCulprits,
-    		final boolean notifyFixers) throws IMMessageTargetConversionException
+    		final boolean notifyFixers,
+    		String defaultIdSuffix) throws IMMessageTargetConversionException
     {
         Assert.isNotNull(targetsAsString, "Parameter 'targetsAsString' must not be null.");
         final String[] split = targetsAsString.split("\\s");
@@ -73,6 +74,7 @@ public abstract class IMPublisher extends Notifier implements BuildStep
         this.notifySuspects = notifySuspects;
         this.notifyCulprits = notifyCulprits;
         this.notifyFixers = notifyFixers;
+        this.defaultIdSuffix = Util.fixEmptyAndTrim(defaultIdSuffix);
     }
     
     /**
@@ -291,16 +293,7 @@ public abstract class IMPublisher extends Notifier implements BuildStep
 	private Collection<IMMessageTarget> calculateIMTargets(Set<User> targets, BuildListener listener) {
 		Set<IMMessageTarget> suspects = new HashSet<IMMessageTarget>();
 		
-		String defaultSuffix = null;
-		try {
-			defaultSuffix = getIMConnection().getDefaultIdSuffix();
-			if (StringUtils.isBlank(defaultSuffix)) {
-				defaultSuffix = null;
-			}
-		} catch (IMException e) {
-			// ignore
-		}
-		LOGGER.fine("Default Suffix: " + defaultSuffix);
+		LOGGER.fine("Default Suffix: " + defaultIdSuffix);
 		
 		for (User target : targets) {
 			LOGGER.fine("Possible target: " + target.getId());
@@ -308,8 +301,8 @@ public abstract class IMPublisher extends Notifier implements BuildStep
 			JabberUserProperty jabberUserProperty = (JabberUserProperty) target.getProperties().get(JabberUserProperty.DESCRIPTOR);
 			if ((jabberUserProperty != null) && (jabberUserProperty.getJid() != null)) {
                 jabberId = jabberUserProperty.getJid();
-			} else if (defaultSuffix != null) {
-                jabberId = target.getId() + defaultSuffix;
+			} else if (this.defaultIdSuffix != null) {
+                jabberId = target.getId() + defaultIdSuffix;
             }
 
             if (jabberId != null) {

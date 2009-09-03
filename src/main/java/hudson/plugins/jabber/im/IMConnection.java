@@ -8,7 +8,7 @@ package hudson.plugins.jabber.im;
 public interface IMConnection
 {
 	/**
-	 * Init i.e. starts asynchronous connection attempt.
+	 * Inits i.e. starts asynchronous connection attempt.
 	 */
 	void init();
 	
@@ -45,8 +45,4 @@ public interface IMConnection
      * @throws IMException encapsulated exception of underlying protocol/client 
      */
     void setPresence(IMPresence presence, String statusMessage) throws IMException;
-    
-    
-    String getDefaultIdSuffix();
-
 }

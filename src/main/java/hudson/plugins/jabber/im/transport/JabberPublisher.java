@@ -78,10 +78,11 @@ public class JabberPublisher extends IMPublisher
     		final boolean notifyGroupChatsOnBuildStart,
     		final boolean notifySuspects,
     		final boolean notifyCulprits,
-    		final boolean notifyFixers) throws IMMessageTargetConversionException
+    		final boolean notifyFixers,
+    		String defaultIdSuffix) throws IMMessageTargetConversionException
     {
         super(targetsAsString, notificationStrategy, notifyGroupChatsOnBuildStart,
-        		notifySuspects, notifyCulprits, notifyFixers);
+        		notifySuspects, notifyCulprits, notifyFixers, defaultIdSuffix);
     }
 
     @Override

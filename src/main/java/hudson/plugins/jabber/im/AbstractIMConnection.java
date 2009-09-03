@@ -37,6 +37,7 @@ public abstract class AbstractIMConnection implements IMConnection {
         this.busyListener = new BusyListener();
     }
     
+    @Override
     public final void init() {
     	if (StringUtils.isNotBlank(desc.getHost())) {
     		// TODO: busyListener and especially reconnection thread
@@ -49,6 +50,7 @@ public abstract class AbstractIMConnection implements IMConnection {
         }
     }
     
+    @Override
     public void shutdown() {
     	this.busyListener.unregister();
     	if (this.connectorThread != null) {
@@ -165,11 +167,6 @@ public abstract class AbstractIMConnection implements IMConnection {
             // the executor of 'r' is still busy, we have to take that into account!
             updateIMStatus(r);
         }
-
-//        @Override
-//		public void onFinalized(Run r) {
-//			updateIMStatus(null);
-//		}
 
 		@Override
         public void onDeleted(Run r) {

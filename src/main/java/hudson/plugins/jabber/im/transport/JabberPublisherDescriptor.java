@@ -312,7 +312,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         try
         {
             return new JabberPublisher(t, n, notifyStart, notifySuspects, notifyCulprits,
-            		notifyFixers);
+            		notifyFixers, this.defaultIdSuffix);
         }
         catch (final IMMessageTargetConversionException e)
         {

@@ -76,8 +76,6 @@ class JabberIMConnection extends AbstractIMConnection {
 	
 	private IMPresence impresence;
 
-	private final String defaultIdSuffix;
-
     private String imStatusMessage;
 
     private JabberPublisherDescriptor desc;
@@ -100,9 +98,9 @@ class JabberIMConnection extends AbstractIMConnection {
 			this.groupChats = new String[0];
 		}
 		this.impresence = desc.isExposePresence() ? IMPresence.AVAILABLE : IMPresence.UNAVAILABLE;
-		this.defaultIdSuffix = desc.getDefaultIdSuffix();
 	}
 
+	@Override
 	public boolean connect() {
 	    lock();
 	    try {
@@ -150,6 +148,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 	}
 
+	@Override
     public void close() {
 	    lock();
 	    try {
@@ -176,6 +175,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 	}
 
+	@Override
     public void shutdown() {
     	for (Bot bot : this.bots) {
     		bot.shutdown();
@@ -380,10 +380,6 @@ class JabberIMConnection extends AbstractIMConnection {
 		} finally {
 		    unlock();
 		}
-	}
-	
-	public String getDefaultIdSuffix() {
-		return this.defaultIdSuffix;
 	}
 
 	private final class IMListener implements PacketListener {
