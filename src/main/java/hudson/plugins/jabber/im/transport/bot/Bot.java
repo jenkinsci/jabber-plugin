@@ -22,6 +22,7 @@ import java.util.logging.Logger;
  * Instant messaging bot.
  * 
  * @author Pascal Bleser
+ * @author kutzi
  */
 public class Bot implements IMMessageListener {
 
@@ -192,6 +193,8 @@ public class Bot implements IMMessageListener {
 		if (alias instanceof AliasCommand) {
 			this.cmdsAndAliases.remove(name);
 			return (AliasCommand) alias;
+		} else if (alias != null) {
+			throw new IllegalArgumentException("Won't remove built-in command: '" + name + "'!");
 		}
 		return null;
 	}
