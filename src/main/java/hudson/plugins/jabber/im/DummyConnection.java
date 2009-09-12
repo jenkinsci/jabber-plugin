@@ -7,7 +7,7 @@ import java.util.logging.Logger;
  * 
  * @author kutzi
  */
-public class DummyConnection implements IMConnection {
+class DummyConnection implements IMConnection {
 
 	private static final Logger LOGGER = Logger.getLogger(DummyConnection.class.getName());
 	

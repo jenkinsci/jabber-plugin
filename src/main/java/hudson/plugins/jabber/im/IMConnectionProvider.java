@@ -15,6 +15,8 @@ import java.util.logging.Logger;
 public abstract class IMConnectionProvider implements IMConnectionListener {
 	
 	private static final Logger LOGGER = Logger.getLogger(IMConnectionProvider.class.getName());
+	
+	private static final IMConnection NULL_CONNECTION = new DummyConnection();
 
 	protected IMPublisherDescriptor descriptor;
 	private IMConnection imConnection;
@@ -32,15 +34,22 @@ public abstract class IMConnectionProvider implements IMConnectionListener {
     /**
      * @throws IMException on any underlying communication Exception
      */
-    public synchronized IMConnection currentConnection() throws IMException
-    {
+    public synchronized IMConnection currentConnection() {
     	if (this.imConnection == null) {
-    		this.imConnection = createConnection();
+    		try {
+				this.imConnection = createConnection();
+			} catch (IMException e) {
+				tryReconnect();
+				return NULL_CONNECTION;
+			}
     		if (this.imConnection != null) {
     			this.imConnection.addConnectionListener(this);
+    			return this.imConnection;
     		} else {
-    			tryReconnect();
-    			return new DummyConnection();
+    			if (this.descriptor != null) {
+    				tryReconnect();
+    			}
+    			return NULL_CONNECTION;
     		}
     	}
     	
@@ -107,10 +116,12 @@ public abstract class IMConnectionProvider implements IMConnectionListener {
 								}
 							}
 							try {
-								currentConnection();
-								success = true;
+								IMConnection conn = createConnection();
+								if (conn != null) {
+									success = true;
+								}
 							} catch (IMException e) {
-								LOGGER.warning(ExceptionHelper.dump(e));
+								// ignore
 							}
 						}
                         

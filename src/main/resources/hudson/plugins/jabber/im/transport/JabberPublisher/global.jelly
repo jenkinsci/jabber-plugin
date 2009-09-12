@@ -4,6 +4,7 @@
   <j:set var="base" value="/plugin/jabber"/>
 
   <f:section title="Jabber Notification">
+    <f:optionalBlock name="${descriptor.PARAMETERNAME_ENABLED}" title="Enable Jabber Notification" checked="${descriptor.enabled}">
 		<f:entry title="Jabber ID" help="${base}/help-id.html">
 			<f:textbox name="${descriptor.PARAMETERNAME_JABBERID}"
 				value="${descriptor.jabberId}"
@@ -46,5 +47,6 @@
           value="${descriptor.groupChatNickname}" />
       </f:entry>
     </f:advanced>
-    </f:section>
+    </f:optionalBlock>  
+  </f:section>
 </j:jelly>

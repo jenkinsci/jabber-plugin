@@ -1,6 +1,5 @@
 package hudson.plugins.jabber.im.transport;
 
-import hudson.plugins.jabber.im.DummyConnection;
 import hudson.plugins.jabber.im.IMConnection;
 import hudson.plugins.jabber.im.IMConnectionProvider;
 import hudson.plugins.jabber.im.IMException;
@@ -31,9 +30,8 @@ final class JabberIMConnectionProvider extends IMConnectionProvider
     public synchronized IMConnection createConnection() throws IMException {
         releaseConnection();
 
-        // close vulnerability hole during initialization:
         if (getDescriptor() == null) {
-        	return new DummyConnection();
+        	return null;
         }
         
         IMConnection imConnection = new JabberIMConnection((JabberPublisherDescriptor)getDescriptor());

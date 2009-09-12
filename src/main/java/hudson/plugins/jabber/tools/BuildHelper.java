@@ -25,7 +25,7 @@ public class BuildHelper {
             return false;
         }
         
-        AbstractBuild<?, ?> previousBuild = getPreviousCompletedBuild(build);
+        AbstractBuild<?, ?> previousBuild = getPreviousNonAbortedBuild(build);
         if (previousBuild != null) {
             return previousBuild.getResult().isWorseThan(Result.SUCCESS);
         }
@@ -41,10 +41,10 @@ public class BuildHelper {
     }
 
     /**
-     * Returns the previous 'completed' (i.e. ignores ABORTED and NOT_BUILT builds)
+     * Returns the previous 'not aborted' build (i.e. ignores ABORTED and NOT_BUILT builds)
      * or null.
      */
-    public static AbstractBuild<?, ?> getPreviousCompletedBuild(AbstractBuild<?, ?> build) {
+    public static AbstractBuild<?, ?> getPreviousNonAbortedBuild(AbstractBuild<?, ?> build) {
         AbstractBuild<?, ?> previousBuild = build.getPreviousBuild();
         while (previousBuild != null) {
             if (previousBuild.getResult() == Result.ABORTED || previousBuild.getResult() == Result.NOT_BUILT) {
@@ -71,7 +71,7 @@ public class BuildHelper {
             return "FIXED";
         }
         
-        AbstractBuild<?, ?> previousBuild = getPreviousCompletedBuild(build);
+        AbstractBuild<?, ?> previousBuild = getPreviousNonAbortedBuild(build);
         if (result == Result.UNSTABLE) {
             if (previousBuild != null && previousBuild.getResult() == Result.UNSTABLE) {
                 return "STILL UNSTABLE";

@@ -7,6 +7,7 @@ import hudson.Util;
 import hudson.model.AbstractProject;
 import hudson.model.Hudson;
 import hudson.plugins.jabber.NotificationStrategy;
+import hudson.plugins.jabber.im.IMException;
 import hudson.plugins.jabber.im.IMMessageTargetConversionException;
 import hudson.plugins.jabber.im.IMPublisherDescriptor;
 import hudson.plugins.jabber.tools.Assert;
@@ -34,6 +35,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     private static final Logger LOGGER = Logger.getLogger(JabberPublisherDescriptor.class.getName());
     
     private static final String PREFIX = "jabberPlugin.";
+    public static final String PARAMETERNAME_ENABLED = JabberPublisherDescriptor.PREFIX + "enabled";
     public static final String PARAMETERNAME_PORT = JabberPublisherDescriptor.PREFIX + "port";
     public static final String PARAMETERNAME_HOSTNAME = JabberPublisherDescriptor.PREFIX + "hostname";
     public static final String PARAMETERNAME_SSL = JabberPublisherDescriptor.PREFIX + "ssl";
@@ -81,8 +83,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         super(JabberPublisher.class);
         load();
         
-        if (StringUtils.isNotBlank(this.hostname)
-            || StringUtils.isNotBlank(getServiceName())) {
+        if (isEnabled()) {
             try {
             	JabberIMConnectionProvider.setDesc(this);
             } catch (final Exception e) {
@@ -90,7 +91,11 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
                 LOGGER.warning(ExceptionHelper.dump(e));
             }
         } else {
-            LOGGER.info("No hostname configured.");
+            try {
+				JabberIMConnectionProvider.setDesc(null);
+			} catch (IMException e) {
+				// ignore
+			}
         }
     }
     
@@ -351,8 +356,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	 */
 	@Override
 	public boolean configure(StaplerRequest req, JSONObject json) throws hudson.model.Descriptor.FormException {
-		Assert.isNotNull(req, "Parameter 'req' must not be null.");
-
+		String en = req.getParameter(PARAMETERNAME_ENABLED);
+		this.enabled = Boolean.valueOf(en != null);
         applyPresence(req);
         applyHostname(req);
         applyPort(req);
@@ -364,15 +369,21 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         applyCommandPrefix(req);
         applyDefaultIdSuffix(req);
 
-        if (StringUtils.isNotBlank(this.hostname)
-            || StringUtils.isNotBlank(getServiceName())) {
+        if (isEnabled()) {
             try {
-                JabberIMConnectionProvider.getInstance().createConnection();
+            	JabberIMConnectionProvider.setDesc(this);
+                JabberIMConnectionProvider.getInstance().currentConnection();
             } catch (final Exception e) {
                 //throw new FormException("Unable to create Client: " + ExceptionHelper.dump(e), null);
             	LOGGER.warning(ExceptionHelper.dump(e));
             }
         } else {
+        	JabberIMConnectionProvider.getInstance().releaseConnection();
+        	try {
+				JabberIMConnectionProvider.setDesc(null);
+			} catch (IMException e) {
+				// ignore
+			}
             LOGGER.info("No hostname specified.");
         }
         save();
