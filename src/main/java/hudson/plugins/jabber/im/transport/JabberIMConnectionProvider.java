@@ -18,8 +18,10 @@ final class JabberIMConnectionProvider extends IMConnectionProvider
         return INSTANCE;
     }
     
-    static final synchronized void setDesc(IMPublisherDescriptor desc) {
+    static final synchronized void setDesc(IMPublisherDescriptor desc) throws IMException {
     	INSTANCE.setDescriptor(desc);
+    	INSTANCE.releaseConnection();
+    	INSTANCE.currentConnection();
     }
 
     private JabberIMConnectionProvider() {
@@ -35,7 +37,9 @@ final class JabberIMConnectionProvider extends IMConnectionProvider
         }
         
         IMConnection imConnection = new JabberIMConnection((JabberPublisherDescriptor)getDescriptor());
-        imConnection.init();
-        return imConnection;
+        if (imConnection.connect()) {
+        	return imConnection;
+        }
+        return null;
     }
 }

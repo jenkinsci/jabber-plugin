@@ -1,6 +1,13 @@
 package hudson.plugins.jabber.im;
 
 public interface IMPublisherDescriptor {
+
+	/**
+	 * Returns <code>true</code> iff the plugin is globally enabled.
+	 * @return
+	 */
+	boolean isEnabled();
+	
     boolean isExposePresence();
     
     String getHost();

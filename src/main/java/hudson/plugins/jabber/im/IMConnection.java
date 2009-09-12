@@ -7,11 +7,6 @@ package hudson.plugins.jabber.im;
  */
 public interface IMConnection
 {
-	/**
-	 * Inits i.e. starts asynchronous connection attempt.
-	 */
-	void init();
-	
     /**
      * Establishes the connection and login.
      * 
@@ -31,12 +26,6 @@ public interface IMConnection
     void close();
     
     /**
-     * Called on shutdown.
-     * close() is NOT called additionally!
-     */
-    void shutdown();
-
-    /**
      * Sends a Message-Text to an IMMessageTarget (aka a User ;).
      * @param target the target to send to 
      * @param text the text to be sent
@@ -53,4 +42,8 @@ public interface IMConnection
      * @throws IMException encapsulated exception of underlying protocol/client 
      */
     void setPresence(IMPresence presence, String statusMessage) throws IMException;
+
+	void addConnectionListener(IMConnectionListener listener);
+
+	void removeConnectionListener(IMConnectionListener listener);
 }

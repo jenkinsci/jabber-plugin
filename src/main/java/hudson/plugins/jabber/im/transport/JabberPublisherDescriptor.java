@@ -63,6 +63,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     
     private static final int DEFAULT_PORT = 5222;
     
+    // big Boolean to support backwards compatibility
+    private Boolean enabled;
     private int port = DEFAULT_PORT;
     private String hostname = null;
     private boolean legacySSL = false;
@@ -83,8 +85,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
             || StringUtils.isNotBlank(getServiceName())) {
             try {
             	JabberIMConnectionProvider.setDesc(this);
-            	// TODO: create connection in JabberPluginImpl?
-                JabberIMConnectionProvider.getInstance().currentConnection();
             } catch (final Exception e) {
                 // Server temporarily unavailable or misconfigured?
                 LOGGER.warning(ExceptionHelper.dump(e));
@@ -94,7 +94,20 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         }
     }
     
-    // TODO: reuse the checkHostAccessibility method for this
+    @Override
+	public synchronized void load() {
+		super.load();
+    	if (this.enabled == null) {
+        	// migrate
+        	if (Util.fixEmptyAndTrim(this.hudsonNickname) != null) {
+        		this.enabled = Boolean.TRUE;
+        	} else {
+        		this.enabled = Boolean.FALSE;
+        	}
+        }
+	}
+
+	// TODO: reuse the checkHostAccessibility method for this
     private void applyHostname(final HttpServletRequest req) throws FormException
     {
         final String s = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_HOSTNAME);
@@ -207,6 +220,14 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public String getDisplayName()
     {
         return "Jabber Notification";
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isEnabled() {
+    	return Boolean.TRUE.equals(this.enabled);
     }
 
     public String getHostname()

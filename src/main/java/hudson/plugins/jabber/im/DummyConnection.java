@@ -21,10 +21,6 @@ public class DummyConnection implements IMConnection {
 	}
 
 	@Override
-	public void init() {
-	}
-
-	@Override
 	public boolean isConnected() {
 		return true;
 	}
@@ -41,6 +37,10 @@ public class DummyConnection implements IMConnection {
 	}
 
 	@Override
-	public void shutdown() {
+	public void addConnectionListener(IMConnectionListener listener) {
+	}
+
+	@Override
+	public void removeConnectionListener(IMConnectionListener listener) {
 	}
 }

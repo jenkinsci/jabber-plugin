@@ -5,6 +5,7 @@ package hudson.plugins.jabber.im.transport;
 
 import hudson.plugins.jabber.im.AbstractIMConnection;
 import hudson.plugins.jabber.im.GroupChatIMMessageTarget;
+import hudson.plugins.jabber.im.IMConnectionListener;
 import hudson.plugins.jabber.im.IMException;
 import hudson.plugins.jabber.im.IMMessageTarget;
 import hudson.plugins.jabber.im.IMPresence;
@@ -18,6 +19,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -176,16 +178,6 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 	}
 
-	@Override
-    public void shutdown() {
-    	for (Bot bot : this.bots) {
-    		bot.shutdown();
-    	}
-    	close();
-    	
-    	super.shutdown();
-    }
-
 	private boolean createConnection() throws XMPPException {
 		if (this.connection != null) {
 			try {
@@ -220,14 +212,6 @@ class JabberIMConnection extends AbstractIMConnection {
 			
 			PacketListener listener = new IMListener();
 			this.connection.addPacketListener(listener, filter);
-			this.connection.addConnectionListener(new ConnectionListener() {
-				public void connectionClosedOnError(Exception paramException) {
-					tryReconnect();
-				}
-				
-				public void connectionClosed() {
-				}
-			});
 		}
 		
 		return this.connection.isAuthenticated();
@@ -299,11 +283,11 @@ class JabberIMConnection extends AbstractIMConnection {
             			final Chat chat = getChat(target.toString(), null);
             			chat.sendMessage(text);
             		}
-            } catch (final XMPPException dontCare) {
+            } catch (final XMPPException e) {
             	// server unavailable ? Target-host unknown ? Well. Just skip this
             	// one.
-                LOGGER.warning(ExceptionHelper.dump(dontCare));
-            	tryReconnect();
+                LOGGER.warning(ExceptionHelper.dump(e));
+            	// TODO ? tryReconnect();
             } finally {
                 unlock();
             }
@@ -380,6 +364,45 @@ class JabberIMConnection extends AbstractIMConnection {
 			return this.connection != null && this.connection.isAuthenticated();
 		} finally {
 		    unlock();
+		}
+	}
+	
+	private final Map<IMConnectionListener, ConnectionListener> listeners = 
+		new ConcurrentHashMap<IMConnectionListener, ConnectionListener>();
+	
+	@Override
+	public void addConnectionListener(final IMConnectionListener listener) {
+		lock();
+		try {
+			ConnectionListener l = new ConnectionListener() {
+				@Override
+				public void connectionClosedOnError(Exception e) {
+					listener.connectionBroken(e);
+					
+				}
+				@Override
+				public void connectionClosed() {
+				}
+			};
+			listeners.put(listener, l);
+			this.connection.addConnectionListener(l);
+		} finally {
+			unlock();
+		}
+	}
+
+	@Override
+	public void removeConnectionListener(IMConnectionListener listener) {
+		lock();
+		try {
+			ConnectionListener l = this.listeners.remove(listener);
+			if (l != null) {
+				this.connection.removeConnectionListener(l);
+			} else {
+				LOGGER.warning("Connection listener " + listener + " not found.");
+			}
+		} finally {
+			unlock();
 		}
 	}
 
