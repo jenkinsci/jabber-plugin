@@ -109,7 +109,8 @@ class JabberIMConnection extends AbstractIMConnection {
 					if (createConnection()) {
 						LOGGER.info("Connected to XMPP on " + this.desc.getHost() + ":" + this.port);
 			
-						updateIMStatus();
+						// I've read somewhere that status must be set, before one can do anything other
+						sendPresence();
 						
 						groupChatCache.clear();
 						for (String groupChatName : this.groupChats) {
@@ -161,7 +162,9 @@ class JabberIMConnection extends AbstractIMConnection {
 				
 				this.groupChatCache.clear();
 				this.chatCache.clear();
-				this.connection.close();
+				if (this.connection.isConnected()) {
+					this.connection.close();
+				}
 			} catch (Exception e) {
 				// ignore
 				LOGGER.fine(e.toString());
@@ -248,7 +251,7 @@ class JabberIMConnection extends AbstractIMConnection {
 			}
 
 			this.bots.add(new Bot(new JabberMultiUserChat(groupChat),
-					this.groupChatNick, this.hostname,
+					this.groupChatNick, this.desc.getHost(),
 					this.botCommandPrefix));
 
 			groupChatCache.put(groupChatName, new WeakReference<GroupChat>(groupChat));
@@ -268,7 +271,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		
 		final Chat chat = this.connection.createChat(chatPartner);
 		Bot bot = new Bot(new JabberChat(chat), this.groupChatNick,
-				this.hostname, this.botCommandPrefix);
+					this.desc.getHost(), this.botCommandPrefix);
 		this.bots.add(bot);
 		
 		if (msg != null) {
@@ -371,7 +374,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	}
 	
 	@Override
-    protected boolean isConnected() {
+    public boolean isConnected() {
 	    lock();
 		try {
 			return this.connection != null && this.connection.isAuthenticated();

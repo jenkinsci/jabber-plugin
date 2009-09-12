@@ -1,12 +1,5 @@
 package hudson.plugins.jabber.im;
 
-import hudson.model.Computer;
-import hudson.model.Executor;
-import hudson.model.Hudson;
-import hudson.model.Queue;
-import hudson.model.Run;
-import hudson.model.TaskListener;
-import hudson.model.listeners.RunListener;
 import hudson.util.TimeUnit2;
 
 import java.util.concurrent.Semaphore;
@@ -29,12 +22,8 @@ public abstract class AbstractIMConnection implements IMConnection {
 
     private final IMPublisherDescriptor desc;
 
-    private final BusyListener busyListener;
-
     protected AbstractIMConnection(IMPublisherDescriptor desc) {
         this.desc = desc;
-        // TODO: cannot use @Extension as BusyListener must be non-static
-        this.busyListener = new BusyListener();
     }
     
     @Override
@@ -43,7 +32,6 @@ public abstract class AbstractIMConnection implements IMConnection {
     		// TODO: busyListener and especially reconnection thread
     		// don't really belong here. They should be moved to
     		// ConnectionProvider o.s.l.t.
-            this.busyListener.register();
             connectorThread = new Thread(connector, "IM-ConnectorThread");
             connectorThread.start();
             tryReconnect();
@@ -52,7 +40,6 @@ public abstract class AbstractIMConnection implements IMConnection {
     
     @Override
     public void shutdown() {
-    	this.busyListener.unregister();
     	if (this.connectorThread != null) {
     		this.connectorThread.interrupt();
     	}
@@ -75,110 +62,6 @@ public abstract class AbstractIMConnection implements IMConnection {
      */
     protected void tryReconnect() {
         this.connector.semaphore.release();
-    }
-    
-    protected void updateIMStatus() {
-        updateIMStatus(null);
-    }
-    
-    private void updateIMStatus(Run<?, ?> run) {
-        int totalExecutors = getTotalExecutors();
-        int busyExecutors = getBusyExecutors(run);
-        
-        try {
-            if (busyExecutors == 0) {
-                setPresence(IMPresence.AVAILABLE, "Yawn, I'm so bored. Don't you have some work for me?");
-            } else if (busyExecutors == totalExecutors) {
-                setPresence(IMPresence.DND, 
-                        "Please give me some rest! All " + totalExecutors + " executors are busy, "
-                        + Hudson.getInstance().getQueue().getItems().length + " job(s) in queue.");
-            } else {
-                String msg = "Working: " + busyExecutors + " out of " + totalExecutors +
-                    " executors are busy.";
-                int queueItems = Hudson.getInstance().getQueue().getItems().length;
-                if (queueItems > 0) {
-                    msg += " " + queueItems + " job(s) in queue.";
-                }
-                setPresence(IMPresence.OCCUPIED, msg);
-            }
-        } catch (IMException e) {
-            // ignore
-        }
-    }
-    
-    private int getBusyExecutors(Run<?, ?> run) {
-        int busyExecutors = 0;
-        boolean stillRunningExecutorFound = (run == null);
-        Computer[] computers = Hudson.getInstance().getComputers();
-        for (Computer compi : computers) {
-            
-            for (Executor executor : compi.getExecutors()) {
-                if (executor.isBusy()) {
-                    if (isNotEqual(executor.getCurrentExecutable(), run)) {
-                        busyExecutors++;
-                    } else {
-                    	stillRunningExecutorFound = true;
-                    }
-                }
-            }
-        }
-        
-        if (!stillRunningExecutorFound) {
-        	LOGGER.warning("Didn't find executor for run " + run + " among the list of busy executors.");
-        }
-        
-        return busyExecutors;
-    }
-    
-    private int getTotalExecutors() {
-        int totalExecutors = 0;
-        Computer[] computers = Hudson.getInstance().getComputers();
-        for (Computer compi : computers) {
-            totalExecutors += compi.getNumExecutors();
-        }
-        return totalExecutors;
-    }
-        
-    private static boolean isNotEqual(Queue.Executable executable, Run<?, ?> run) {
-        if (run == null) {
-            return true;
-        }
-        
-        if (executable instanceof Run<?, ?>) {
-        	return !((Run<?, ?>)executable).getId().equals(run.getId());
-        } else {
-        	// can never be equal
-        	return false;
-        }
-    }
-    
-    protected abstract boolean isConnected();
-    
-    @SuppressWarnings("unchecked")
-    public final class BusyListener extends RunListener<Run> {
-
-        public BusyListener() {
-            super(Run.class);
-            LOGGER.info("Executor busy listener created");
-        }
-
-        @Override
-        public void onCompleted(Run r, TaskListener listener) {
-            // the executor of 'r' is still busy, we have to take that into account!
-            updateIMStatus(r);
-        }
-
-		@Override
-        public void onDeleted(Run r) {
-            updateIMStatus(null);
-        }
-
-        @Override
-        public void onStarted(Run r, TaskListener listener) {
-            updateIMStatus(null);
-        }
-        
-        
     }
     
     private final class ConnectorRunnable implements Runnable {

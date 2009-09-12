@@ -1,58 +1,41 @@
 package hudson.plugins.jabber.im.transport;
 
+import hudson.plugins.jabber.im.DummyConnection;
 import hudson.plugins.jabber.im.IMConnection;
+import hudson.plugins.jabber.im.IMConnectionProvider;
 import hudson.plugins.jabber.im.IMException;
-import hudson.plugins.jabber.tools.Assert;
+import hudson.plugins.jabber.im.IMPublisherDescriptor;
 
 /**
  * @author Uwe Schaefer
  *
  */
-final class JabberIMConnectionProvider
+final class JabberIMConnectionProvider extends IMConnectionProvider
 {
-    private static final JabberIMConnectionProvider INSTANCE = new JabberIMConnectionProvider();
-
-    static final JabberIMConnectionProvider getInstance()
-    {
-        return JabberIMConnectionProvider.INSTANCE;
+    private static final IMConnectionProvider INSTANCE = new JabberIMConnectionProvider();
+    
+    static final synchronized IMConnectionProvider getInstance() {
+        return INSTANCE;
+    }
+    
+    static final synchronized void setDesc(IMPublisherDescriptor desc) {
+    	INSTANCE.setDescriptor(desc);
     }
 
-    private IMConnection imConnection;
-    private JabberPublisherDescriptor descriptor;
-
-    private JabberIMConnectionProvider()
-    {
+    private JabberIMConnectionProvider() {
+    	super();
     }
 
-    synchronized IMConnection createConnection(final JabberPublisherDescriptor desc) throws IMException
-    {
-        Assert.isNotNull(desc, "Parameter 'desc' must not be null.");
-        this.descriptor = desc;
-
+    public synchronized IMConnection createConnection() throws IMException {
         releaseConnection();
 
-        this.imConnection = new JabberIMConnection(desc);
-        this.imConnection.init();
-        return this.imConnection;
-    }
-
-    /**
-     * @throws IMException on any underlying communication Exception
-     */
-    synchronized IMConnection currentConnection() throws IMException
-    {
-        return this.imConnection != null ? this.imConnection : createConnection(this.descriptor);
-    }
-
-    /**
-     * releases (and thus closes) the current connection
-     */
-    synchronized void releaseConnection()
-    {
-        if (this.imConnection != null)
-        {
-        	this.imConnection.shutdown();
-            this.imConnection = null;
+        // close vulnerability hole during initialization:
+        if (getDescriptor() == null) {
+        	return new DummyConnection();
         }
+        
+        IMConnection imConnection = new JabberIMConnection((JabberPublisherDescriptor)getDescriptor());
+        imConnection.init();
+        return imConnection;
     }
 }

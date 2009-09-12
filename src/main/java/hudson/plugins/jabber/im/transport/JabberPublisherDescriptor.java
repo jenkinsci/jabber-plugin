@@ -81,14 +81,13 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         
         if (StringUtils.isNotBlank(this.hostname)
             || StringUtils.isNotBlank(getServiceName())) {
-            try
-            {
-                JabberIMConnectionProvider.getInstance().createConnection(this);
-            }
-            catch (final Exception dontCare)
-            {
+            try {
+            	JabberIMConnectionProvider.setDesc(this);
+            	// TODO: create connection in JabberPluginImpl?
+                JabberIMConnectionProvider.getInstance().currentConnection();
+            } catch (final Exception e) {
                 // Server temporarily unavailable or misconfigured?
-                LOGGER.warning(ExceptionHelper.dump(dontCare));
+                LOGGER.warning(ExceptionHelper.dump(e));
             }
         } else {
             LOGGER.info("No hostname configured.");
@@ -326,12 +325,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         }
     }
 
-    public void shutdown()
-    {
-        final JabberIMConnectionProvider factory = JabberIMConnectionProvider.getInstance();
-        factory.releaseConnection();
-    }
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -352,13 +345,11 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 
         if (StringUtils.isNotBlank(this.hostname)
             || StringUtils.isNotBlank(getServiceName())) {
-            try
-            {
-                JabberIMConnectionProvider.getInstance().createConnection(this);
-            }
-            catch (final Exception e)
-            {
-                throw new FormException("Unable to create Client: " + e, null);
+            try {
+                JabberIMConnectionProvider.getInstance().createConnection();
+            } catch (final Exception e) {
+                //throw new FormException("Unable to create Client: " + ExceptionHelper.dump(e), null);
+            	LOGGER.warning(ExceptionHelper.dump(e));
             }
         } else {
             LOGGER.info("No hostname specified.");

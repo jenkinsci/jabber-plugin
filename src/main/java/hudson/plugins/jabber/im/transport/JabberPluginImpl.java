@@ -1,31 +1,37 @@
 package hudson.plugins.jabber.im.transport;
 
 import hudson.Plugin;
+import hudson.plugins.jabber.im.IMPlugin;
 
 /**
- * Plugin Entrypoint used to start/stop the plugin.
+ * Plugin entry point used to start/stop the plugin.
+ *
  * @author Uwe Schaefer
- * @plugin
+ * @author kutzi
  */
-public class JabberPluginImpl extends Plugin
-{
+public class JabberPluginImpl extends Plugin {
 
+	private transient final IMPlugin imPlugin;
+
+	public JabberPluginImpl() {
+		this.imPlugin = new IMPlugin(JabberIMConnectionProvider.getInstance());
+	}
+	
     /**
      * {@inheritDoc}
      */
     @Override
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         super.start();
+        this.imPlugin.start();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void stop() throws Exception
-    {
-        JabberPublisher.DESCRIPTOR.shutdown();
+    public void stop() throws Exception {
+    	this.imPlugin.stop();
         super.stop();
     }
 }

@@ -209,7 +209,7 @@ public abstract class IMPublisher extends Notifier implements BuildStep
 			.append(": ")
 			.append(MessageHelper.getBuildURL(build));
 		
-		if ((build.getChangeSet() != null) && (! build.getChangeSet().isEmptySet())) {
+		if (! build.getChangeSet().isEmptySet()) {
 			boolean hasManyChangeSets = build.getChangeSet().getItems().length > 1;
 			for (Entry entry : build.getChangeSet()) {
 				sb.append("\n");

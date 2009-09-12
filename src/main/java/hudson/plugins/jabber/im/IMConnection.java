@@ -13,9 +13,17 @@ public interface IMConnection
 	void init();
 	
     /**
-     * Establish the connection and login.
+     * Establishes the connection and login.
+     * 
+     * @return <code>true</code> iff connection and login was successful
      */
     boolean connect();
+    
+    /**
+     * Returns if the connection is established.
+     */
+    boolean isConnected();
+    
     
     /**
      * Closes the connection (includes logout) and releases resources. 
