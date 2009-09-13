@@ -101,7 +101,7 @@ public class HudsonIsBusyListener extends RunListener {
     
     private int getBusyExecutors(Run<?, ?> run) {
         int busyExecutors = 0;
-        boolean stillRunningExecutorFound = (run == null);
+        boolean stillRunningExecutorFound = false;
         Computer[] computers = Hudson.getInstance().getComputers();
         for (Computer compi : computers) {
             
@@ -116,8 +116,14 @@ public class HudsonIsBusyListener extends RunListener {
             }
         }
         
-        if (!stillRunningExecutorFound) {
+        if ( run != null && !stillRunningExecutorFound) {
         	LOGGER.warning("Didn't find executor for run " + run + " among the list of busy executors.");
+        	// Decrease anyway.
+        	// Otherwise count would be wrong. See [HUDSON-4337]
+        	// Don't know why the detection doesn't work reliably
+        	if (busyExecutors > 0) {
+        		busyExecutors--;
+        	}
         }
         
         return busyExecutors;
