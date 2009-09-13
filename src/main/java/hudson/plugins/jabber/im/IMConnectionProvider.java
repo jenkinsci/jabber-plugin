@@ -116,8 +116,8 @@ public abstract class IMConnectionProvider implements IMConnectionListener {
 								}
 							}
 							try {
-								IMConnection conn = createConnection();
-								if (conn != null) {
+								imConnection = createConnection();
+								if (imConnection != null) {
 									success = true;
 								}
 							} catch (IMException e) {
