@@ -52,6 +52,11 @@ public class HudsonIsBusyListener extends RunListener {
         // the executor of 'r' is still busy, we have to take that into account!
         updateIMStatus(r);
     }
+    
+	@Override
+	public void onFinalized(Run r) {
+		updateIMStatus(r);
+	}
 
 	@Override
     public void onDeleted(Run r) {
