@@ -29,6 +29,12 @@
     
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.jvnet.hudson.tools</groupId>
+                <artifactId>maven-hpi-plugin</artifactId>
+                <version>1.43</version>
+                <extensions>true</extensions>
+            </plugin>
             <!-- Make sure that we don't use any Java 1.6 dependencies -->
             <plugin>
                 <groupId>org.jvnet</groupId>
@@ -53,6 +59,12 @@
     </build>
     
     <dependencies>
+        <dependency>
+        	<groupId>org.jvnet.hudson.plugins</groupId>
+        	<artifactId>instant-messaging</artifactId>
+        	<version>1.0-SNAPSHOT</version>
+        	<scope>compile</scope>
+        </dependency>
         <dependency>
             <groupId>jivesoftware</groupId>
             <artifactId>smack</artifactId>

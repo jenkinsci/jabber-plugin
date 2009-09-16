@@ -1,7 +1,7 @@
 package hudson.plugins.jabber.im.transport;
 
-import hudson.plugins.jabber.im.IMMessage;
-import hudson.plugins.jabber.im.IMMessageListener;
+import hudson.plugins.im.IMMessage;
+import hudson.plugins.im.IMMessageListener;
 
 import java.util.Iterator;
 

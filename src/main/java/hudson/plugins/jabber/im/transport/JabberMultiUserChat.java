@@ -1,8 +1,8 @@
 package hudson.plugins.jabber.im.transport;
 
-import hudson.plugins.jabber.im.IMChat;
-import hudson.plugins.jabber.im.IMException;
-import hudson.plugins.jabber.im.IMMessageListener;
+import hudson.plugins.im.IMChat;
+import hudson.plugins.im.IMException;
+import hudson.plugins.im.IMMessageListener;
 
 import org.jivesoftware.smack.GroupChat;
 import org.jivesoftware.smack.XMPPException;

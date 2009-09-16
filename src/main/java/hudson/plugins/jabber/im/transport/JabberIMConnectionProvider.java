@@ -1,9 +1,9 @@
 package hudson.plugins.jabber.im.transport;
 
-import hudson.plugins.jabber.im.IMConnection;
-import hudson.plugins.jabber.im.IMConnectionProvider;
-import hudson.plugins.jabber.im.IMException;
-import hudson.plugins.jabber.im.IMPublisherDescriptor;
+import hudson.plugins.im.IMConnection;
+import hudson.plugins.im.IMConnectionProvider;
+import hudson.plugins.im.IMException;
+import hudson.plugins.im.IMPublisherDescriptor;
 
 /**
  * @author Uwe Schaefer

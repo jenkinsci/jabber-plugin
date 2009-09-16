@@ -1,20 +1,17 @@
 package hudson.plugins.jabber.im;
 
-import hudson.plugins.jabber.tools.Assert;
-
 /**
  * DefaultIMMessageTarget basically is a String, that represents an Im-Account to send messages to.
  * @author Pascal Bleser
  */
-public class GroupChatIMMessageTarget implements IMMessageTarget
+@Deprecated
+public class GroupChatIMMessageTarget extends hudson.plugins.im.GroupChatIMMessageTarget
 {
     private static final long serialVersionUID = 1L;
-    private String value;
 
     public GroupChatIMMessageTarget(final String value)
     {
-        Assert.isNotNull(value, "Parameter 'value' must not be null.");
-        this.value = value;
+    	super(value);
     }
 
     @Override
@@ -42,17 +39,5 @@ public class GroupChatIMMessageTarget implements IMMessageTarget
             return false;
         }
 
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return this.value.hashCode();
-    }
-
-    @Override
-    public String toString()
-    {
-        return this.value;
     }
 }

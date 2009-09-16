@@ -1,6 +1,6 @@
 package hudson.plugins.jabber.im.transport;
 
-import hudson.plugins.jabber.im.IMMessage;
+import hudson.plugins.im.IMMessage;
 
 import org.jivesoftware.smack.packet.Message;
 

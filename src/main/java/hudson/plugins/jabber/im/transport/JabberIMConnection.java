@@ -3,15 +3,15 @@
  */
 package hudson.plugins.jabber.im.transport;
 
-import hudson.plugins.jabber.im.AbstractIMConnection;
+import hudson.plugins.im.AbstractIMConnection;
+import hudson.plugins.im.IMConnectionListener;
+import hudson.plugins.im.IMException;
+import hudson.plugins.im.IMMessageTarget;
+import hudson.plugins.im.IMPresence;
+import hudson.plugins.im.bot.Bot;
+import hudson.plugins.im.tools.Assert;
+import hudson.plugins.im.tools.ExceptionHelper;
 import hudson.plugins.jabber.im.GroupChatIMMessageTarget;
-import hudson.plugins.jabber.im.IMConnectionListener;
-import hudson.plugins.jabber.im.IMException;
-import hudson.plugins.jabber.im.IMMessageTarget;
-import hudson.plugins.jabber.im.IMPresence;
-import hudson.plugins.jabber.im.transport.bot.Bot;
-import hudson.plugins.jabber.tools.Assert;
-import hudson.plugins.jabber.tools.ExceptionHelper;
 
 import java.lang.ref.WeakReference;
 import java.util.HashMap;

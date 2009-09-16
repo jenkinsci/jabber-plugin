@@ -1,15 +1,17 @@
 package hudson.plugins.jabber.im.transport;
 
 import hudson.Extension;
-import hudson.plugins.jabber.im.DefaultIMMessageTarget;
-import hudson.plugins.jabber.im.DefaultIMMessageTargetConverter;
-import hudson.plugins.jabber.im.GroupChatIMMessageTarget;
-import hudson.plugins.jabber.im.IMConnection;
-import hudson.plugins.jabber.im.IMException;
-import hudson.plugins.jabber.im.IMMessageTarget;
-import hudson.plugins.jabber.im.IMMessageTargetConversionException;
-import hudson.plugins.jabber.im.IMMessageTargetConverter;
-import hudson.plugins.jabber.im.IMPublisher;
+import hudson.model.User;
+import hudson.plugins.im.DefaultIMMessageTarget;
+import hudson.plugins.im.DefaultIMMessageTargetConverter;
+import hudson.plugins.im.GroupChatIMMessageTarget;
+import hudson.plugins.im.IMConnection;
+import hudson.plugins.im.IMException;
+import hudson.plugins.im.IMMessageTarget;
+import hudson.plugins.im.IMMessageTargetConversionException;
+import hudson.plugins.im.IMMessageTargetConverter;
+import hudson.plugins.im.IMPublisher;
+import hudson.plugins.jabber.user.JabberUserProperty;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
 
@@ -106,6 +108,15 @@ public class JabberPublisher extends IMPublisher
 	@Override
 	protected String getPluginName() {
 		return "Jabber notifier plugin";
+	}
+
+	@Override
+	protected String getConfiguredIMId(User user) {
+		JabberUserProperty jabberUserProperty = (JabberUserProperty) user.getProperties().get(JabberUserProperty.DESCRIPTOR);
+		if (jabberUserProperty != null) {
+			return jabberUserProperty.getJid();
+		}
+		return null;
 	}
     
     

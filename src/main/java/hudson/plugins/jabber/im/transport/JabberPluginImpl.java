@@ -1,7 +1,7 @@
 package hudson.plugins.jabber.im.transport;
 
 import hudson.Plugin;
-import hudson.plugins.jabber.im.IMPlugin;
+import hudson.plugins.im.IMPlugin;
 
 /**
  * Plugin entry point used to start/stop the plugin.
