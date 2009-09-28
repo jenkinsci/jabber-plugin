@@ -7,6 +7,7 @@ import hudson.model.User;
 import hudson.model.UserProperty;
 import hudson.model.UserPropertyDescriptor;
 
+import net.sf.json.JSONObject;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
@@ -27,7 +28,7 @@ public class JabberUserPropertyDescriptor extends UserPropertyDescriptor {
 	}
 
 	@Override
-	public UserProperty newInstance(StaplerRequest req) throws FormException {
+	public UserProperty newInstance(StaplerRequest req, JSONObject formData) throws FormException {
 		try {
 			return new JabberUserProperty(req.getParameter(PARAMETERNAME_JID));
 		} catch (IllegalArgumentException e) {

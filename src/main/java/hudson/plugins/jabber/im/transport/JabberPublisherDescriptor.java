@@ -317,7 +317,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      * Creates a new instance of {@link JabberPublisher} from a submitted form.
      */
     @Override
-    public JabberPublisher newInstance(final StaplerRequest req) throws FormException
+    public JabberPublisher newInstance(final StaplerRequest req, JSONObject formData) throws FormException
     {
         Assert.isNotNull(req, "Parameter 'req' must not be null.");
         final String t = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_TARGETS);
