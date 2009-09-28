@@ -100,7 +100,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     }
     
     @Override
-	public synchronized void load() {
+	public void load() {
 		super.load();
     	if (this.enabled == null) {
         	// migrate
