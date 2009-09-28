@@ -6,8 +6,10 @@ import hudson.plugins.im.IMException;
 import hudson.plugins.im.IMPublisherDescriptor;
 
 /**
+ * Jabber implementation of an {@link IMConnectionProvider}.
+ * 
  * @author Uwe Schaefer
- *
+ * @author kutzi
  */
 final class JabberIMConnectionProvider extends IMConnectionProvider
 {
@@ -27,6 +29,7 @@ final class JabberIMConnectionProvider extends IMConnectionProvider
     	super();
     }
 
+    @Override
     public synchronized IMConnection createConnection() throws IMException {
         releaseConnection();
 
