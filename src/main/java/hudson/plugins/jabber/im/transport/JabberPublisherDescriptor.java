@@ -305,10 +305,12 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     	return Util.fixEmptyAndTrim(this.initialGroupChats);
     }
 
+    @Override
     public String getDefaultIdSuffix() {
         return this.defaultIdSuffix;
     }
 
+    @Override
     public String getCommandPrefix() {
     	return this.commandPrefix;
     }
@@ -343,7 +345,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         try
         {
             return new JabberPublisher(t, n, notifyStart, notifySuspects, notifyCulprits,
-            		notifyFixers, this.defaultIdSuffix);
+            		notifyFixers);
         }
         catch (final IMMessageTargetConversionException e)
         {
