@@ -27,7 +27,28 @@
         </developer>
     </developers>
     
+    <properties>
+        <version.instant-messaging.plugin>1.1-SNAPSHOT</version.instant-messaging.plugin>
+    </properties>
+    
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>index.jelly</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>index.jelly</exclude>
+                </excludes>
+            </resource>
+        </resources>
+    
         <plugins>
             <plugin>
                 <groupId>org.jvnet.hudson.tools</groupId>
@@ -65,18 +86,20 @@
         <dependency>
         	<groupId>org.jvnet.hudson.plugins</groupId>
         	<artifactId>instant-messaging</artifactId>
-        	<version>1.1-SNAPSHOT</version>
+        	<version>${version.instant-messaging.plugin}</version>
         	<scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>jivesoftware</groupId>
             <artifactId>smack</artifactId>
             <version>2.2.1</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>jivesoftware</groupId>
             <artifactId>smackx</artifactId>
             <version>2.2.1</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 
