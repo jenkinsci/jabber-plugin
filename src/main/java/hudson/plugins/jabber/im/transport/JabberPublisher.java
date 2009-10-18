@@ -13,6 +13,7 @@ import hudson.plugins.im.IMMessageTargetConverter;
 import hudson.plugins.im.IMPublisher;
 import hudson.plugins.jabber.user.JabberUserProperty;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 
 /**
@@ -121,7 +122,7 @@ public class JabberPublisher extends IMPublisher
     
 
     // since Hudson 1.319:
-//	public BuildStepMonitor getRequiredMonitorService() {
-//		return BuildStepMonitor.BUILD;
-//	}
+	public BuildStepMonitor getRequiredMonitorService() {
+		return BuildStepMonitor.BUILD;
+	}
 }

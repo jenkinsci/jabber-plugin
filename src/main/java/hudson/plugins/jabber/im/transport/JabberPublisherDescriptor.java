@@ -26,6 +26,9 @@ import javax.servlet.http.HttpServletRequest;
 
 import net.sf.json.JSONObject;
 
+import org.acegisecurity.Authentication;
+import org.acegisecurity.AuthenticationException;
+import org.acegisecurity.providers.UsernamePasswordAuthenticationToken;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -52,6 +55,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public static final String PARAMETERNAME_INITIAL_GROUPCHATS = JabberPublisherDescriptor.PREFIX + "initialGroupChats";
     public static final String PARAMETERNAME_COMMAND_PREFIX = JabberPublisherDescriptor.PREFIX + "commandPrefix";
     public static final String PARAMETERNAME_DEFAULT_ID_SUFFIX = JabberPublisherDescriptor.PREFIX + "defaultIdSuffix";
+    public static final String PARAMETERNAME_HUDSON_LOGIN = JabberPublisherDescriptor.PREFIX + "hudsonLogin";
+    public static final String PARAMETERNAME_HUDSON_PASSWORD = JabberPublisherDescriptor.PREFIX + "hudsonPassword";
     public static final String[] PARAMETERVALUE_STRATEGY_VALUES;
     static {
         PARAMETERVALUE_STRATEGY_VALUES = new String[NotificationStrategy.values().length];
@@ -70,6 +75,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     private int port = DEFAULT_PORT;
     private String hostname = null;
     private boolean legacySSL = false;
+    // the following 2 are actually the Jabber nick and password. For backward compatibility I cannot rename them
     private String hudsonNickname = "hudson";
     private String hudsonPassword = "secret";
     private String groupChatNickname = null;
@@ -77,6 +83,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     private String initialGroupChats = null;
     private String commandPrefix = DEFAULT_COMMAND_PREFIX;
     private String defaultIdSuffix;
+    private String hudsonCiLogin;
+    private String hudsonCiPassword;
 
     public JabberPublisherDescriptor()
     {
@@ -103,7 +111,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	public void load() {
 		super.load();
     	if (this.enabled == null) {
-        	// migrate
+        	// migrate from plugin < v1.0
         	if (Util.fixEmptyAndTrim(this.hudsonNickname) != null) {
         		this.enabled = Boolean.TRUE;
         	} else {
@@ -217,6 +225,19 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     		this.defaultIdSuffix = "";
     	}
     }
+     
+     private void applyHudsonLoginPassword(HttpServletRequest req) throws FormException {
+    	 this.hudsonCiLogin = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_HUDSON_LOGIN));
+    	 this.hudsonCiPassword = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_HUDSON_PASSWORD));
+    	 if(this.hudsonCiLogin != null) {
+    		 Authentication auth = new UsernamePasswordAuthenticationToken(this.hudsonCiLogin, this.hudsonCiPassword);
+    		 try {
+				Hudson.getInstance().getSecurityRealm().getSecurityComponents().manager.authenticate(auth);
+			} catch (AuthenticationException e) {
+				throw new FormException(e, "Bad Hudson credentials");
+			}
+    	 }
+     }
     
     /**
      * This human readable name is used in the configuration screen.
@@ -370,6 +391,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         applyInitialGroupChats(req);
         applyCommandPrefix(req);
         applyDefaultIdSuffix(req);
+        applyHudsonLoginPassword(req);
 
         if (isEnabled()) {
             try {
@@ -477,6 +499,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	 * 'john.doe' for 'john.doe@gmail.com' or
 	 * 'alfred.e.neumann' for 'alfred.e.neumann'.
 	 */
+	@Override
 	public String getUserName() {
 		return JabberUtil.getUserPart(getJabberId());
 	}
@@ -485,7 +508,17 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      * Returns 'gmail.com' portion of the nick name 'john.doe@gmail.com', or
      * null if not found.
      */
-    public String getServiceName() {
+    String getServiceName() {
         return JabberUtil.getDomainPart(getJabberId());
     }
+
+	@Override
+	public String getHudsonPassword() {
+		return this.hudsonCiLogin;
+	}
+
+	@Override
+	public String getHudsonUserName() {
+		return this.hudsonCiPassword;
+	}
 }

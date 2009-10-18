@@ -11,7 +11,7 @@
                 checkUrl="'${rootURL}/publisher/JabberPublisher/jabberIdCheck?jabberId='+escape(this.value)+'&amp;port='+escape(this.form.elements['jabberPlugin.port'].value)+'&amp;hostname='+escape(this.form.elements['jabberPlugin.hostname'].value)"/>
 		</f:entry>
 		<f:entry title="Password">
-           <input type="password" name="${descriptor.PARAMETERNAME_PASSWORD}" class="setting-input"
+           <f:password name="${descriptor.PARAMETERNAME_PASSWORD}"
 				value="${descriptor.password}"/>
 		</f:entry>
 		<f:entry title="Initial group chats" description="Group chats to automatically join on startup with a bot (whitespace separated)">
@@ -45,6 +45,14 @@
       <f:entry title="Group chat nickname" help="${base}/help-group-nick.html">
         <f:textbox name="${descriptor.PARAMETERNAME_GROUP_NICKNAME}"
           value="${descriptor.groupChatNickname}" />
+      </f:entry>
+      <f:entry title="Hudson Username" help="${base}/help-hudson-login.html">
+        <f:textbox name="${descriptor.PARAMETERNAME_HUDSON_LOGIN}"
+          value="${descriptor.hudsonUserName}" />
+      </f:entry>
+      <f:entry title="Hudson Password">
+        <f:password name="${descriptor.PARAMETERNAME_HUDSON_PASSWORD}"
+          value="${descriptor.hudsonPassword}" />
       </f:entry>
     </f:advanced>
     </f:optionalBlock>  

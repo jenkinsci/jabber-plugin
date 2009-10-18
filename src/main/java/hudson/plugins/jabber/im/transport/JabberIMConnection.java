@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import org.acegisecurity.Authentication;
 import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.GroupChat;
@@ -80,12 +81,14 @@ class JabberIMConnection extends AbstractIMConnection {
 
     private String imStatusMessage;
 
-    private JabberPublisherDescriptor desc;
+    private final JabberPublisherDescriptor desc;
+    private final Authentication authentication;
 	
-	JabberIMConnection(final JabberPublisherDescriptor desc) throws IMException {
+	JabberIMConnection(JabberPublisherDescriptor desc, Authentication authentication) throws IMException {
 	    super(desc);
 		Assert.isNotNull(desc, "Parameter 'desc' must not be null.");
 		this.desc = desc;
+		this.authentication = authentication;
 		this.hostname = desc.getHostname();
 		this.port = desc.getPort();
 		this.legacySSL = desc.isLegacySSL();
@@ -236,7 +239,7 @@ class JabberIMConnection extends AbstractIMConnection {
 
 			this.bots.add(new Bot(new JabberMultiUserChat(groupChat),
 					this.groupChatNick, this.desc.getHost(),
-					this.botCommandPrefix));
+					this.botCommandPrefix, this.authentication));
 
 			groupChatCache.put(groupChatName, new WeakReference<GroupChat>(groupChat));
 		}
@@ -255,7 +258,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		
 		final Chat chat = this.connection.createChat(chatPartner);
 		Bot bot = new Bot(new JabberChat(chat), this.groupChatNick,
-					this.desc.getHost(), this.botCommandPrefix);
+					this.desc.getHost(), this.botCommandPrefix, this.authentication);
 		this.bots.add(bot);
 		
 		if (msg != null) {
