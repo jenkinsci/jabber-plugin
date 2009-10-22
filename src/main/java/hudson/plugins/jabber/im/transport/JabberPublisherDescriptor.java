@@ -243,9 +243,13 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      * This human readable name is used in the configuration screen.
      */
     @Override
-    public String getDisplayName()
-    {
+    public String getDisplayName() {
         return "Jabber Notification";
+    }
+    
+    @Override
+    public String getPluginDescription() {
+        return "Jabber plugin";
     }
 
     /**
@@ -256,6 +260,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     	return Boolean.TRUE.equals(this.enabled);
     }
 
+    @Override
     public String getHostname()
     {
         return this.hostname;
@@ -266,6 +271,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      * I.e. when hostname is set returns hostname.
      * Otherwise returns {@link #getServiceName()}
      */
+    @Override
     public String getHost() {
         if (StringUtils.isNotBlank(this.hostname)) {
             return this.hostname;
@@ -284,6 +290,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         return this.hudsonNickname;
     }
 
+    @Override
     public String getPassword()
     {
         return this.hudsonPassword;
@@ -294,6 +301,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         return this.groupChatNickname;
     }
 
+    @Override
     public int getPort()
     {
         return this.port;
