@@ -28,7 +28,7 @@
     </developers>
     
     <properties>
-        <version.instant-messaging.plugin>1.1</version.instant-messaging.plugin>
+        <version.instant-messaging.plugin>1.2-SNAPSHOT</version.instant-messaging.plugin>
     </properties>
     
     <build>

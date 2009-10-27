@@ -522,11 +522,11 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 
 	@Override
 	public String getHudsonPassword() {
-		return this.hudsonCiLogin;
+		return this.hudsonCiPassword;
 	}
 
 	@Override
 	public String getHudsonUserName() {
-		return this.hudsonCiPassword;
+		return this.hudsonCiLogin;
 	}
 }
