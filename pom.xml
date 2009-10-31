@@ -28,7 +28,7 @@
     </developers>
     
     <properties>
-        <version.instant-messaging.plugin>1.1</version.instant-messaging.plugin>
+        <version.instant-messaging.plugin>1.2</version.instant-messaging.plugin>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     
