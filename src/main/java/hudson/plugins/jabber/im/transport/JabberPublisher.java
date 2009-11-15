@@ -1,5 +1,7 @@
 package hudson.plugins.jabber.im.transport;
 
+import java.util.List;
+
 import hudson.Extension;
 import hudson.model.User;
 import hudson.plugins.im.DefaultIMMessageTarget;
@@ -88,20 +90,17 @@ public class JabberPublisher extends IMPublisher
     }
 
     @Override
-    public BuildStepDescriptor<Publisher> getDescriptor()
-    {
+    public BuildStepDescriptor<Publisher> getDescriptor() {
         return JabberPublisher.DESCRIPTOR;
     }
 
     @Override
-    protected IMConnection getIMConnection() throws IMException
-    {
+    protected IMConnection getIMConnection() throws IMException {
         return JabberIMConnectionProvider.getInstance().currentConnection();
     }
 
     @Override
-    protected IMMessageTargetConverter getIMMessageTargetConverter()
-    {
+    protected IMMessageTargetConverter getIMMessageTargetConverter() {
         return JabberPublisher.CONVERTER;
     }
 
@@ -119,6 +118,20 @@ public class JabberPublisher extends IMPublisher
 		return null;
 	}
     
+	@Override
+	public String getTargets() {
+		List<IMMessageTarget> notificationTargets = getNotificationTargets();
+		
+		StringBuilder sb = new StringBuilder();
+		for (IMMessageTarget target : notificationTargets) {
+			if ((target instanceof GroupChatIMMessageTarget) && (! target.toString().contains("@conference."))) {
+        		sb.append("*");
+        	}
+            sb.append(getIMMessageTargetConverter().toString(target));
+            sb.append(" ");
+        }
+        return sb.toString().trim();
+	}
     
 
     // since Hudson 1.319:
