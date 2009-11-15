@@ -57,14 +57,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public static final String PARAMETERNAME_DEFAULT_ID_SUFFIX = JabberPublisherDescriptor.PREFIX + "defaultIdSuffix";
     public static final String PARAMETERNAME_HUDSON_LOGIN = JabberPublisherDescriptor.PREFIX + "hudsonLogin";
     public static final String PARAMETERNAME_HUDSON_PASSWORD = JabberPublisherDescriptor.PREFIX + "hudsonPassword";
-    public static final String[] PARAMETERVALUE_STRATEGY_VALUES;
-    static {
-        PARAMETERVALUE_STRATEGY_VALUES = new String[NotificationStrategy.values().length];
-        int i = 0;
-        for (NotificationStrategy strategy : NotificationStrategy.values()) {
-            PARAMETERVALUE_STRATEGY_VALUES[i++] = strategy.getDisplayName();
-        }
-    };
+    public static final String[] PARAMETERVALUE_STRATEGY_VALUES = NotificationStrategy.getDisplayNames();
     public static final String PARAMETERVALUE_STRATEGY_DEFAULT = NotificationStrategy.STATECHANGE_ONLY.getDisplayName();
     public static final String DEFAULT_COMMAND_PREFIX = "!";
     
