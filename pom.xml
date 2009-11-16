@@ -54,11 +54,10 @@
             <plugin>
                 <groupId>org.jvnet.hudson.tools</groupId>
                 <artifactId>maven-hpi-plugin</artifactId>
-                <version>1.45</version>
+                <version>1.46</version>
                 <extensions>true</extensions>
 		        <configuration>
 					<compatibleSinceVersion>1.0</compatibleSinceVersion>
-                    <disabledTestInjection>true</disabledTestInjection>
 		        </configuration>
             </plugin>
             <!-- Make sure that we don't use any Java 1.6 dependencies -->
