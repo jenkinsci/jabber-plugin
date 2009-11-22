@@ -123,7 +123,7 @@ class JabberIMConnection extends AbstractIMConnection {
 								groupChatName = groupChatName.trim();
 								getGroupChat(groupChatName);
 								LOGGER.info("Joined groupchat " + groupChatName);
-							} catch (XMPPException e) {
+							} catch (IMException e) {
 								// if we got here, the XMPP connection could be established, but probably the groupchat name
 								// is invalid
 								LOGGER.warning("Unable to connect to groupchat '" + groupChatName + "'. Did you append @conference or so to the name?\n"
@@ -220,8 +220,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		return this.connection.isAuthenticated();
 	}
 
-	private GroupChat getGroupChat(String groupChatName)
-			throws XMPPException {
+	private GroupChat getGroupChat(String groupChatName) throws IMException {
 		WeakReference<GroupChat> ref = groupChatCache.get(groupChatName);
 		GroupChat groupChat = null;
 		if (ref != null) {
@@ -231,7 +230,12 @@ class JabberIMConnection extends AbstractIMConnection {
 		
 		if (create) {
 			groupChat = this.connection.createGroupChat(groupChatName);
-			groupChat.join(this.groupChatNick);
+			try {
+				groupChat.join(this.groupChatNick);
+			} catch (XMPPException e) {
+				LOGGER.warning("Cannot join group chat '" + groupChatName + "'. Exception:\n" + ExceptionHelper.dump(e));
+				throw new IMException(e);
+			}
 
 			// get rid of old messages:
 			while (groupChat.pollMessage() != null) {
