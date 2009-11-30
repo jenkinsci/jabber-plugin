@@ -61,15 +61,17 @@ class JabberIMConnection extends AbstractIMConnection {
 	private final String passwd;
 	private final String botCommandPrefix;
 	/**
-	 * Jabber ID. It can be either 'john.doe@gmail.com' (username+service name)
-	 * or just 'john.doe' (service name.)
+	 * Jabber 'nick'. This is just the username-part of the Jabber-ID.
+	 * I.e. for 'john.doe@gmail.com' it is 'john.doe'.
 	 */
 	private final String nick;
+	/**
+	 * The nick name of the Hudson bot to use in group chats.
+	 * May be null in which case the nick is used.
+	 */
 	private final String groupChatNick;
 	/**
-	 * Optional server name. If the {@link #nick} is username+service name, this
-	 * field can be omitted, in which case reverse DNS lookup and other
-	 * defaulting mechanism is used to determine the server name.
+	 * Server name of the Jabber server.
 	 */
 	private final String hostname;
 	private final int port;
@@ -89,13 +91,13 @@ class JabberIMConnection extends AbstractIMConnection {
 		Assert.isNotNull(desc, "Parameter 'desc' must not be null.");
 		this.desc = desc;
 		this.authentication = authentication;
-		this.hostname = desc.getHostname();
+		this.hostname = desc.getHost();
 		this.port = desc.getPort();
 		this.legacySSL = desc.isLegacySSL();
-		this.nick = desc.getJabberId();
+		this.nick = JabberUtil.getUserPart(desc.getJabberId());
 		this.passwd = desc.getPassword();
-		this.groupChatNick = desc.getGroupChatNickname() != null ? desc
-				.getGroupChatNickname() : this.nick;
+		this.groupChatNick = desc.getGroupChatNickname() != null ?
+				desc.getGroupChatNickname() : this.nick;
 		this.botCommandPrefix = desc.getCommandPrefix();
 		if (desc.getInitialGroupChats() != null) {
 			this.groupChats = desc.getInitialGroupChats().trim().split("\\s");
@@ -115,6 +117,7 @@ class JabberIMConnection extends AbstractIMConnection {
 						LOGGER.info("Connected to XMPP on " + this.desc.getHost() + ":" + this.port);
 			
 						// I've read somewhere that status must be set, before one can do anything other
+						// Don't know if it's true, but can't hurt, either.
 						sendPresence();
 						
 						groupChatCache.clear();
@@ -127,7 +130,7 @@ class JabberIMConnection extends AbstractIMConnection {
 								// if we got here, the XMPP connection could be established, but probably the groupchat name
 								// is invalid
 								LOGGER.warning("Unable to connect to groupchat '" + groupChatName + "'. Did you append @conference or so to the name?\n"
-										+ "Message: " + e.toString());
+										+ "Exception: " + ExceptionHelper.dump(e));
 							}
 						}
 					} else {
@@ -192,14 +195,14 @@ class JabberIMConnection extends AbstractIMConnection {
 		String serviceName = desc.getServiceName();
 		if (serviceName == null) {
 			this.connection = this.legacySSL ? new SSLXMPPConnection(
-					this.hostname, this.port) : new XMPPConnection(
-					this.hostname, this.port);
-		} else if (hostname == null) {
+					desc.getHostname(), this.port) : new XMPPConnection(
+					desc.getHostname(), this.port);
+		} else if (desc.getHostname() == null) {
 			this.connection = this.legacySSL ? new SSLXMPPConnection(
 					serviceName) : new XMPPConnection(serviceName);
 		} else {
 			this.connection = this.legacySSL ? new SSLXMPPConnection(
-					this.hostname, this.port, serviceName)
+					desc.getHostname(), this.port, serviceName)
 					: new XMPPConnection(this.hostname, this.port,
 							serviceName);
 		}
