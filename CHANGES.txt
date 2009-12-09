@@ -1,2 +1,0 @@
-Please see Wiki for changes:
-http://wiki.hudson-ci.org/display/HUDSON/Jabber+Plugin#JabberPlugin-Changelog
