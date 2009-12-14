@@ -52,6 +52,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public static final String PARAMETERNAME_NOTIFY_SUSPECTS = JabberPublisherDescriptor.PREFIX + "notifySuspects";
     public static final String PARAMETERNAME_NOTIFY_CULPRITS = JabberPublisherDescriptor.PREFIX + "notifyCulprits";
     public static final String PARAMETERNAME_NOTIFY_FIXERS = JabberPublisherDescriptor.PREFIX + "notifyFixers";
+    public static final String PARAMETERNAME_NOTIFY_UPSTREAM_COMMITTERS = JabberPublisherDescriptor.PREFIX + "notifyUpstreamCommitters";
     public static final String PARAMETERNAME_INITIAL_GROUPCHATS = JabberPublisherDescriptor.PREFIX + "initialGroupChats";
     public static final String PARAMETERNAME_COMMAND_PREFIX = JabberPublisherDescriptor.PREFIX + "commandPrefix";
     public static final String PARAMETERNAME_DEFAULT_ID_SUFFIX = JabberPublisherDescriptor.PREFIX + "defaultIdSuffix";
@@ -364,13 +365,11 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         boolean notifySuspects = "on".equals(req.getParameter(PARAMETERNAME_NOTIFY_SUSPECTS));
         boolean notifyCulprits = "on".equals(req.getParameter(PARAMETERNAME_NOTIFY_CULPRITS));
         boolean notifyFixers = "on".equals(req.getParameter(PARAMETERNAME_NOTIFY_FIXERS));
-        try
-        {
+        boolean notifyUpstream = "on".equals(req.getParameter(PARAMETERNAME_NOTIFY_UPSTREAM_COMMITTERS));
+        try {
             return new JabberPublisher(t, n, notifyStart, notifySuspects, notifyCulprits,
-            		notifyFixers);
-        }
-        catch (final IMMessageTargetConversionException e)
-        {
+            		notifyFixers, notifyUpstream);
+        } catch (final IMMessageTargetConversionException e) {
             throw new FormException(e, JabberPublisherDescriptor.PARAMETERNAME_TARGETS);
         }
     }

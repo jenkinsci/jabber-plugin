@@ -79,14 +79,15 @@ public class JabberPublisher extends IMPublisher
 
     private static final IMMessageTargetConverter CONVERTER = new JabberIMMessageTargetConverter();
 
-    public JabberPublisher(final String targetsAsString, final String notificationStrategy,
-    		final boolean notifyGroupChatsOnBuildStart,
-    		final boolean notifySuspects,
-    		final boolean notifyCulprits,
-    		final boolean notifyFixers) throws IMMessageTargetConversionException
+    public JabberPublisher(String targetsAsString, String notificationStrategy,
+    		boolean notifyGroupChatsOnBuildStart,
+    		boolean notifySuspects,
+    		boolean notifyCulprits,
+    		boolean notifyFixers,
+    		boolean notifyUpstreamCommitters) throws IMMessageTargetConversionException
     {
         super(targetsAsString, notificationStrategy, notifyGroupChatsOnBuildStart,
-        		notifySuspects, notifyCulprits, notifyFixers);
+        		notifySuspects, notifyCulprits, notifyFixers, notifyUpstreamCommitters);
     }
 
     @Override
