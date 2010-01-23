@@ -1,11 +1,8 @@
 package hudson.plugins.jabber.im.transport;
 
-import java.util.List;
-
 import hudson.Extension;
 import hudson.model.User;
 import hudson.plugins.im.DefaultIMMessageTarget;
-import hudson.plugins.im.DefaultIMMessageTargetConverter;
 import hudson.plugins.im.GroupChatIMMessageTarget;
 import hudson.plugins.im.IMConnection;
 import hudson.plugins.im.IMException;
@@ -13,21 +10,25 @@ import hudson.plugins.im.IMMessageTarget;
 import hudson.plugins.im.IMMessageTargetConversionException;
 import hudson.plugins.im.IMMessageTargetConverter;
 import hudson.plugins.im.IMPublisher;
+import hudson.plugins.im.tools.Assert;
 import hudson.plugins.jabber.user.JabberUserProperty;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 
+import java.util.List;
+
 /**
- * Jabber-specific implementation of the Publisher.
- * @author Uwe Schaefer
+ * Jabber-specific implementation of the {@link IMPublisher}.
+ *
+ * @author Christoph Kutzinski
+ * @author Uwe Schaefer (original implementation)
  */
 public class JabberPublisher extends IMPublisher
 {
-    private static class JabberIMMessageTargetConverter extends DefaultIMMessageTargetConverter
+    private static class JabberIMMessageTargetConverter implements IMMessageTargetConverter
     {
-        private void checkValidity(final String f) throws IMMessageTargetConversionException
-        {
+        private void checkValidity(final String f) throws IMMessageTargetConversionException {
         	// See: http://xmpp.org/rfcs/rfc3920.html#addressing
         	// obviously, there is no easy regexp to validate this.
         	// Additionally, we require the part before the @.
@@ -44,8 +45,7 @@ public class JabberPublisher extends IMPublisher
         }
 
         @Override
-        public IMMessageTarget fromString(final String targetAsString) throws IMMessageTargetConversionException
-        {
+        public IMMessageTarget fromString(final String targetAsString) throws IMMessageTargetConversionException {
             String f = targetAsString.trim();
             if (f.length() > 0)
             {
@@ -73,20 +73,29 @@ public class JabberPublisher extends IMPublisher
                 return null;
             }
         }
+        
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+		public String toString(final IMMessageTarget target) {
+            Assert.isNotNull(target, "Parameter 'target' must not be null.");
+            return target.toString();
+        }
     }
     @Extension
     public static final JabberPublisherDescriptor DESCRIPTOR = new JabberPublisherDescriptor();
 
-    private static final IMMessageTargetConverter CONVERTER = new JabberIMMessageTargetConverter();
+    static final IMMessageTargetConverter CONVERTER = new JabberIMMessageTargetConverter();
 
-    public JabberPublisher(String targetsAsString, String notificationStrategy,
+    public JabberPublisher(List<IMMessageTarget> targets, String notificationStrategy,
     		boolean notifyGroupChatsOnBuildStart,
     		boolean notifySuspects,
     		boolean notifyCulprits,
     		boolean notifyFixers,
     		boolean notifyUpstreamCommitters) throws IMMessageTargetConversionException
     {
-        super(targetsAsString, notificationStrategy, notifyGroupChatsOnBuildStart,
+        super(targets, notificationStrategy, notifyGroupChatsOnBuildStart,
         		notifySuspects, notifyCulprits, notifyFixers, notifyUpstreamCommitters);
     }
 
@@ -98,11 +107,6 @@ public class JabberPublisher extends IMPublisher
     @Override
     protected IMConnection getIMConnection() throws IMException {
         return JabberIMConnectionProvider.getInstance().currentConnection();
-    }
-
-    @Override
-    protected IMMessageTargetConverter getIMMessageTargetConverter() {
-        return JabberPublisher.CONVERTER;
     }
 
 	@Override
@@ -128,7 +132,7 @@ public class JabberPublisher extends IMPublisher
 			if ((target instanceof GroupChatIMMessageTarget) && (! target.toString().contains("@conference."))) {
         		sb.append("*");
         	}
-            sb.append(getIMMessageTargetConverter().toString(target));
+            sb.append(getIMDescriptor().getIMMessageTargetConverter().toString(target));
             sb.append(" ");
         }
         return sb.toString().trim();

@@ -7,7 +7,9 @@ import hudson.Util;
 import hudson.model.AbstractProject;
 import hudson.model.Hudson;
 import hudson.plugins.im.IMException;
+import hudson.plugins.im.IMMessageTarget;
 import hudson.plugins.im.IMMessageTargetConversionException;
+import hudson.plugins.im.IMMessageTargetConverter;
 import hudson.plugins.im.IMPublisherDescriptor;
 import hudson.plugins.im.NotificationStrategy;
 import hudson.plugins.im.tools.Assert;
@@ -20,6 +22,9 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
@@ -33,8 +38,7 @@ import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> implements IMPublisherDescriptor
-{
+public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> implements IMPublisherDescriptor {
     private static final Logger LOGGER = Logger.getLogger(JabberPublisherDescriptor.class.getName());
     
     private static final String PREFIX = "jabberPlugin.";
@@ -346,6 +350,29 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     {
         Assert.isNotNull(req, "Parameter 'req' must not be null.");
         final String t = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_TARGETS);
+        final String[] split;
+        if (t != null) {
+        	split = t.split("\\s");
+        } else {
+        	split = new String[0];
+        }
+        
+    	List<IMMessageTarget> targets = new ArrayList<IMMessageTarget>(split.length);
+    	
+        
+        try {
+			final IMMessageTargetConverter conv = getIMMessageTargetConverter();
+			for (String fragment : split) {
+			    IMMessageTarget createIMMessageTarget;
+			    createIMMessageTarget = conv.fromString(fragment);
+			    if (createIMMessageTarget != null)  {
+			        targets.add(createIMMessageTarget);
+			    }
+			}
+		} catch (IMMessageTargetConversionException e) {
+			throw new FormException("Invalid Jabber address", e, JabberPublisherDescriptor.PARAMETERNAME_TARGETS);
+		}
+        
         String n = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_STRATEGY);
         if (n == null) {
         	n = PARAMETERVALUE_STRATEGY_DEFAULT;
@@ -367,7 +394,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         boolean notifyFixers = "on".equals(req.getParameter(PARAMETERNAME_NOTIFY_FIXERS));
         boolean notifyUpstream = "on".equals(req.getParameter(PARAMETERNAME_NOTIFY_UPSTREAM_COMMITTERS));
         try {
-            return new JabberPublisher(t, n, notifyStart, notifySuspects, notifyCulprits,
+            return new JabberPublisher(targets, n, notifyStart, notifySuspects, notifyCulprits,
             		notifyFixers, notifyUpstream);
         } catch (final IMMessageTargetConversionException e) {
             throw new FormException(e, JabberPublisherDescriptor.PARAMETERNAME_TARGETS);
@@ -520,5 +547,16 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	@Override
 	public String getHudsonUserName() {
 		return this.hudsonCiLogin;
+	}
+	
+	@Override
+	public IMMessageTargetConverter getIMMessageTargetConverter() {
+		return JabberPublisher.CONVERTER;
+	}
+
+	@Override
+	public List<IMMessageTarget> getDefaultTargets() {
+		// not implemented for Jabber bot
+		return Collections.emptyList();
 	}
 }
