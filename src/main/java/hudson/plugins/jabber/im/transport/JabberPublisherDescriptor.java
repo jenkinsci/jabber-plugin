@@ -72,7 +72,13 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     private Boolean enabled;
     private int port = DEFAULT_PORT;
     private String hostname = null;
-    private boolean legacySSL = false;
+    
+    /**
+     * Only left here for deserialization compatibility with old instances.
+     * @deprecated not supported anymore. Any half decent jabber server doesn't need this.
+     */
+    @Deprecated
+	private transient boolean legacySSL = false;
     // the following 2 are actually the Jabber nick and password. For backward compatibility I cannot rename them
     private String hudsonNickname = "hudson";
     private String hudsonPassword = "secret";
@@ -191,11 +197,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         } else {
             this.port = DEFAULT_PORT;
         }
-    }
-
-    private void applyLegacySSL(final HttpServletRequest req)
-    {
-        this.legacySSL = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_SSL) != null;
     }
 
     private void applyPresence(final HttpServletRequest req)
@@ -412,7 +413,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         applyPresence(req);
         applyHostname(req);
         applyPort(req);
-        applyLegacySSL(req);
         applyNickname(req);
         applyPassword(req);
         applyGroupChatNickname(req);

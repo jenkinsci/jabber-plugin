@@ -4,14 +4,14 @@ import hudson.plugins.im.IMChat;
 import hudson.plugins.im.IMException;
 import hudson.plugins.im.IMMessageListener;
 
-import org.jivesoftware.smack.GroupChat;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smackx.muc.MultiUserChat;
 
 public class JabberMultiUserChat implements IMChat {
     
-    private GroupChat chat;
+    private MultiUserChat chat;
 
-    public JabberMultiUserChat (GroupChat chat) {
+    public JabberMultiUserChat (MultiUserChat chat) {
          this.chat = chat;
      }
 

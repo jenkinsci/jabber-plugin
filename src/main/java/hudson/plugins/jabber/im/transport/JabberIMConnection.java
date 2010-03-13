@@ -16,7 +16,6 @@ import hudson.plugins.im.tools.ExceptionHelper;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,10 +24,9 @@ import java.util.logging.Logger;
 
 import org.acegisecurity.Authentication;
 import org.jivesoftware.smack.Chat;
+import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.ConnectionListener;
-import org.jivesoftware.smack.GroupChat;
 import org.jivesoftware.smack.PacketListener;
-import org.jivesoftware.smack.SSLXMPPConnection;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.filter.AndFilter;
@@ -39,6 +37,7 @@ import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smack.packet.Presence;
+import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.packet.DelayInformation;
 import org.jivesoftware.smackx.packet.MessageEvent;
 import org.jivesoftware.smackx.packet.XHTMLExtension;
@@ -55,7 +54,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	
 	private volatile XMPPConnection connection;
 
-	private final Map<String, WeakReference<GroupChat>> groupChatCache = new HashMap<String, WeakReference<GroupChat>>();
+	private final Map<String, WeakReference<MultiUserChat>> groupChatCache = new HashMap<String, WeakReference<MultiUserChat>>();
 	private final Map<String, WeakReference<Chat>> chatCache = new HashMap<String, WeakReference<Chat>>();
 	private final Set<Bot> bots = new HashSet<Bot>();
 	private final String passwd;
@@ -75,7 +74,6 @@ class JabberIMConnection extends AbstractIMConnection {
 	 */
 	private final String hostname;
 	private final int port;
-	private final boolean legacySSL;
 
 	private final String[] groupChats;
 	
@@ -93,7 +91,6 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.authentication = authentication;
 		this.hostname = desc.getHost();
 		this.port = desc.getPort();
-		this.legacySSL = desc.isLegacySSL();
 		this.nick = JabberUtil.getUserPart(desc.getJabberId());
 		this.passwd = desc.getPassword();
 		this.groupChatNick = desc.getGroupChatNickname() != null ?
@@ -114,7 +111,11 @@ class JabberIMConnection extends AbstractIMConnection {
 			try {
 				if (!isConnected()) {
 					if (createConnection()) {
-						LOGGER.info("Connected to XMPP on " + this.desc.getHost() + ":" + this.port);
+						LOGGER.info("Connected to XMPP on "
+								+ this.connection.getHost() + ":" + this.connection.getPort()
+								+ "/" + this.connection.getServiceName()
+								+ (this.connection.isUsingTLS() ? " using TLS" : "")
+								+ (this.connection.isUsingCompression() ? " using compression" : ""));
 			
 						// I've read somewhere that status must be set, before one can do anything other
 						// Don't know if it's true, but can't hurt, either.
@@ -137,7 +138,7 @@ class JabberIMConnection extends AbstractIMConnection {
 						// clean-up if needed
 						if (this.connection != null) {
 							try {
-								this.connection.close();
+								this.connection.disconnect();
 							} catch (Exception e) {
 								// ignore
 							}
@@ -160,8 +161,8 @@ class JabberIMConnection extends AbstractIMConnection {
 	    lock();
 	    try {
 			try {
-				for (WeakReference<GroupChat> entry : groupChatCache.values()) {
-					GroupChat chat = entry.get();
+				for (WeakReference<MultiUserChat> entry : groupChatCache.values()) {
+					MultiUserChat chat = entry.get();
 					if (chat != null && chat.isJoined()) {
 						chat.leave();
 					}
@@ -171,7 +172,7 @@ class JabberIMConnection extends AbstractIMConnection {
 				this.groupChatCache.clear();
 				this.chatCache.clear();
 				if (this.connection.isConnected()) {
-					this.connection.close();
+					this.connection.disconnect();
 				}
 			} catch (Exception e) {
 				// ignore
@@ -187,30 +188,35 @@ class JabberIMConnection extends AbstractIMConnection {
 	private boolean createConnection() throws XMPPException {
 		if (this.connection != null) {
 			try {
-				this.connection.close();
+				this.connection.disconnect();
 			} catch (Exception ignore) {
 				// ignore
 			}
 		}
 		String serviceName = desc.getServiceName();
+		final ConnectionConfiguration cfg;
 		if (serviceName == null) {
-			this.connection = this.legacySSL ? new SSLXMPPConnection(
-					desc.getHostname(), this.port) : new XMPPConnection(
-					desc.getHostname(), this.port);
-		} else if (desc.getHostname() == null) {
-			this.connection = this.legacySSL ? new SSLXMPPConnection(
-					serviceName) : new XMPPConnection(serviceName);
+			cfg = new ConnectionConfiguration(
+					this.hostname, this.port);
+		} else if (this.hostname == null) {
+			cfg = new ConnectionConfiguration(serviceName);
 		} else {
-			this.connection = this.legacySSL ? new SSLXMPPConnection(
-					desc.getHostname(), this.port, serviceName)
-					: new XMPPConnection(this.hostname, this.port,
-							serviceName);
+			cfg = new ConnectionConfiguration(
+					this.hostname, this.port,
+					serviceName);
 		}
+		// Currently, we handle reconnects ourself.
+		// Maybe we should change it in the future, but currently I'm
+		// not sure what Smack's reconnect feature really does.
+		cfg.setReconnectionAllowed(false);
+		
+		this.connection = new XMPPConnection(cfg);
+		this.connection.connect();
 
 		if (this.connection.isConnected()) {
 			this.connection.login(this.desc.getUserName(), this.passwd, "Hudson");
 			
-			PacketFilter filter = new AndFilter(new MessageTypeFilter(Message.Type.CHAT), 
+			PacketFilter filter = new AndFilter(new MessageTypeFilter(Message.Type.chat), 
 					new ToContainsFilter(this.desc.getUserName()));
 			// Actually, this should be the full user name (including '@server')
 			// but since via this connection only message to me should be delivered (right?)
@@ -223,16 +229,16 @@ class JabberIMConnection extends AbstractIMConnection {
 		return this.connection.isAuthenticated();
 	}
 
-	private GroupChat getGroupChat(String groupChatName) throws IMException {
-		WeakReference<GroupChat> ref = groupChatCache.get(groupChatName);
-		GroupChat groupChat = null;
+	private MultiUserChat getGroupChat(String groupChatName) throws IMException {
+		WeakReference<MultiUserChat> ref = groupChatCache.get(groupChatName);
+		MultiUserChat groupChat = null;
 		if (ref != null) {
 			groupChat = ref.get();
 		}
 		boolean create = (groupChat == null);
 		
 		if (create) {
-			groupChat = this.connection.createGroupChat(groupChatName);
+			groupChat = new MultiUserChat(this.connection, groupChatName);
 			try {
 				groupChat.join(this.groupChatNick);
 			} catch (XMPPException e) {
@@ -248,7 +254,7 @@ class JabberIMConnection extends AbstractIMConnection {
 					this.groupChatNick, this.desc.getHost(),
 					this.botCommandPrefix, this.authentication));
 
-			groupChatCache.put(groupChatName, new WeakReference<GroupChat>(groupChat));
+			groupChatCache.put(groupChatName, new WeakReference<MultiUserChat>(groupChat));
 		}
 		return groupChat;
 	}
@@ -263,7 +269,7 @@ class JabberIMConnection extends AbstractIMConnection {
 			}
 		}
 		
-		final Chat chat = this.connection.createChat(chatPartner);
+		final Chat chat = this.connection.getChatManager().createChat(chatPartner, null);
 		Bot bot = new Bot(new JabberChat(chat), this.groupChatNick,
 					this.desc.getHost(), this.botCommandPrefix, this.authentication);
 		this.bots.add(bot);
@@ -335,22 +341,22 @@ class JabberIMConnection extends AbstractIMConnection {
             	Presence presence;
             	switch (this.impresence) {
             	case AVAILABLE:
-            		presence = new Presence(Presence.Type.AVAILABLE,
-            				this.imStatusMessage, 1, Presence.Mode.AVAILABLE);
+            		presence = new Presence(Presence.Type.available,
+            				this.imStatusMessage, 1, Presence.Mode.available);
             		break;
             	
             	case OCCUPIED:
-            	    presence = new Presence(Presence.Type.AVAILABLE,
-            	            this.imStatusMessage, 1, Presence.Mode.AWAY);
+            	    presence = new Presence(Presence.Type.available,
+            	            this.imStatusMessage, 1, Presence.Mode.away);
             	    break;
             	    
             	case DND:
-            	    presence = new Presence(Presence.Type.AVAILABLE,
-                            this.imStatusMessage, 1, Presence.Mode.DO_NOT_DISTURB);
+            	    presence = new Presence(Presence.Type.available,
+                            this.imStatusMessage, 1, Presence.Mode.dnd);
                     break;
 
             	case UNAVAILABLE:
-            		presence = new Presence(Presence.Type.UNAVAILABLE);
+            		presence = new Presence(Presence.Type.unavailable);
             		break;
 
             	default:
@@ -388,10 +394,26 @@ class JabberIMConnection extends AbstractIMConnection {
 				@Override
 				public void connectionClosedOnError(Exception e) {
 					listener.connectionBroken(e);
+				}
+				
+				@Override
+				public void connectionClosed() {
+				}
+				
+				@Override
+				public void reconnectingIn(int paramInt) {
+					// TODO Auto-generated method stub
 					
 				}
 				@Override
-				public void connectionClosed() {
+				public void reconnectionFailed(Exception paramException) {
+					// TODO Auto-generated method stub
+					
+				}
+				@Override
+				public void reconnectionSuccessful() {
+					// TODO Auto-generated method stub
+					
 				}
 			};
 			listeners.put(listener, l);
@@ -424,10 +446,7 @@ class JabberIMConnection extends AbstractIMConnection {
 
 				boolean composing = false;
 				boolean xhtmlMessage = false;
-				@SuppressWarnings("unchecked")
-				Iterator<PacketExtension> extensions = m.getExtensions();
-				while (extensions.hasNext()) {
-					PacketExtension ext = extensions.next();
+				for (PacketExtension ext : m.getExtensions()) {
 					if (ext instanceof DelayInformation) {
 						// ignore delayed messages
 						return;

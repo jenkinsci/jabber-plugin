@@ -3,8 +3,8 @@ package hudson.plugins.jabber.im.transport;
 import hudson.plugins.im.IMMessage;
 import hudson.plugins.im.IMMessageListener;
 
-import java.util.Iterator;
-
+import org.jivesoftware.smack.Chat;
+import org.jivesoftware.smack.MessageListener;
 import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
@@ -16,7 +16,7 @@ import org.jivesoftware.smackx.packet.DelayInformation;
  * 
  * @author kutzi
  */
-class JabberMessageListenerAdapter implements PacketListener {
+class JabberMessageListenerAdapter implements MessageListener, PacketListener {
 
     private final IMMessageListener listener;
 
@@ -24,12 +24,11 @@ class JabberMessageListenerAdapter implements PacketListener {
         this.listener = listener;
     }
     
-    @SuppressWarnings("unchecked")
+    @Override
     public void processPacket(Packet p) {
         if (p instanceof Message) {
             // don't react to old messages
-            for (Iterator iter = p.getExtensions(); iter.hasNext();) {
-                PacketExtension pe = (PacketExtension) iter.next();
+            for (PacketExtension pe : p.getExtensions()) {
                 if (pe instanceof DelayInformation) {
                     return; // simply bail out here, it's an old message
                 }
@@ -41,5 +40,20 @@ class JabberMessageListenerAdapter implements PacketListener {
             listener.onMessage(imMessage);
         }
     }
+
+	@Override
+	public void processMessage(Chat chat, Message msg) {
+		// don't react to old messages
+        for (PacketExtension pe : msg.getExtensions()) {
+            if (pe instanceof DelayInformation) {
+                return; // simply bail out here, it's an old message
+            }
+        }
+
+        IMMessage imMessage = new IMMessage(msg.getFrom(),
+        		msg.getTo(), msg.getBody());
+        
+        listener.onMessage(imMessage);
+	}
     
 }
