@@ -101,6 +101,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 				JabberIMConnectionProvider.setDesc(null);
 			} catch (IMException e) {
 				// ignore
+				LOGGER.info(ExceptionHelper.dump(e));
 			}
         }
     }
@@ -434,6 +435,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 				JabberIMConnectionProvider.setDesc(null);
 			} catch (IMException e) {
 				// ignore
+				LOGGER.info(ExceptionHelper.dump(e));
 			}
             LOGGER.info("No hostname specified.");
         }
