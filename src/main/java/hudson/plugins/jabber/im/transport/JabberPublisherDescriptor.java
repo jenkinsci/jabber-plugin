@@ -102,7 +102,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     private String defaultIdSuffix;
     private String hudsonCiLogin;
     private String hudsonCiPassword;
-    private String subscriptionMode;
+    private String subscriptionMode = SubscriptionMode.accept_all.name();
 
     public JabberPublisherDescriptor()
     {
