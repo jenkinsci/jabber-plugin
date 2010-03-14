@@ -22,14 +22,11 @@
       <f:entry title="Server" help="${base}/help-server.html">
           <f:textbox name="${descriptor.PARAMETERNAME_HOSTNAME}"
            value="${descriptor.hostname}"
-           checkUrl="'${rootURL}/publisher/JabberPublisher/serverCheck?field=hostname&amp;hostname='+escape(this.value)+'&amp;port='+escape(this.form.elements['jabberPlugin.port'].value)+'&amp;legacySSL='+escape(this.form.elements['jabberPlugin.ssl'].value)"/>
+           checkUrl="'${rootURL}/publisher/JabberPublisher/serverCheck?field=hostname&amp;hostname='+escape(this.value)+'&amp;port='+escape(this.form.elements['jabberPlugin.port'].value)"/>
       </f:entry>
       <f:entry title="Port" help="${base}/help-port.html">
         <f:textbox name="${descriptor.PARAMETERNAME_PORT}" value="${descriptor.portString}"
         checkUrl="'${rootURL}/publisher/JabberPublisher/serverCheck?field=port&amp;hostname='+escape(this.form.elements['jabberPlugin.hostname'].value)+'&amp;port='+escape(this.value)"/>
-      </f:entry>
-      <f:entry title="Legacy SSL">
-        <f:checkbox name="${descriptor.PARAMETERNAME_SSL}" checked="${descriptor.legacySSL}"/>
       </f:entry>
       <f:entry title="Default ID suffix" description="This suffix will be used to determine the Jabber ID from the Hudson ID, if no Jabber ID is specified in the user settings">
 			<f:textbox name="${descriptor.PARAMETERNAME_DEFAULT_ID_SUFFIX}"
@@ -37,6 +34,13 @@
 	  </f:entry>
       <f:entry title="Expose presence" help="${base}/help-presence.html">
         <f:checkbox name="${descriptor.PARAMETERNAME_PRESENCE}" checked="${descriptor.exposePresence}"/>
+      </f:entry>
+      <f:entry title="Acceptance mode for subscription requests" help="${base}/help-presence.html">
+        <select class="setting-input" name="${descriptor.PARAMETERNAME_SUBSCRIPTION_MODE}">
+	       <j:forEach var="value" items="${descriptor.PARAMETERVALUE_SUBSCRIPTION_MODE}">
+	          <f:option selected="${instance.subscriptionMode==value}">${value}</f:option>
+	       </j:forEach>
+	    </select>
       </f:entry>
       <f:entry title="Bot command prefix" help="${base}/help-bot.html">
         <f:textbox name="${descriptor.PARAMETERNAME_COMMAND_PREFIX}"
@@ -55,6 +59,6 @@
           value="${descriptor.hudsonPassword}" />
       </f:entry>
     </f:advanced>
-    </f:optionalBlock>  
+    </f:optionalBlock>
   </f:section>
 </j:jelly>

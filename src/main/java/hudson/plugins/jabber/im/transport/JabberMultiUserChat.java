@@ -9,10 +9,12 @@ import org.jivesoftware.smackx.muc.MultiUserChat;
 
 public class JabberMultiUserChat implements IMChat {
     
-    private MultiUserChat chat;
+    private final MultiUserChat chat;
+	private final JabberIMConnection connection;
 
-    public JabberMultiUserChat (MultiUserChat chat) {
+    public JabberMultiUserChat (MultiUserChat chat, JabberIMConnection connection) {
          this.chat = chat;
+         this.connection = connection;
      }
 
     public void sendMessage(String msg) throws IMException {
@@ -33,7 +35,8 @@ public class JabberMultiUserChat implements IMChat {
     }
     
     public void addMessageListener(IMMessageListener listener) {
-        this.chat.addMessageListener(new JabberMessageListenerAdapter(listener));
+        this.chat.addMessageListener(
+        		new JabberMUCMessageListenerAdapter(listener, this.connection, this.chat));
     }
 
     public void removeMessageListener(IMMessageListener listener) {

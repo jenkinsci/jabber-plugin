@@ -13,10 +13,12 @@ import org.jivesoftware.smack.XMPPException;
  * @author kutzi
  */
 public class JabberChat implements IMChat {
-    private Chat chat;
+    private final Chat chat;
+    private final JabberIMConnection connection;
 
-    public JabberChat(Chat chat) {
+    public JabberChat(Chat chat, JabberIMConnection connection) {
         this.chat = chat;
+        this.connection = connection;
     }
 
     public void sendMessage(String msg) throws IMException {
@@ -32,7 +34,8 @@ public class JabberChat implements IMChat {
     }
     
     public void addMessageListener(IMMessageListener listener) {
-        this.chat.addMessageListener(new JabberMessageListenerAdapter(listener));
+        this.chat.addMessageListener(
+        		new JabberMessageListenerAdapter(listener, this.connection, this.chat));
     }
 
     public void removeMessageListener(IMMessageListener listener) {

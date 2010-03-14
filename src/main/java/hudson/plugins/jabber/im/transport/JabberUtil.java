@@ -17,6 +17,8 @@ public class JabberUtil {
 	 * Returns the user part (aka. 'node') of a jabber ID in the form:
 	 * 
 	 * <user>[@<domain>[/<resource]]
+	 * 
+	 * @return the part before '@' or jabberId unchanged if '@' was not found
 	 */
 	public static String getUserPart(String jabberId) {
 		int idx = jabberId.indexOf('@');

@@ -5,6 +5,7 @@ package hudson.plugins.jabber.im.transport;
 
 import hudson.plugins.im.AbstractIMConnection;
 import hudson.plugins.im.GroupChatIMMessageTarget;
+import hudson.plugins.im.IMConnection;
 import hudson.plugins.im.IMConnectionListener;
 import hudson.plugins.im.IMException;
 import hudson.plugins.im.IMMessageTarget;
@@ -27,8 +28,11 @@ import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.PacketListener;
+import org.jivesoftware.smack.Roster;
+import org.jivesoftware.smack.RosterEntry;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.Roster.SubscriptionMode;
 import org.jivesoftware.smack.filter.AndFilter;
 import org.jivesoftware.smack.filter.MessageTypeFilter;
 import org.jivesoftware.smack.filter.PacketFilter;
@@ -37,16 +41,18 @@ import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smack.packet.Presence;
+import org.jivesoftware.smack.packet.RosterPacket.ItemType;
+import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.packet.DelayInformation;
 import org.jivesoftware.smackx.packet.MessageEvent;
 import org.jivesoftware.smackx.packet.XHTMLExtension;
 
 /**
- * Smack-specific implementation of IMConnection.
+ * Smack-specific implementation of {@link IMConnection}.
  * 
- * @author Uwe Schaefer
- * 
+ * @author kutzi
+ * @author Uwe Schaefer (original author)
  */
 class JabberIMConnection extends AbstractIMConnection {
 	
@@ -83,6 +89,8 @@ class JabberIMConnection extends AbstractIMConnection {
 
     private final JabberPublisherDescriptor desc;
     private final Authentication authentication;
+
+	private Roster roster;
 	
 	JabberIMConnection(JabberPublisherDescriptor desc, Authentication authentication) throws IMException {
 	    super(desc);
@@ -216,6 +224,18 @@ class JabberIMConnection extends AbstractIMConnection {
 		if (this.connection.isConnected()) {
 			this.connection.login(this.desc.getUserName(), this.passwd, "Hudson");
 			
+			this.roster = this.connection.getRoster();
+			SubscriptionMode mode = SubscriptionMode.valueOf(this.desc.getSubscriptionMode());
+			switch (mode) {
+				case accept_all : LOGGER.info("Accepting all subscription requests");
+					break;
+				case reject_all : LOGGER.info("Rejecting all subscription requests");
+					break;
+				case manual : LOGGER.info("Subscription requests must be handled manually");
+					break;
+			}
+			this.roster.setSubscriptionMode(mode);
+			
 			PacketFilter filter = new AndFilter(new MessageTypeFilter(Message.Type.chat), 
 					new ToContainsFilter(this.desc.getUserName()));
 			// Actually, this should be the full user name (including '@server')
@@ -250,7 +270,7 @@ class JabberIMConnection extends AbstractIMConnection {
 			while (groupChat.pollMessage() != null) {
 			}
 
-			this.bots.add(new Bot(new JabberMultiUserChat(groupChat),
+			this.bots.add(new Bot(new JabberMultiUserChat(groupChat, this),
 					this.groupChatNick, this.desc.getHost(),
 					this.botCommandPrefix, this.authentication));
 
@@ -270,13 +290,13 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 		
 		final Chat chat = this.connection.getChatManager().createChat(chatPartner, null);
-		Bot bot = new Bot(new JabberChat(chat), this.groupChatNick,
+		Bot bot = new Bot(new JabberChat(chat, this), this.groupChatNick,
 					this.desc.getHost(), this.botCommandPrefix, this.authentication);
 		this.bots.add(bot);
 		
 		if (msg != null) {
 			// replay original message:
-			bot.onMessage(new JabberMessage(msg));
+			bot.onMessage(new JabberMessage(msg, isAuthorized(msg.getFrom())));
 		}
 		chatCache.put(chatPartner, new WeakReference<Chat>(chat));
 		return chat;
@@ -383,6 +403,17 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 	}
 	
+	public boolean isAuthorized(String xmppAddress) {
+		String bareAddress = StringUtils.parseBareAddress(xmppAddress);
+		
+		RosterEntry entry = this.roster.getEntry(bareAddress);
+        boolean authorized = entry != null
+        	&& (entry.getType() == ItemType.both
+        	|| entry.getType() == ItemType.from);
+        
+        return authorized;
+	}
+	
 	private final Map<IMConnectionListener, ConnectionListener> listeners = 
 		new ConcurrentHashMap<IMConnectionListener, ConnectionListener>();
 	
@@ -402,18 +433,12 @@ class JabberIMConnection extends AbstractIMConnection {
 				
 				@Override
 				public void reconnectingIn(int paramInt) {
-					// TODO Auto-generated method stub
-					
 				}
 				@Override
 				public void reconnectionFailed(Exception paramException) {
-					// TODO Auto-generated method stub
-					
 				}
 				@Override
 				public void reconnectionSuccessful() {
-					// TODO Auto-generated method stub
-					
 				}
 			};
 			listeners.put(listener, l);

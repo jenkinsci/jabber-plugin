@@ -35,6 +35,7 @@ import org.acegisecurity.Authentication;
 import org.acegisecurity.AuthenticationException;
 import org.acegisecurity.providers.UsernamePasswordAuthenticationToken;
 import org.apache.commons.lang.StringUtils;
+import org.jivesoftware.smack.Roster.SubscriptionMode;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -62,6 +63,16 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public static final String PARAMETERNAME_DEFAULT_ID_SUFFIX = JabberPublisherDescriptor.PREFIX + "defaultIdSuffix";
     public static final String PARAMETERNAME_HUDSON_LOGIN = JabberPublisherDescriptor.PREFIX + "hudsonLogin";
     public static final String PARAMETERNAME_HUDSON_PASSWORD = JabberPublisherDescriptor.PREFIX + "hudsonPassword";
+    public static final String PARAMETERNAME_SUBSCRIPTION_MODE = JabberPublisherDescriptor.PREFIX + "subscriptionMode";
+    public static final String[] PARAMETERVALUE_SUBSCRIPTION_MODE;
+    static {
+    	SubscriptionMode[] modes = SubscriptionMode.values();
+    	PARAMETERVALUE_SUBSCRIPTION_MODE = new String[modes.length];
+    	for (int i=0; i < modes.length; i++) {
+    		PARAMETERVALUE_SUBSCRIPTION_MODE[i] = modes[i].name();
+    	}
+    }
+    
     public static final String[] PARAMETERVALUE_STRATEGY_VALUES = NotificationStrategy.getDisplayNames();
     public static final String PARAMETERVALUE_STRATEGY_DEFAULT = NotificationStrategy.STATECHANGE_ONLY.getDisplayName();
     public static final String DEFAULT_COMMAND_PREFIX = "!";
@@ -71,24 +82,27 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     // big Boolean to support backwards compatibility
     private Boolean enabled;
     private int port = DEFAULT_PORT;
-    private String hostname = null;
+    private String hostname;
     
     /**
      * Only left here for deserialization compatibility with old instances.
      * @deprecated not supported anymore. Any half decent jabber server doesn't need this.
      */
-    @Deprecated
-	private transient boolean legacySSL = false;
+    @SuppressWarnings("unused")
+	@Deprecated
+	private transient boolean legacySSL;
+    
     // the following 2 are actually the Jabber nick and password. For backward compatibility I cannot rename them
-    private String hudsonNickname = "hudson";
-    private String hudsonPassword = "secret";
-    private String groupChatNickname = null;
+    private String hudsonNickname;
+    private String hudsonPassword;
+    private String groupChatNickname;
     private boolean exposePresence = true;
-    private String initialGroupChats = null;
+    private String initialGroupChats;
     private String commandPrefix = DEFAULT_COMMAND_PREFIX;
     private String defaultIdSuffix;
     private String hudsonCiLogin;
     private String hudsonCiPassword;
+    private String subscriptionMode;
 
     public JabberPublisherDescriptor()
     {
@@ -123,6 +137,10 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         		this.enabled = Boolean.FALSE;
         	}
         }
+    	
+    	if (this.subscriptionMode == null) {
+    		this.subscriptionMode = SubscriptionMode.accept_all.name();
+    	}
 	}
 
 	// TODO: reuse the checkHostAccessibility method for this
@@ -199,11 +217,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         }
     }
 
-    private void applyPresence(final HttpServletRequest req)
-    {
-        this.exposePresence = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PRESENCE) != null;
-    }
-    
     private void applyInitialGroupChats(final HttpServletRequest req) {
     	this.initialGroupChats = Util.fixEmptyAndTrim(req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_INITIAL_GROUPCHATS));
     }
@@ -316,14 +329,12 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         else            return String.valueOf(port);
     }
 
-    public boolean isLegacySSL()
-    {
-        return this.legacySSL;
-    }
-
-    public boolean isExposePresence()
-    {
+    public boolean isExposePresence() {
         return this.exposePresence;
+    }
+    
+    public String getSubscriptionMode() {
+    	return this.subscriptionMode;
     }
 
     /**
@@ -410,7 +421,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	public boolean configure(StaplerRequest req, JSONObject json) throws hudson.model.Descriptor.FormException {
 		String en = req.getParameter(PARAMETERNAME_ENABLED);
 		this.enabled = Boolean.valueOf(en != null);
-        applyPresence(req);
+		this.exposePresence = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PRESENCE) != null;
+		this.subscriptionMode = Util.fixEmptyAndTrim(req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_SUBSCRIPTION_MODE));
         applyHostname(req);
         applyPort(req);
         applyNickname(req);
@@ -476,8 +488,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      * Validates the connection information.
      */
     public FormValidation doServerCheck(@QueryParameter final String hostname,
-            @QueryParameter final String port,
-            @QueryParameter final boolean legacySSL) {
+            @QueryParameter final String port) {
         if(!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) {
             return FormValidation.ok();
         }

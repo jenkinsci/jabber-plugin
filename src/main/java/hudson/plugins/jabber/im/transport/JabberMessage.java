@@ -6,7 +6,7 @@ import org.jivesoftware.smack.packet.Message;
 
 public class JabberMessage extends IMMessage {
 
-    public JabberMessage(Message msg) {
-        super(msg.getFrom(), msg.getTo(), msg.getBody());
+    public JabberMessage(Message msg, boolean authorized) {
+        super(msg.getFrom(), msg.getTo(), msg.getBody(), authorized);
     }
 }

@@ -7,7 +7,6 @@ import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.MessageListener;
 import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.packet.Message;
-import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smackx.packet.DelayInformation;
 
@@ -16,31 +15,17 @@ import org.jivesoftware.smackx.packet.DelayInformation;
  * 
  * @author kutzi
  */
-class JabberMessageListenerAdapter implements MessageListener, PacketListener {
+class JabberMessageListenerAdapter implements MessageListener {
 
     private final IMMessageListener listener;
+	private final JabberIMConnection connection;
 
-    public JabberMessageListenerAdapter(IMMessageListener listener) {
+    public JabberMessageListenerAdapter(IMMessageListener listener,
+    		JabberIMConnection connection, Chat chat) {
         this.listener = listener;
+        this.connection = connection;
     }
     
-    @Override
-    public void processPacket(Packet p) {
-        if (p instanceof Message) {
-            // don't react to old messages
-            for (PacketExtension pe : p.getExtensions()) {
-                if (pe instanceof DelayInformation) {
-                    return; // simply bail out here, it's an old message
-                }
-            }
-
-            final Message msg = (Message) p;
-            IMMessage imMessage = new IMMessage(msg.getFrom(), msg.getTo(), msg.getBody());
-            
-            listener.onMessage(imMessage);
-        }
-    }
-
 	@Override
 	public void processMessage(Chat chat, Message msg) {
 		// don't react to old messages
@@ -51,9 +36,9 @@ class JabberMessageListenerAdapter implements MessageListener, PacketListener {
         }
 
         IMMessage imMessage = new IMMessage(msg.getFrom(),
-        		msg.getTo(), msg.getBody());
+        		msg.getTo(), msg.getBody(),
+        		this.connection.isAuthorized(msg.getFrom()));
         
         listener.onMessage(imMessage);
 	}
-    
 }
