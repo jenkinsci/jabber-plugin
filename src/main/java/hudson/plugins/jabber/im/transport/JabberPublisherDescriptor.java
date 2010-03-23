@@ -47,6 +47,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public static final String PARAMETERNAME_PORT = JabberPublisherDescriptor.PREFIX + "port";
     public static final String PARAMETERNAME_HOSTNAME = JabberPublisherDescriptor.PREFIX + "hostname";
     public static final String PARAMETERNAME_SSL = JabberPublisherDescriptor.PREFIX + "ssl";
+    public static final String PARAMETERNAME_SASL = JabberPublisherDescriptor.PREFIX + "enableSASL";
     public static final String PARAMETERNAME_PRESENCE = JabberPublisherDescriptor.PREFIX + "exposePresence";
     public static final String PARAMETERNAME_PASSWORD = JabberPublisherDescriptor.PREFIX + "password";
     public static final String PARAMETERNAME_JABBERID = JabberPublisherDescriptor.PREFIX + "jabberId";
@@ -97,6 +98,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     private String hudsonPassword;
     private String groupChatNickname;
     private boolean exposePresence = true;
+    private boolean enableSASL = true;
     private String initialGroupChats;
     private String commandPrefix = DEFAULT_COMMAND_PREFIX;
     private String defaultIdSuffix;
@@ -329,6 +331,10 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         else            return String.valueOf(port);
     }
 
+    public boolean isEnableSASL() {
+        return enableSASL;
+    }
+
     public boolean isExposePresence() {
         return this.exposePresence;
     }
@@ -422,6 +428,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 		String en = req.getParameter(PARAMETERNAME_ENABLED);
 		this.enabled = Boolean.valueOf(en != null);
 		this.exposePresence = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PRESENCE) != null;
+        this.enableSASL = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_SASL) != null;
 		this.subscriptionMode = Util.fixEmptyAndTrim(req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_SUBSCRIPTION_MODE));
         applyHostname(req);
         applyPort(req);

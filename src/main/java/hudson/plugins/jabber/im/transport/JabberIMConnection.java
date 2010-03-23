@@ -86,6 +86,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	private IMPresence impresence;
 
     private String imStatusMessage;
+    private boolean enableSASL;
 
     private final JabberPublisherDescriptor desc;
     private final Authentication authentication;
@@ -101,6 +102,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.port = desc.getPort();
 		this.nick = JabberUtil.getUserPart(desc.getJabberId());
 		this.passwd = desc.getPassword();
+        this.enableSASL = desc.isEnableSASL();
 		this.groupChatNick = desc.getGroupChatNickname() != null ?
 				desc.getGroupChatNickname() : this.nick;
 		this.botCommandPrefix = desc.getCommandPrefix();
@@ -218,6 +220,8 @@ class JabberIMConnection extends AbstractIMConnection {
 		// not sure what Smack's reconnect feature really does.
 		cfg.setReconnectionAllowed(false);
 		
+        cfg.setSASLAuthenticationEnabled(this.enableSASL);
+
 		this.connection = new XMPPConnection(cfg);
 		this.connection.connect();
 
