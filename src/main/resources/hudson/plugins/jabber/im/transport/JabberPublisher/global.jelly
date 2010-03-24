@@ -32,7 +32,7 @@
 			<f:textbox name="${descriptor.PARAMETERNAME_DEFAULT_ID_SUFFIX}"
 				value="${descriptor.defaultIdSuffix}" />
 	  </f:entry>
-         <f:entry title="Enable SASL for connection" help="${base}/help-sasl.html">
+         <f:entry title="Enable SASL authentication" help="${base}/help-sasl.html">
 			  <f:checkbox name="${descriptor.PARAMETERNAME_SASL}" checked="${descriptor.enableSASL}"/>
 		</f:entry>
       <f:entry title="Expose presence" help="${base}/help-presence.html">
