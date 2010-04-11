@@ -28,7 +28,7 @@
     </developers>
     
     <properties>
-        <version.instant-messaging.plugin>1.6</version.instant-messaging.plugin>
+        <version.instant-messaging.plugin>1.7-SNAPSHOT</version.instant-messaging.plugin>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     
