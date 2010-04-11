@@ -344,18 +344,24 @@ class JabberIMConnection extends AbstractIMConnection {
         }
 	}
 
+	/**
+	 * This implementation ignores the new presence if
+	 * {@link JabberPublisherDescriptor#isExposePresence()} is false.
+	 */
+	@Override
 	public void setPresence(final IMPresence impresence, String statusMessage)
 			throws IMException {
 		Assert.isNotNull(impresence, "Parameter 'impresence' must not be null.");
 		if (this.desc.isExposePresence()) {
 		    this.impresence = impresence;
 		    this.imStatusMessage = statusMessage;
+		    sendPresence();
 		} else {
-		    // ignore set presence
-		    this.impresence = IMPresence.UNAVAILABLE;
-		    this.imStatusMessage = "";
+		    // Ignore new presence.
+		    
+		    // Don't re-send presence, either. It would result in disconnecting from
+		    // all joined group chats
 		}
-		sendPresence();
 	}
 	
 	private void sendPresence() {
