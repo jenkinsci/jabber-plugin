@@ -6,6 +6,7 @@ import hudson.plugins.im.IMMessageListener;
 
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.muc.MultiUserChat;
+import org.jivesoftware.smackx.muc.Occupant;
 
 public class JabberMultiUserChat implements IMChat {
     
@@ -25,6 +26,11 @@ public class JabberMultiUserChat implements IMChat {
         }
     }
 
+    /**
+     * Returns the 'resource' part of the sender id which is the nickname
+     * of the sender in this room.
+     */
+    @Override
     public String getNickName(String sender) {
     	// Jabber has the chosen MUC nickname in the resource part of the sender id
     	String resource = JabberUtil.getResourcePart(sender);
@@ -34,6 +40,15 @@ public class JabberMultiUserChat implements IMChat {
         return sender;
     }
     
+    @Override
+    public String getIMId(String senderId) {
+        Occupant occ = this.chat.getOccupant(senderId);
+        if (occ != null) {
+            return occ.getJid();
+        }
+        return null;
+    }
+
     public void addMessageListener(IMMessageListener listener) {
         this.chat.addMessageListener(
         		new JabberMUCMessageListenerAdapter(listener, this.connection, this.chat));

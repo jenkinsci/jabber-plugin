@@ -29,10 +29,16 @@ public class JabberChat implements IMChat {
         }
     }
 
+    @Override
     public String getNickName(String sender) {
     	return JabberUtil.getUserPart(sender);
     }
     
+    @Override
+    public String getIMId(String senderId) {
+        return JabberUtil.getUserPart(senderId) + '@' + JabberUtil.getDomainPart(senderId);
+    }
+
     public void addMessageListener(IMMessageListener listener) {
         this.chat.addMessageListener(
         		new JabberMessageListenerAdapter(listener, this.connection, this.chat));
