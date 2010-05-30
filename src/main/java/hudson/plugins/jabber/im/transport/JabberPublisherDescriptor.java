@@ -146,10 +146,10 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	}
 
 	// TODO: reuse the checkHostAccessibility method for this
-    private void applyHostname(final HttpServletRequest req) throws FormException
+    private void applyHostname(final HttpServletRequest req, boolean check) throws FormException
     {
         final String s = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_HOSTNAME);
-        if ((s != null) && (s.trim().length() > 0))
+        if (check && (s != null) && (s.trim().length() > 0))
         {
             try
             {
@@ -168,22 +168,26 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         }
     }
 
-    private void applyNickname(final HttpServletRequest req) throws FormException
+    private void applyNickname(final HttpServletRequest req, boolean check) throws FormException
     {
         this.hudsonNickname = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_JABBERID);
-        if ((this.hostname != null) && ((this.hudsonNickname == null) || (this.hudsonNickname.trim().length() == 0)))
-        {
-            throw new FormException("Account/Nickname cannot be empty.",
-                    JabberPublisherDescriptor.PARAMETERNAME_JABBERID);
+        if (check) {
+	        if ((this.hostname != null) && ((this.hudsonNickname == null) || (this.hudsonNickname.trim().length() == 0)))
+	        {
+	            throw new FormException("Account/Nickname cannot be empty.",
+	                    JabberPublisherDescriptor.PARAMETERNAME_JABBERID);
+	        }
         }
     }
 
-    private void applyPassword(final HttpServletRequest req) throws FormException
+    private void applyPassword(final HttpServletRequest req, boolean check) throws FormException
     {
         this.hudsonPassword = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PASSWORD);
-        if (((this.hostname != null) && (this.hudsonPassword == null)) || (this.hudsonPassword.trim().length() == 0))
-        {
-            throw new FormException("Password cannot be empty.", JabberPublisherDescriptor.PARAMETERNAME_PASSWORD);
+        if (check) {
+	        if (((this.hostname != null) && (this.hudsonPassword == null))
+	    		|| (this.hudsonPassword.trim().length() == 0)) {
+	            throw new FormException("Password cannot be empty.", JabberPublisherDescriptor.PARAMETERNAME_PASSWORD);
+	        }
         }
     }
 
@@ -196,7 +200,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         }
     }
 
-    private void applyPort(final HttpServletRequest req) throws FormException
+    private void applyPort(final HttpServletRequest req, boolean check) throws FormException
     {
         final String p = Util.fixEmptyAndTrim(req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PORT));
         if (p != null)
@@ -204,8 +208,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
             try
             {
                 final int i = Integer.parseInt(p);
-                if ((i < 0) || (i > 65535))
-                {
+                if (check && ((i < 0) || (i > 65535))) {
                     throw new FormException("Port out of range.", JabberPublisherDescriptor.PARAMETERNAME_PORT);
                 }
                 this.port = i;
@@ -430,10 +433,10 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 		this.exposePresence = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PRESENCE) != null;
         this.enableSASL = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_SASL) != null;
 		this.subscriptionMode = Util.fixEmptyAndTrim(req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_SUBSCRIPTION_MODE));
-        applyHostname(req);
-        applyPort(req);
-        applyNickname(req);
-        applyPassword(req);
+        applyHostname(req, this.enabled);
+        applyPort(req, this.enabled);
+        applyNickname(req, this.enabled);
+        applyPassword(req, this.enabled);
         applyGroupChatNickname(req);
         applyInitialGroupChats(req);
         applyCommandPrefix(req);
