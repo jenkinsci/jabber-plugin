@@ -27,6 +27,7 @@ final class JabberIMConnectionProvider extends IMConnectionProvider
 
     private JabberIMConnectionProvider() {
     	super();
+    	init();
     }
 
     @Override
@@ -34,7 +35,7 @@ final class JabberIMConnectionProvider extends IMConnectionProvider
         releaseConnection();
 
         if (getDescriptor() == null) {
-        	return null;
+        	throw new IMException("Descriptor not set");
         }
         
         IMConnection imConnection = new JabberIMConnection((JabberPublisherDescriptor)getDescriptor(),
@@ -42,6 +43,6 @@ final class JabberIMConnectionProvider extends IMConnectionProvider
         if (imConnection.connect()) {
         	return imConnection;
         }
-        return null;
+        throw new IMException("Connection failed");
     }
 }
