@@ -2,9 +2,9 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.jvnet.hudson.plugins</groupId>
-        <artifactId>plugin</artifactId>
-        <version>1.327</version>
-        <relativePath>../pom.xml</relativePath>
+        <artifactId>instant-messaging-parent</artifactId>
+        <version>1.9-SNAPSHOT</version>
+        <relativePath>../instant-messaging-parent/pom.xml</relativePath>
     </parent>
     
     <artifactId>jabber</artifactId>
@@ -27,78 +27,10 @@
         </developer>
     </developers>
     
-    <properties>
-        <version.instant-messaging.plugin>1.8</version.instant-messaging.plugin>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-    
-    <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-                <includes>
-                    <include>index.jelly</include>
-                </includes>
-            </resource>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>false</filtering>
-                <excludes>
-                    <exclude>index.jelly</exclude>
-                </excludes>
-            </resource>
-        </resources>
-    
-        <plugins>
-            <plugin>
-                <groupId>org.jvnet.hudson.tools</groupId>
-                <artifactId>maven-hpi-plugin</artifactId>
-                <version>1.52</version>
-                <extensions>true</extensions>
-		        <configuration>
-					<compatibleSinceVersion>1.0</compatibleSinceVersion>
-		        </configuration>
-            </plugin>
-            <!-- Make sure that we don't use any Java 1.6 dependencies -->
-            <plugin>
-                <groupId>org.jvnet</groupId>
-                <artifactId>animal-sniffer</artifactId>
-                <version>1.2</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                        <configuration>
-                            <signature>
-                                <groupId>org.jvnet.animal-sniffer</groupId>
-                                <artifactId>java1.5</artifactId>
-                                <version>1.0</version>
-                            </signature>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-        <pluginManagement>
-            <plugins>
-                <!-- Enforce 2.6 until 2.9 is released. See http://jira.codehaus.org/browse/MECLIPSE-621 -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                      <artifactId>maven-eclipse-plugin</artifactId>
-                      <version>2.6</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
-    
     <dependencies>
         <dependency>
         	<groupId>org.jvnet.hudson.plugins</groupId>
         	<artifactId>instant-messaging</artifactId>
-        	<version>${version.instant-messaging.plugin}</version>
-        	<scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>jivesoftware</groupId>
