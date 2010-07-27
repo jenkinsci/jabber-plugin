@@ -506,7 +506,7 @@ class JabberIMConnection extends AbstractIMConnection {
 				}
 				
 				if (composing && !xhtmlMessage) {
-					// pretty strange: if composing extension BUT also a XHTMLExtension this seems
+					// pretty strange: if composing extension AND NOT XHTMLExtension, this seems
 					// to mean that the message was delivered
 					return;
 				}
