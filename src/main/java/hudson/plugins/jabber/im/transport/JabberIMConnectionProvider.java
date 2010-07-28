@@ -38,7 +38,7 @@ final class JabberIMConnectionProvider extends IMConnectionProvider
         }
         
         IMConnection imConnection = new JabberIMConnection((JabberPublisherDescriptor)getDescriptor(),
-        		getAuthentication());
+        		getAuthenticationHolder());
         if (imConnection.connect()) {
         	return imConnection;
         }

@@ -4,6 +4,7 @@
 package hudson.plugins.jabber.im.transport;
 
 import hudson.plugins.im.AbstractIMConnection;
+import hudson.plugins.im.AuthenticationHolder;
 import hudson.plugins.im.GroupChatIMMessageTarget;
 import hudson.plugins.im.IMConnection;
 import hudson.plugins.im.IMConnectionListener;
@@ -23,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import org.acegisecurity.Authentication;
 import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.ConnectionListener;
@@ -90,11 +90,11 @@ class JabberIMConnection extends AbstractIMConnection {
     private boolean enableSASL;
 
     private final JabberPublisherDescriptor desc;
-    private final Authentication authentication;
+    private final AuthenticationHolder authentication;
 
 	private Roster roster;
 	
-	JabberIMConnection(JabberPublisherDescriptor desc, Authentication authentication) throws IMException {
+	JabberIMConnection(JabberPublisherDescriptor desc, AuthenticationHolder authentication) throws IMException {
 	    super(desc);
 		Assert.isNotNull(desc, "Parameter 'desc' must not be null.");
 		this.desc = desc;
