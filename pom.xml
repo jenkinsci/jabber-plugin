@@ -31,6 +31,7 @@
         <dependency>
         	<groupId>org.jvnet.hudson.plugins</groupId>
         	<artifactId>instant-messaging</artifactId>
+            <version>${version.instant-messaging.plugin}</version>
         </dependency>
         <dependency>
             <groupId>jivesoftware</groupId>
