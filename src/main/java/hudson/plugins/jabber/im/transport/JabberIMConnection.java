@@ -31,6 +31,7 @@ import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.RosterEntry;
 import org.jivesoftware.smack.SASLAuthentication;
+import org.jivesoftware.smack.SmackConfiguration;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.Roster.SubscriptionMode;
@@ -58,6 +59,8 @@ import org.jivesoftware.smackx.packet.XHTMLExtension;
 class JabberIMConnection extends AbstractIMConnection {
 	
 	private static final Logger LOGGER = Logger.getLogger(JabberIMConnection.class.getName());
+	
+	private static final boolean DEBUG = false;
 	
 	private volatile XMPPConnection connection;
 
@@ -93,6 +96,14 @@ class JabberIMConnection extends AbstractIMConnection {
     private final AuthenticationHolder authentication;
 
 	private Roster roster;
+	
+	static {
+		if (DEBUG) {
+			System.setProperty("smack.debugEnabled", "true");
+			//XMPPConnection.DEBUG_ENABLED = true;
+		}
+		SmackConfiguration.setPacketReplyTimeout(20000);
+	}
 	
 	JabberIMConnection(JabberPublisherDescriptor desc, AuthenticationHolder authentication) throws IMException {
 	    super(desc);
@@ -226,6 +237,8 @@ class JabberIMConnection extends AbstractIMConnection {
 		// http://www.igniterealtime.org/community/message/198558
 		// and also http://www.igniterealtime.org/community/message/201908#201908
 		SASLAuthentication.unregisterSASLMechanism("DIGEST-MD5");
+		
+		//SASLAuthentication.unregisterSASLMechanism("GSSAPI");
 
         cfg.setSASLAuthenticationEnabled(this.enableSASL);
 
