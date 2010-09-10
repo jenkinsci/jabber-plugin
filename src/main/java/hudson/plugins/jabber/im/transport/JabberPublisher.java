@@ -10,7 +10,6 @@ import hudson.plugins.im.IMMessageTarget;
 import hudson.plugins.im.IMMessageTargetConversionException;
 import hudson.plugins.im.IMMessageTargetConverter;
 import hudson.plugins.im.IMPublisher;
-import hudson.plugins.im.build_notify.BuildToChatNotifier;
 import hudson.plugins.im.tools.Assert;
 import hudson.plugins.jabber.user.JabberUserProperty;
 import hudson.tasks.BuildStepDescriptor;
@@ -94,12 +93,10 @@ public class JabberPublisher extends IMPublisher
     		boolean notifySuspects,
     		boolean notifyCulprits,
     		boolean notifyFixers,
-    		boolean notifyUpstreamCommitters,
-    		BuildToChatNotifier buildToChatNotifier) throws IMMessageTargetConversionException
+    		boolean notifyUpstreamCommitters) throws IMMessageTargetConversionException
     {
         super(targets, notificationStrategy, notifyGroupChatsOnBuildStart,
-        		notifySuspects, notifyCulprits, notifyFixers, notifyUpstreamCommitters,
-        		buildToChatNotifier);
+        		notifySuspects, notifyCulprits, notifyFixers, notifyUpstreamCommitters);
     }
 
     @Override

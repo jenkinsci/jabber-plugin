@@ -12,7 +12,6 @@ import hudson.plugins.im.IMMessageTargetConversionException;
 import hudson.plugins.im.IMMessageTargetConverter;
 import hudson.plugins.im.IMPublisherDescriptor;
 import hudson.plugins.im.NotificationStrategy;
-import hudson.plugins.im.build_notify.BuildToChatNotifier;
 import hudson.plugins.im.tools.Assert;
 import hudson.plugins.im.tools.ExceptionHelper;
 import hudson.tasks.BuildStepDescriptor;
@@ -418,8 +417,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         boolean notifyUpstream = "on".equals(req.getParameter(PARAMETERNAME_NOTIFY_UPSTREAM_COMMITTERS));
         try {
             return new JabberPublisher(targets, n, notifyStart, notifySuspects, notifyCulprits,
-            		notifyFixers, notifyUpstream,
-            		req.bindJSON(BuildToChatNotifier.class,formData.getJSONObject("buildToChatNotifier")));
+            		notifyFixers, notifyUpstream);
         } catch (final IMMessageTargetConversionException e) {
             throw new FormException(e, JabberPublisherDescriptor.PARAMETERNAME_TARGETS);
         }
