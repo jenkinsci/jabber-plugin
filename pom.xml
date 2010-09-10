@@ -10,7 +10,7 @@
     <artifactId>jabber</artifactId>
     <packaging>hpi</packaging>
     <name>Hudson Jabber notifier plugin</name>
-    <version>1.11-SNAPSHOT</version>
+    <version>1.11</version>
     <url>http://wiki.hudson-ci.org/display/HUDSON/Jabber+Plugin</url>
     <developers>
         <developer>
@@ -47,8 +47,8 @@
     </dependencies>
 
   <scm>
-    <connection>scm:svn:https://guest@svn.dev.java.net/svn/hudson/trunk/hudson/plugins/jabber</connection>
-    <developerConnection>scm:svn:https://svn.dev.java.net/svn/hudson/trunk/hudson/plugins/jabber</developerConnection>
-    <url>http://fisheye4.atlassian.com/browse/hudson/trunk/hudson/plugins/jabber</url>
+    <connection>scm:svn:https://guest@svn.dev.java.net/svn/hudson/tags/jabber-1.11</connection>
+    <developerConnection>scm:svn:https://svn.dev.java.net/svn/hudson/tags/jabber-1.11</developerConnection>
+    <url>http://fisheye4.atlassian.com/browse/hudson/tags/jabber-1.11</url>
   </scm>
 </project>
