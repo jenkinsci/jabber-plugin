@@ -149,7 +149,7 @@ class JabberIMConnection extends AbstractIMConnection {
 						for (String groupChatName : this.groupChats) {
 							try {
 								groupChatName = groupChatName.trim();
-								getGroupChat(groupChatName);
+								getOrCreateGroupChat(groupChatName);
 								LOGGER.info("Joined groupchat " + groupChatName);
 							} catch (IMException e) {
 								// if we got here, the XMPP connection could be established, but probably the groupchat name
@@ -266,14 +266,7 @@ class JabberIMConnection extends AbstractIMConnection {
 			
 			setupSubscriptionMode();
 			
-			PacketFilter filter = new AndFilter(new MessageTypeFilter(Message.Type.chat), 
-					new ToContainsFilter(this.desc.getUserName()));
-			// Actually, this should be the full user name (including '@server')
-			// but since via this connection only message to me should be delivered (right?)
-			// this doesn't matter anyway.
-			
-			PacketListener listener = new IMListener();
-			this.connection.addPacketListener(listener, filter);
+			listenForPrivateChats();
 		}
 		
 		return this.connection.isAuthenticated();
@@ -320,8 +313,22 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 		this.roster.setSubscriptionMode(mode);
 	}
+	
+	/**
+	 * Listens on the connection for private chat requests.
+	 */
+	private void listenForPrivateChats() {
+		PacketFilter filter = new AndFilter(new MessageTypeFilter(Message.Type.chat), 
+				new ToContainsFilter(this.desc.getUserName()));
+		// Actually, this should be the full user name (including '@server')
+		// but since via this connection only message to me should be delivered (right?)
+		// this doesn't matter anyway.
+		
+		PacketListener listener = new PrivateChatListener();
+		this.connection.addPacketListener(listener, filter);
+	}
 
-	private MultiUserChat getGroupChat(String groupChatName) throws IMException {
+	private MultiUserChat getOrCreateGroupChat(String groupChatName) throws IMException {
 		WeakReference<MultiUserChat> ref = groupChatCache.get(groupChatName);
 		MultiUserChat groupChat = null;
 		if (ref != null) {
@@ -351,7 +358,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		return groupChat;
 	}
 	
-	private Chat getChat(String chatPartner, Message msg) {
+	private Chat getOrCreatePrivateChat(String chatPartner, Message msg) {
 		// use possibly existing chat
 		WeakReference<Chat> wr = chatCache.get(chatPartner);
 		if (wr != null) {
@@ -385,10 +392,10 @@ class JabberIMConnection extends AbstractIMConnection {
             }
             try {
             		if (target instanceof GroupChatIMMessageTarget) {
-            			getGroupChat(target.toString()).sendMessage(
+            			getOrCreateGroupChat(target.toString()).sendMessage(
             					text);
             		} else {
-            			final Chat chat = getChat(target.toString(), null);
+            			final Chat chat = getOrCreatePrivateChat(target.toString(), null);
             			chat.sendMessage(text);
             		}
             } catch (final XMPPException e) {
@@ -541,7 +548,10 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 	}
 
-	private final class IMListener implements PacketListener {
+	/**
+	 * Listens for private chats.
+	 */
+	private final class PrivateChatListener implements PacketListener {
 
 		public void processPacket(Packet packet) {
 			if (packet instanceof Message) {
@@ -576,7 +586,7 @@ class JabberIMConnection extends AbstractIMConnection {
 					LOGGER.info("Message from " + m.getFrom() + " : " + m.getBody());
 					
 					final String chatPartner = m.getFrom();
-					getChat(chatPartner, m);
+					getOrCreatePrivateChat(chatPartner, m);
 				}
 			}
 		}
