@@ -3,18 +3,6 @@
  */
 package hudson.plugins.jabber.im.transport;
 
-import hudson.plugins.im.AbstractIMConnection;
-import hudson.plugins.im.AuthenticationHolder;
-import hudson.plugins.im.GroupChatIMMessageTarget;
-import hudson.plugins.im.IMConnection;
-import hudson.plugins.im.IMConnectionListener;
-import hudson.plugins.im.IMException;
-import hudson.plugins.im.IMMessageTarget;
-import hudson.plugins.im.IMPresence;
-import hudson.plugins.im.bot.Bot;
-import hudson.plugins.im.tools.Assert;
-import hudson.plugins.im.tools.ExceptionHelper;
-
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,6 +11,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+
+import javax.net.ssl.SSLSocketFactory;
 
 import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.ConnectionConfiguration;
@@ -49,6 +39,18 @@ import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.packet.DelayInformation;
 import org.jivesoftware.smackx.packet.MessageEvent;
 import org.jivesoftware.smackx.packet.XHTMLExtension;
+
+import hudson.plugins.im.AbstractIMConnection;
+import hudson.plugins.im.AuthenticationHolder;
+import hudson.plugins.im.GroupChatIMMessageTarget;
+import hudson.plugins.im.IMConnection;
+import hudson.plugins.im.IMConnectionListener;
+import hudson.plugins.im.IMException;
+import hudson.plugins.im.IMMessageTarget;
+import hudson.plugins.im.IMPresence;
+import hudson.plugins.im.bot.Bot;
+import hudson.plugins.im.tools.Assert;
+import hudson.plugins.im.tools.ExceptionHelper;
 
 /**
  * Smack-specific implementation of {@link IMConnection}.
@@ -242,23 +244,27 @@ class JabberIMConnection extends AbstractIMConnection {
 
         cfg.setSASLAuthenticationEnabled(this.enableSASL);
 
-		this.connection = new XMPPConnection(cfg);
-		this.connection.connect();
+        boolean retryWithLegacySSL = false;
+        Exception originalException = null;
+		try {
+			this.connection = new XMPPConnection(cfg);
+			this.connection.connect();
+			if (!this.connection.isConnected()) {
+				retryWithLegacySSL = true;
+			}
+		} catch (XMPPException e) {
+			retryWithLegacySSL = true;
+			originalException = e;
+		}
+		
+		if (retryWithLegacySSL) {
+			retryConnectionWithLegacySSL(cfg, originalException);
+		}
 
 		if (this.connection.isConnected()) {
 			this.connection.login(this.desc.getUserName(), this.passwd, "Hudson");
 			
-			this.roster = this.connection.getRoster();
-			SubscriptionMode mode = SubscriptionMode.valueOf(this.desc.getSubscriptionMode());
-			switch (mode) {
-				case accept_all : LOGGER.info("Accepting all subscription requests");
-					break;
-				case reject_all : LOGGER.info("Rejecting all subscription requests");
-					break;
-				case manual : LOGGER.info("Subscription requests must be handled manually");
-					break;
-			}
-			this.roster.setSubscriptionMode(mode);
+			setupSubscriptionMode();
 			
 			PacketFilter filter = new AndFilter(new MessageTypeFilter(Message.Type.chat), 
 					new ToContainsFilter(this.desc.getUserName()));
@@ -271,6 +277,48 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 		
 		return this.connection.isAuthenticated();
+	}
+
+	/**
+	 * Transparently retries the connection attempt with legacy SSL if original attempt fails.
+	 * @param originalException the exception of the original attempt (may be null)
+	 * 
+	 * See HUDSON-6863
+	 */
+	private void retryConnectionWithLegacySSL(
+			final ConnectionConfiguration cfg, Exception originalException)
+			throws XMPPException {
+		try {
+			LOGGER.info("Retrying connection with legacy SSL");
+			cfg.setSocketFactory(SSLSocketFactory.getDefault());
+			this.connection = new XMPPConnection(cfg);
+			this.connection.connect();
+		} catch (XMPPException e) {
+			if (originalException != null) {
+				// use the original connection exception as legacy SSL should only
+				// be a fallback
+				throw new XMPPException(originalException);
+			} else {
+				throw new XMPPException(e);
+			}
+		}
+	}
+
+	/**
+	 * Sets the chosen subscription mode on our connection.
+	 */
+	private void setupSubscriptionMode() {
+		this.roster = this.connection.getRoster();
+		SubscriptionMode mode = SubscriptionMode.valueOf(this.desc.getSubscriptionMode());
+		switch (mode) {
+			case accept_all : LOGGER.info("Accepting all subscription requests");
+				break;
+			case reject_all : LOGGER.info("Rejecting all subscription requests");
+				break;
+			case manual : LOGGER.info("Subscription requests must be handled manually");
+				break;
+		}
+		this.roster.setSubscriptionMode(mode);
 	}
 
 	private MultiUserChat getGroupChat(String groupChatName) throws IMException {
