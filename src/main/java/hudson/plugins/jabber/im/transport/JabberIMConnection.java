@@ -62,8 +62,6 @@ class JabberIMConnection extends AbstractIMConnection {
 	
 	private static final Logger LOGGER = Logger.getLogger(JabberIMConnection.class.getName());
 	
-	private static final boolean DEBUG = false;
-	
 	private volatile XMPPConnection connection;
 
 	private final Map<String, WeakReference<MultiUserChat>> groupChatCache = new HashMap<String, WeakReference<MultiUserChat>>();
@@ -100,11 +98,9 @@ class JabberIMConnection extends AbstractIMConnection {
 	private Roster roster;
 	
 	static {
-		if (DEBUG) {
-			System.setProperty("smack.debugEnabled", "true");
-			//XMPPConnection.DEBUG_ENABLED = true;
-		}
 		SmackConfiguration.setPacketReplyTimeout(20000);
+		
+		System.setProperty("smack.debuggerClass", JabberConnectionDebugger.class.getName());
 	}
 	
 	JabberIMConnection(JabberPublisherDescriptor desc, AuthenticationHolder authentication) throws IMException {
@@ -233,6 +229,8 @@ class JabberIMConnection extends AbstractIMConnection {
 		// Maybe we should change it in the future, but currently I'm
 		// not sure what Smack's reconnect feature really does.
 		cfg.setReconnectionAllowed(false);
+		
+		cfg.setDebuggerEnabled(true);
 
 		// try workaround for SASL error in Smack 3.1.0
 		// See: HUDSON-6032
