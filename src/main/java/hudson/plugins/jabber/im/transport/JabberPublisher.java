@@ -143,7 +143,15 @@ public class JabberPublisher extends IMPublisher
     
 
     // since Hudson 1.319:
+	@Override
 	public BuildStepMonitor getRequiredMonitorService() {
 		return BuildStepMonitor.BUILD;
 	}
+	
+    @Override
+    protected Object readResolve() {
+        // make sure we don't forget to call readResolve on the super class
+        super.readResolve();
+        return this;
+    }
 }
