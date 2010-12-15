@@ -13,7 +13,6 @@ import hudson.plugins.im.IMMessageTargetConverter;
 import hudson.plugins.im.IMPublisherDescriptor;
 import hudson.plugins.im.NotificationStrategy;
 import hudson.plugins.im.build_notify.BuildToChatNotifier;
-import hudson.plugins.im.tools.Assert;
 import hudson.plugins.im.tools.ExceptionHelper;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
@@ -39,6 +38,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jivesoftware.smack.Roster.SubscriptionMode;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.springframework.util.Assert;
 
 public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> implements IMPublisherDescriptor {
     private static final Logger LOGGER = Logger.getLogger(JabberPublisherDescriptor.class.getName());
@@ -371,7 +371,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     @Override
     public JabberPublisher newInstance(final StaplerRequest req, JSONObject formData) throws FormException
     {
-        Assert.isNotNull(req, "Parameter 'req' must not be null.");
+        Assert.notNull(req, "Parameter 'req' must not be null.");
         final String t = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_TARGETS);
         final String[] split;
         if (t != null) {

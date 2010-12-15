@@ -3,6 +3,17 @@
  */
 package hudson.plugins.jabber.im.transport;
 
+import hudson.plugins.im.AbstractIMConnection;
+import hudson.plugins.im.AuthenticationHolder;
+import hudson.plugins.im.GroupChatIMMessageTarget;
+import hudson.plugins.im.IMConnection;
+import hudson.plugins.im.IMConnectionListener;
+import hudson.plugins.im.IMException;
+import hudson.plugins.im.IMMessageTarget;
+import hudson.plugins.im.IMPresence;
+import hudson.plugins.im.bot.Bot;
+import hudson.plugins.im.tools.ExceptionHelper;
+
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,12 +30,12 @@ import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.Roster;
+import org.jivesoftware.smack.Roster.SubscriptionMode;
 import org.jivesoftware.smack.RosterEntry;
 import org.jivesoftware.smack.SASLAuthentication;
 import org.jivesoftware.smack.SmackConfiguration;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smack.Roster.SubscriptionMode;
 import org.jivesoftware.smack.filter.AndFilter;
 import org.jivesoftware.smack.filter.MessageTypeFilter;
 import org.jivesoftware.smack.filter.PacketFilter;
@@ -39,18 +50,7 @@ import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.packet.DelayInformation;
 import org.jivesoftware.smackx.packet.MessageEvent;
 import org.jivesoftware.smackx.packet.XHTMLExtension;
-
-import hudson.plugins.im.AbstractIMConnection;
-import hudson.plugins.im.AuthenticationHolder;
-import hudson.plugins.im.GroupChatIMMessageTarget;
-import hudson.plugins.im.IMConnection;
-import hudson.plugins.im.IMConnectionListener;
-import hudson.plugins.im.IMException;
-import hudson.plugins.im.IMMessageTarget;
-import hudson.plugins.im.IMPresence;
-import hudson.plugins.im.bot.Bot;
-import hudson.plugins.im.tools.Assert;
-import hudson.plugins.im.tools.ExceptionHelper;
+import org.springframework.util.Assert;
 
 /**
  * Smack-specific implementation of {@link IMConnection}.
@@ -105,7 +105,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	
 	JabberIMConnection(JabberPublisherDescriptor desc, AuthenticationHolder authentication) throws IMException {
 	    super(desc);
-		Assert.isNotNull(desc, "Parameter 'desc' must not be null.");
+		Assert.notNull(desc, "Parameter 'desc' must not be null.");
 		this.desc = desc;
 		this.authentication = authentication;
 		this.hostname = desc.getHost();
@@ -381,8 +381,8 @@ class JabberIMConnection extends AbstractIMConnection {
 
 	public void send(final IMMessageTarget target, final String text)
 			throws IMException {
-		Assert.isNotNull(target, "Parameter 'target' must not be null.");
-		Assert.isNotNull(text, "Parameter 'text' must not be null.");
+		Assert.notNull(target, "Parameter 'target' must not be null.");
+		Assert.notNull(text, "Parameter 'text' must not be null.");
 		try {
 		    // prevent long waits for lock
             if (!tryLock(5, TimeUnit.SECONDS)) {
@@ -417,7 +417,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	@Override
 	public void setPresence(final IMPresence impresence, String statusMessage)
 			throws IMException {
-		Assert.isNotNull(impresence, "Parameter 'impresence' must not be null.");
+		Assert.notNull(impresence, "Parameter 'impresence' must not be null.");
 		if (this.desc.isExposePresence()) {
 		    this.impresence = impresence;
 		    this.imStatusMessage = statusMessage;

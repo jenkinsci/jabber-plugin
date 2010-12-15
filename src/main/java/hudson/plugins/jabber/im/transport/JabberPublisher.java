@@ -11,13 +11,14 @@ import hudson.plugins.im.IMMessageTargetConversionException;
 import hudson.plugins.im.IMMessageTargetConverter;
 import hudson.plugins.im.IMPublisher;
 import hudson.plugins.im.build_notify.BuildToChatNotifier;
-import hudson.plugins.im.tools.Assert;
 import hudson.plugins.jabber.user.JabberUserProperty;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 
 import java.util.List;
+
+import org.springframework.util.Assert;
 
 /**
  * Jabber-specific implementation of the {@link IMPublisher}.
@@ -80,7 +81,7 @@ public class JabberPublisher extends IMPublisher
          */
         @Override
 		public String toString(final IMMessageTarget target) {
-            Assert.isNotNull(target, "Parameter 'target' must not be null.");
+            Assert.notNull(target, "Parameter 'target' must not be null.");
             return target.toString();
         }
     }
