@@ -21,6 +21,13 @@
         </developer>
     </developers>
     
+    <licenses>
+        <license>
+            <name>MIT license</name>
+            <comments>All source code is under the MIT license.</comments>
+        </license>
+    </licenses>
+    
     <properties>
   	  <version.instant-messaging.plugin>1.14-SNAPSHOT</version.instant-messaging.plugin>
   	</properties>
