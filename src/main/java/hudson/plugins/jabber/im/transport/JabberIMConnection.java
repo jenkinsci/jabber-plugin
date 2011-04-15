@@ -45,6 +45,8 @@ import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.RosterPacket.ItemType;
+import org.jivesoftware.smack.proxy.ProxyInfo;
+import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.packet.DelayInformation;
@@ -59,9 +61,9 @@ import org.springframework.util.Assert;
  * @author Uwe Schaefer (original author)
  */
 class JabberIMConnection extends AbstractIMConnection {
-	
+
 	private static final Logger LOGGER = Logger.getLogger(JabberIMConnection.class.getName());
-	
+
 	private volatile XMPPConnection connection;
 
 	private final Map<String, WeakReference<MultiUserChat>> groupChatCache = new HashMap<String, WeakReference<MultiUserChat>>();
@@ -86,25 +88,34 @@ class JabberIMConnection extends AbstractIMConnection {
 	private final int port;
 
 	private final String[] groupChats;
-	
+
 	private IMPresence impresence;
 
-    private String imStatusMessage;
-    private boolean enableSASL;
+	private String imStatusMessage;
+	private boolean enableSASL;
 
-    private final JabberPublisherDescriptor desc;
-    private final AuthenticationHolder authentication;
+	private final JabberPublisherDescriptor desc;
+	private final AuthenticationHolder authentication;
 
 	private Roster roster;
-	
+
+	/**
+	 * Proxy parameters
+	 */
+	private final ProxyType proxytype;
+	private final String proxyhost;
+	private final String proxyuser;
+	private final String proxypass;
+	private final int proxyport;
+
 	static {
 		SmackConfiguration.setPacketReplyTimeout(20000);
-		
+
 		System.setProperty("smack.debuggerClass", JabberConnectionDebugger.class.getName());
 	}
-	
+
 	JabberIMConnection(JabberPublisherDescriptor desc, AuthenticationHolder authentication) throws IMException {
-	    super(desc);
+		super(desc);
 		Assert.notNull(desc, "Parameter 'desc' must not be null.");
 		this.desc = desc;
 		this.authentication = authentication;
@@ -112,9 +123,14 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.port = desc.getPort();
 		this.nick = JabberUtil.getUserPart(desc.getJabberId());
 		this.passwd = desc.getPassword();
-        this.enableSASL = desc.isEnableSASL();
+		this.enableSASL = desc.isEnableSASL();
+		this.proxytype = desc.getProxyType();
+		this.proxyhost = desc.getProxyHost();
+		this.proxyport = desc.getProxyPort();
+		this.proxyuser = desc.getProxyUser();
+		this.proxypass = desc.getProxyPass();
 		this.groupChatNick = desc.getGroupChatNickname() != null ?
-				desc.getGroupChatNickname() : this.nick;
+			desc.getGroupChatNickname() : this.nick;
 		this.botCommandPrefix = desc.getCommandPrefix();
 		if (desc.getInitialGroupChats() != null) {
 			this.groupChats = desc.getInitialGroupChats().trim().split("\\s");
@@ -126,8 +142,8 @@ class JabberIMConnection extends AbstractIMConnection {
 
 	@Override
 	public boolean connect() {
-	    lock();
-	    try {
+		lock();
+		try {
 			try {
 				if (!isConnected()) {
 					if (createConnection()) {
@@ -136,11 +152,11 @@ class JabberIMConnection extends AbstractIMConnection {
 								+ "/" + this.connection.getServiceName()
 								+ (this.connection.isUsingTLS() ? " using TLS" : "")
 								+ (this.connection.isUsingCompression() ? " using compression" : ""));
-			
+
 						// I've read somewhere that status must be set, before one can do anything other
 						// Don't know if it's true, but can't hurt, either.
 						sendPresence();
-						
+
 						groupChatCache.clear();
 						for (String groupChatName : this.groupChats) {
 							try {
@@ -172,14 +188,14 @@ class JabberIMConnection extends AbstractIMConnection {
 				return false;
 			}
 		} finally {
-		    unlock();
+			unlock();
 		}
 	}
 
 	@Override
-    public void close() {
-	    lock();
-	    try {
+	public void close() {
+		lock();
+		try {
 			try {
 				for (WeakReference<MultiUserChat> entry : groupChatCache.values()) {
 					MultiUserChat chat = entry.get();
@@ -188,7 +204,7 @@ class JabberIMConnection extends AbstractIMConnection {
 					}
 				}
 				// there seems to be no way to leave a 1-on-1 chat with Smack
-				
+
 				this.groupChatCache.clear();
 				this.chatCache.clear();
 				if (this.connection.isConnected()) {
@@ -201,7 +217,7 @@ class JabberIMConnection extends AbstractIMConnection {
 				this.connection = null;
 			}
 		} finally {
-		    unlock();
+			unlock();
 		}
 	}
 
@@ -213,23 +229,38 @@ class JabberIMConnection extends AbstractIMConnection {
 				// ignore
 			}
 		}
+		ProxyInfo pi;
+		switch (this.proxytype) {
+			case HTTP:
+				pi = ProxyInfo.forHttpProxy(this.proxyhost, this.proxyport, this.proxyuser, this.proxypass);
+				break;
+			case SOCKS4:
+				pi = ProxyInfo.forSocks4Proxy(this.proxyhost, this.proxyport, this.proxyuser, this.proxypass);
+				break;
+			case SOCKS5:
+				pi = ProxyInfo.forSocks5Proxy(this.proxyhost, this.proxyport, this.proxyuser, this.proxypass);
+				break;
+			default:
+				pi = ProxyInfo.forNoProxy();
+				break;
+		}
 		String serviceName = desc.getServiceName();
 		final ConnectionConfiguration cfg;
 		if (serviceName == null) {
 			cfg = new ConnectionConfiguration(
-					this.hostname, this.port);
+					this.hostname, this.port, pi);
 		} else if (this.hostname == null) {
-			cfg = new ConnectionConfiguration(serviceName);
+			cfg = new ConnectionConfiguration(serviceName, pi);
 		} else {
 			cfg = new ConnectionConfiguration(
 					this.hostname, this.port,
-					serviceName);
+					serviceName, pi);
 		}
 		// Currently, we handle reconnects ourself.
 		// Maybe we should change it in the future, but currently I'm
 		// not sure what Smack's reconnect feature really does.
 		cfg.setReconnectionAllowed(false);
-		
+
 		cfg.setDebuggerEnabled(true);
 
 		// try workaround for SASL error in Smack 3.1.0
@@ -237,13 +268,13 @@ class JabberIMConnection extends AbstractIMConnection {
 		// http://www.igniterealtime.org/community/message/198558
 		// and also http://www.igniterealtime.org/community/message/201908#201908
 		SASLAuthentication.unregisterSASLMechanism("DIGEST-MD5");
-		
+
 		//SASLAuthentication.unregisterSASLMechanism("GSSAPI");
 
-        cfg.setSASLAuthenticationEnabled(this.enableSASL);
+		cfg.setSASLAuthenticationEnabled(this.enableSASL);
 
-        boolean retryWithLegacySSL = false;
-        Exception originalException = null;
+		boolean retryWithLegacySSL = false;
+		Exception originalException = null;
 		try {
 			this.connection = new XMPPConnection(cfg);
 			this.connection.connect();
@@ -254,19 +285,19 @@ class JabberIMConnection extends AbstractIMConnection {
 			retryWithLegacySSL = true;
 			originalException = e;
 		}
-		
+
 		if (retryWithLegacySSL) {
 			retryConnectionWithLegacySSL(cfg, originalException);
 		}
 
 		if (this.connection.isConnected()) {
-			this.connection.login(this.desc.getUserName(), this.passwd, "Hudson");
-			
+			this.connection.login(this.desc.getUserName(), this.passwd, "Jenkins");
+
 			setupSubscriptionMode();
-			
+
 			listenForPrivateChats();
 		}
-		
+
 		return this.connection.isAuthenticated();
 	}
 
@@ -278,7 +309,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	 */
 	private void retryConnectionWithLegacySSL(
 			final ConnectionConfiguration cfg, Exception originalException)
-			throws XMPPException {
+		throws XMPPException {
 		try {
 			LOGGER.info("Retrying connection with legacy SSL");
 			cfg.setSocketFactory(SSLSocketFactory.getDefault());
@@ -293,7 +324,7 @@ class JabberIMConnection extends AbstractIMConnection {
 				throw new XMPPException(e);
 			}
 		}
-	}
+			}
 
 	/**
 	 * Sets the chosen subscription mode on our connection.
@@ -303,15 +334,15 @@ class JabberIMConnection extends AbstractIMConnection {
 		SubscriptionMode mode = SubscriptionMode.valueOf(this.desc.getSubscriptionMode());
 		switch (mode) {
 			case accept_all : LOGGER.info("Accepting all subscription requests");
-				break;
+							  break;
 			case reject_all : LOGGER.info("Rejecting all subscription requests");
-				break;
+							  break;
 			case manual : LOGGER.info("Subscription requests must be handled manually");
-				break;
+						  break;
 		}
 		this.roster.setSubscriptionMode(mode);
 	}
-	
+
 	/**
 	 * Listens on the connection for private chat requests.
 	 */
@@ -321,7 +352,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		// Actually, this should be the full user name (including '@server')
 		// but since via this connection only message to me should be delivered (right?)
 		// this doesn't matter anyway.
-		
+
 		PacketListener listener = new PrivateChatListener();
 		this.connection.addPacketListener(listener, filter);
 	}
@@ -333,7 +364,7 @@ class JabberIMConnection extends AbstractIMConnection {
 			groupChat = ref.get();
 		}
 		boolean create = (groupChat == null);
-		
+
 		if (create) {
 			groupChat = new MultiUserChat(this.connection, groupChatName);
 			try {
@@ -348,14 +379,14 @@ class JabberIMConnection extends AbstractIMConnection {
 			}
 
 			this.bots.add(new Bot(new JabberMultiUserChat(groupChat, this),
-					this.groupChatNick, this.desc.getHost(),
-					this.botCommandPrefix, this.authentication));
+						this.groupChatNick, this.desc.getHost(),
+						this.botCommandPrefix, this.authentication));
 
 			groupChatCache.put(groupChatName, new WeakReference<MultiUserChat>(groupChat));
 		}
 		return groupChat;
 	}
-	
+
 	private Chat getOrCreatePrivateChat(String chatPartner, Message msg) {
 		// use possibly existing chat
 		WeakReference<Chat> wr = chatCache.get(chatPartner);
@@ -365,12 +396,12 @@ class JabberIMConnection extends AbstractIMConnection {
 				return c;
 			}
 		}
-		
+
 		final Chat chat = this.connection.getChatManager().createChat(chatPartner, null);
 		Bot bot = new Bot(new JabberChat(chat, this), this.groupChatNick,
-					this.desc.getHost(), this.botCommandPrefix, this.authentication);
+				this.desc.getHost(), this.botCommandPrefix, this.authentication);
 		this.bots.add(bot);
-		
+
 		if (msg != null) {
 			// replay original message:
 			bot.onMessage(new JabberMessage(msg, isAuthorized(msg.getFrom())));
@@ -380,34 +411,34 @@ class JabberIMConnection extends AbstractIMConnection {
 	}
 
 	public void send(final IMMessageTarget target, final String text)
-			throws IMException {
+		throws IMException {
 		Assert.notNull(target, "Parameter 'target' must not be null.");
 		Assert.notNull(text, "Parameter 'text' must not be null.");
 		try {
-		    // prevent long waits for lock
-            if (!tryLock(5, TimeUnit.SECONDS)) {
-                return;
-            }
-            try {
-            		if (target instanceof GroupChatIMMessageTarget) {
-            			getOrCreateGroupChat(target.toString()).sendMessage(
-            					text);
-            		} else {
-            			final Chat chat = getOrCreatePrivateChat(target.toString(), null);
-            			chat.sendMessage(text);
-            		}
-            } catch (final XMPPException e) {
-            	// server unavailable ? Target-host unknown ? Well. Just skip this
-            	// one.
-                LOGGER.warning(ExceptionHelper.dump(e));
-            	// TODO ? tryReconnect();
-            } finally {
-                unlock();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            // ignore
-        }
+			// prevent long waits for lock
+			if (!tryLock(5, TimeUnit.SECONDS)) {
+				return;
+			}
+			try {
+				if (target instanceof GroupChatIMMessageTarget) {
+					getOrCreateGroupChat(target.toString()).sendMessage(
+							text);
+				} else {
+					final Chat chat = getOrCreatePrivateChat(target.toString(), null);
+					chat.sendMessage(text);
+				}
+			} catch (final XMPPException e) {
+				// server unavailable ? Target-host unknown ? Well. Just skip this
+				// one.
+				LOGGER.warning(ExceptionHelper.dump(e));
+				// TODO ? tryReconnect();
+			} finally {
+				unlock();
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			// ignore
+		}
 	}
 
 	/**
@@ -416,90 +447,90 @@ class JabberIMConnection extends AbstractIMConnection {
 	 */
 	@Override
 	public void setPresence(final IMPresence impresence, String statusMessage)
-			throws IMException {
+		throws IMException {
 		Assert.notNull(impresence, "Parameter 'impresence' must not be null.");
 		if (this.desc.isExposePresence()) {
-		    this.impresence = impresence;
-		    this.imStatusMessage = statusMessage;
-		    sendPresence();
+			this.impresence = impresence;
+			this.imStatusMessage = statusMessage;
+			sendPresence();
 		} else {
-		    // Ignore new presence.
-		    
-		    // Don't re-send presence, either. It would result in disconnecting from
-		    // all joined group chats
+			// Ignore new presence.
+
+			// Don't re-send presence, either. It would result in disconnecting from
+			// all joined group chats
 		}
 	}
-	
+
 	private void sendPresence() {
-	    
-	    try {
-	        // prevent long waits for lock
-            if (!tryLock(5, TimeUnit.SECONDS)) {
-                return;
-            }
-            try {
-            	if( !isConnected() ) {
-            		return;
-            	}
-            	Presence presence;
-            	switch (this.impresence) {
-            	case AVAILABLE:
-            		presence = new Presence(Presence.Type.available,
-            				this.imStatusMessage, 1, Presence.Mode.available);
-            		break;
-            	
-            	case OCCUPIED:
-            	    presence = new Presence(Presence.Type.available,
-            	            this.imStatusMessage, 1, Presence.Mode.away);
-            	    break;
-            	    
-            	case DND:
-            	    presence = new Presence(Presence.Type.available,
-                            this.imStatusMessage, 1, Presence.Mode.dnd);
-                    break;
 
-            	case UNAVAILABLE:
-            		presence = new Presence(Presence.Type.unavailable);
-            		break;
+		try {
+			// prevent long waits for lock
+			if (!tryLock(5, TimeUnit.SECONDS)) {
+				return;
+			}
+			try {
+				if( !isConnected() ) {
+					return;
+				}
+				Presence presence;
+				switch (this.impresence) {
+					case AVAILABLE:
+						presence = new Presence(Presence.Type.available,
+								this.imStatusMessage, 1, Presence.Mode.available);
+						break;
 
-            	default:
-            		throw new IllegalStateException("Don't know how to handle "
-            				+ impresence);
-            	}
-            	this.connection.sendPacket(presence);
-            } finally {
-                unlock();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            // ignore
-        }
+					case OCCUPIED:
+						presence = new Presence(Presence.Type.available,
+								this.imStatusMessage, 1, Presence.Mode.away);
+						break;
+
+					case DND:
+						presence = new Presence(Presence.Type.available,
+								this.imStatusMessage, 1, Presence.Mode.dnd);
+						break;
+
+					case UNAVAILABLE:
+						presence = new Presence(Presence.Type.unavailable);
+						break;
+
+					default:
+						throw new IllegalStateException("Don't know how to handle "
+								+ impresence);
+				}
+				this.connection.sendPacket(presence);
+			} finally {
+				unlock();
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			// ignore
+		}
 	}
-	
+
 	@Override
-    public boolean isConnected() {
-	    lock();
+	public boolean isConnected() {
+		lock();
 		try {
 			return this.connection != null && this.connection.isAuthenticated();
 		} finally {
-		    unlock();
+			unlock();
 		}
 	}
-	
+
 	public boolean isAuthorized(String xmppAddress) {
 		String bareAddress = StringUtils.parseBareAddress(xmppAddress);
-		
+
 		RosterEntry entry = this.roster.getEntry(bareAddress);
-        boolean authorized = entry != null
-        	&& (entry.getType() == ItemType.both
-        	|| entry.getType() == ItemType.from);
-        
-        return authorized;
+		boolean authorized = entry != null
+			&& (entry.getType() == ItemType.both
+					|| entry.getType() == ItemType.from);
+
+		return authorized;
 	}
-	
+
 	private final Map<IMConnectionListener, ConnectionListener> listeners = 
 		new ConcurrentHashMap<IMConnectionListener, ConnectionListener>();
-	
+
 	@Override
 	public void addConnectionListener(final IMConnectionListener listener) {
 		lock();
@@ -509,11 +540,11 @@ class JabberIMConnection extends AbstractIMConnection {
 				public void connectionClosedOnError(Exception e) {
 					listener.connectionBroken(e);
 				}
-				
+
 				@Override
 				public void connectionClosed() {
 				}
-				
+
 				@Override
 				public void reconnectingIn(int paramInt) {
 				}
@@ -573,16 +604,16 @@ class JabberIMConnection extends AbstractIMConnection {
 						xhtmlMessage = true;
 					}
 				}
-				
+
 				if (composing && !xhtmlMessage) {
 					// pretty strange: if composing extension AND NOT XHTMLExtension, this seems
 					// to mean that the message was delivered
 					return;
 				}
-				
+
 				if (m.getBody() != null) {
 					LOGGER.info("Message from " + m.getFrom() + " : " + m.getBody());
-					
+
 					final String chatPartner = m.getFrom();
 					getOrCreatePrivateChat(chatPartner, m);
 				}
