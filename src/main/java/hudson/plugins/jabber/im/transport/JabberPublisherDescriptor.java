@@ -36,6 +36,7 @@ import org.acegisecurity.AuthenticationException;
 import org.acegisecurity.providers.UsernamePasswordAuthenticationToken;
 import org.apache.commons.lang.StringUtils;
 import org.jivesoftware.smack.Roster.SubscriptionMode;
+import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.springframework.util.Assert;
@@ -44,9 +45,16 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     private static final Logger LOGGER = Logger.getLogger(JabberPublisherDescriptor.class.getName());
     
     private static final String PREFIX = "jabberPlugin.";
+	private static final int DEFAULT_PROXYPORT = 3128;
+
     public static final String PARAMETERNAME_ENABLED = JabberPublisherDescriptor.PREFIX + "enabled";
     public static final String PARAMETERNAME_PORT = JabberPublisherDescriptor.PREFIX + "port";
     public static final String PARAMETERNAME_HOSTNAME = JabberPublisherDescriptor.PREFIX + "hostname";
+    public static final String PARAMETERNAME_PROXYTYPE = JabberPublisherDescriptor.PREFIX + "proxyType";
+    public static final String PARAMETERNAME_PROXYHOST = JabberPublisherDescriptor.PREFIX + "proxyHost";
+    public static final String PARAMETERNAME_PROXYPORT = JabberPublisherDescriptor.PREFIX + "proxyPort";
+    public static final String PARAMETERNAME_PROXYUSER = JabberPublisherDescriptor.PREFIX + "proxyUser";
+    public static final String PARAMETERNAME_PROXYPASS = JabberPublisherDescriptor.PREFIX + "proxyPass";
     public static final String PARAMETERNAME_SSL = JabberPublisherDescriptor.PREFIX + "ssl";
     public static final String PARAMETERNAME_SASL = JabberPublisherDescriptor.PREFIX + "enableSASL";
     public static final String PARAMETERNAME_PRESENCE = JabberPublisherDescriptor.PREFIX + "exposePresence";
@@ -67,12 +75,18 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public static final String PARAMETERNAME_HUDSON_PASSWORD = JabberPublisherDescriptor.PREFIX + "hudsonPassword";
     public static final String PARAMETERNAME_SUBSCRIPTION_MODE = JabberPublisherDescriptor.PREFIX + "subscriptionMode";
     public static final String[] PARAMETERVALUE_SUBSCRIPTION_MODE;
+    public static final String[] PARAMETERVALUE_PROXYTYPES;
     static {
     	SubscriptionMode[] modes = SubscriptionMode.values();
     	PARAMETERVALUE_SUBSCRIPTION_MODE = new String[modes.length];
     	for (int i=0; i < modes.length; i++) {
     		PARAMETERVALUE_SUBSCRIPTION_MODE[i] = modes[i].name();
     	}
+    	ProxyType[] ptypes = ProxyType.values();
+    	PARAMETERVALUE_PROXYTYPES = new String[ptypes.length];
+    	for (int i=0; i < ptypes.length; i++) {
+    		PARAMETERVALUE_PROXYTYPES[i] = ptypes[i].name();
+    }
     }
     
     public static final String[] PARAMETERVALUE_STRATEGY_VALUES = NotificationStrategy.getDisplayNames();
@@ -106,6 +120,13 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     private String hudsonCiLogin;
     private String hudsonCiPassword;
     private String subscriptionMode = SubscriptionMode.accept_all.name();
+
+    // Proxy parameters
+    private ProxyType proxyType = ProxyType.NONE;
+    private int proxyPort = DEFAULT_PROXYPORT;
+    private String proxyHost = null;
+    private String proxyUser = null;
+    private String proxyPass = null;
 
     public JabberPublisherDescriptor()
     {
@@ -258,6 +279,60 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     	 }
      }
     
+    private void applyProxy(final HttpServletRequest req) throws FormException {
+        String s = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PROXYTYPE);
+        this.proxyType = ProxyType.NONE;
+        if (s != null) {
+            try {
+                this.proxyType = ProxyType.valueOf(s);
+            } catch (final IllegalArgumentException e) {
+                throw new FormException("Proxy type cannot be parsed.",
+                        JabberPublisherDescriptor.PARAMETERNAME_PROXYTYPE);
+            }
+        }
+
+        if (ProxyType.NONE == this.proxyType)
+            return;
+
+        s = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PROXYHOST);
+        if ((s != null) && (s.trim().length() > 0)) {
+            try {
+                InetAddress.getByName(s); // try to resolve
+                this.proxyHost = s;
+            } catch (final UnknownHostException e) {
+                this.proxyType = ProxyType.NONE;
+                throw new FormException("Cannot find Proxy host '" + s + "'.",
+                        JabberPublisherDescriptor.PARAMETERNAME_PROXYHOST);
+            }
+        } else
+            this.proxyType = ProxyType.NONE;
+       if (ProxyType.NONE == this.proxyType)
+            return;
+
+        s = Util.fixEmptyAndTrim(req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PROXYPORT));
+        if (s != null) {
+            try {
+                final int i = Integer.parseInt(s);
+                if ((i < 0) || (i > 65535)) {
+                    throw new FormException("Proxy port out of range.",
+                            JabberPublisherDescriptor.PARAMETERNAME_PROXYPORT);
+                }
+                this.proxyPort = i;
+            }
+            catch (final NumberFormatException e) {
+                this.proxyType = ProxyType.NONE;
+                throw new FormException("Proxy port cannot be parsed.",
+                        JabberPublisherDescriptor.PARAMETERNAME_PROXYPORT);
+            }
+        } else
+            this.proxyPort = DEFAULT_PROXYPORT;
+
+        this.proxyUser = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PROXYUSER);
+        this.proxyPass = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PROXYPASS);
+        if ((null != this.proxyUser) && (this.proxyUser.length() > 0) && (null == this.proxyPass))
+            this.proxyPass = "";
+    }
+
     /**
      * This human readable name is used in the configuration screen.
      */
@@ -365,6 +440,40 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     	return this.commandPrefix;
     }
 
+    public String getProxyHost() {
+        return this.proxyHost;
+    }
+
+    public String getProxyUser() {
+        return this.proxyUser;
+    }
+
+    public String getProxyPass() {
+        return this.proxyPass;
+    }
+
+    public ProxyType getProxyType() {
+        return this.proxyType;
+    }
+
+    public int getProxyPort() {
+        return this.proxyPort;
+    }
+
+    /**
+     * Returns the text to be put into the form field.
+     */
+    public String getProxyPortString() {
+        return String.valueOf(proxyPort);
+    }
+
+    /**
+     * Returns the text to be put into the form field.
+     */
+    public String getProxyTypeString() {
+        return this.proxyType.name();
+    }
+
     /**
      * Creates a new instance of {@link JabberPublisher} from a submitted form.
      */
@@ -444,6 +553,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         applyCommandPrefix(req);
         applyDefaultIdSuffix(req);
         applyHudsonLoginPassword(req);
+        applyProxy(req);
 
         if (isEnabled()) {
             try {
@@ -469,7 +579,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 
 	
 	public FormValidation doJabberIdCheck(@QueryParameter String jabberId,
-			@QueryParameter final String hostname, @QueryParameter final String port) {
+			@QueryParameter final String hostname, @QueryParameter final String port, @QueryParameter final String proxyType) {
 	    if(!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) {
             return FormValidation.ok();
         }
@@ -480,9 +590,18 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	    	// validation has already been done for the hostname field
 	    	return FormValidation.ok();
 	    } else if (JabberUtil.getDomainPart(jabberId) != null) {
+			String pts = Util.fixEmptyAndTrim(proxyType);
 	        String host = JabberUtil.getDomainPart(jabberId);
+			ProxyType pt = ProxyType.NONE;
 	        try {
-                checkHostAccessibility(host, port);
+				if (pts != null) {
+					pt = ProxyType.valueOf(pts);
+				}
+			} catch (IllegalArgumentException e) {
+				return FormValidation.error("Invalid proxy type " + proxyType);
+			}
+	        try {
+                checkHostAccessibility(host, port, pt);
                 return FormValidation.ok();
             } catch (UnknownHostException e) {
                 return FormValidation.error("Unknown host " + host);
@@ -496,21 +615,64 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	    }
 	}
 	
+	public FormValidation doProxyCheck(@QueryParameter final String proxyType,
+			@QueryParameter final String proxyHost, @QueryParameter final String proxyPort) {
+		if(!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) {
+			return FormValidation.ok();
+		}
+		String host = Util.fixEmptyAndTrim(proxyHost);
+		String p = Util.fixEmptyAndTrim(proxyPort);
+		String pts = Util.fixEmptyAndTrim(proxyType);
+		if (host == null) {
+			return FormValidation.ok();
+		} else {
+			ProxyType pt = ProxyType.NONE;
+			try {
+				if (pts != null) {
+					pt = ProxyType.valueOf(pts);
+				}
+			} catch (IllegalArgumentException e) {
+				return FormValidation.error("Invalid proxy type " + proxyType);
+			}
+			if (pt != ProxyType.NONE) {
+				try {
+					checkHostAccessibility(host, p, ProxyType.NONE);
+				} catch (UnknownHostException e) {
+					return FormValidation.error("Unknown proxy host " + proxyHost);
+				} catch (NumberFormatException e) {
+					return FormValidation.error("Invalid proxy port " + proxyPort);
+				} catch (IOException e) {
+					return FormValidation.error("Unable to connect to "+host+":"+p+" : "+e.getMessage());
+				}
+			}
+			return FormValidation.ok();
+		}
+	}
+
     /**
      * Validates the connection information.
      */
     public FormValidation doServerCheck(@QueryParameter final String hostname,
-            @QueryParameter final String port) {
+			@QueryParameter final String port, @QueryParameter final String proxyType) {
         if(!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) {
             return FormValidation.ok();
         }
         String host = Util.fixEmptyAndTrim(hostname);
         String p = Util.fixEmptyAndTrim(port);
+		String pts = Util.fixEmptyAndTrim(proxyType);
         if (host == null) {
             return FormValidation.ok();
         } else {
+			ProxyType pt = ProxyType.NONE;
             try {
-                checkHostAccessibility(host, port);
+				if (pts != null) {
+					pt = ProxyType.valueOf(pts);
+				}
+			} catch (IllegalArgumentException e) {
+				return FormValidation.error("Invalid proxy type " + proxyType);
+			}
+			try {
+				checkHostAccessibility(host, port, pt);
                 return FormValidation.ok();
             } catch (UnknownHostException e) {
                 return FormValidation.error("Unknown host " + host);
@@ -522,7 +684,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         }
     }
     
-    private static void checkHostAccessibility(String hostname, String port)
+	private static void checkHostAccessibility(String hostname, String port, ProxyType pt)
         throws UnknownHostException, IOException, NumberFormatException {
         hostname = Util.fixEmptyAndTrim(hostname);
         port = Util.fixEmptyAndTrim(port);
@@ -532,10 +694,12 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         if (port != null) {
             iPort = Integer.parseInt(port);
         }
-        
+		if (pt == ProxyType.NONE) {
+			// Only try connect if not using a proxy
         Socket s = new Socket(address, iPort);
         s.close();
     }
+	}
 
     /**
      * {@inheritDoc}

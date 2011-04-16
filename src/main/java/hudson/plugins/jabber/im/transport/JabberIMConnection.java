@@ -45,6 +45,8 @@ import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.RosterPacket.ItemType;
+import org.jivesoftware.smack.proxy.ProxyInfo;
+import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.packet.DelayInformation;
@@ -97,6 +99,15 @@ class JabberIMConnection extends AbstractIMConnection {
 
 	private Roster roster;
 	
+	/**
+	 * Proxy parameters
+	 */
+	private final ProxyType proxytype;
+	private final String proxyhost;
+	private final String proxyuser;
+	private final String proxypass;
+	private final int proxyport;
+
 	static {
 		SmackConfiguration.setPacketReplyTimeout(20000);
 		
@@ -113,6 +124,11 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.nick = JabberUtil.getUserPart(desc.getJabberId());
 		this.passwd = desc.getPassword();
         this.enableSASL = desc.isEnableSASL();
+		this.proxytype = desc.getProxyType();
+		this.proxyhost = desc.getProxyHost();
+		this.proxyport = desc.getProxyPort();
+		this.proxyuser = desc.getProxyUser();
+		this.proxypass = desc.getProxyPass();
 		this.groupChatNick = desc.getGroupChatNickname() != null ?
 				desc.getGroupChatNickname() : this.nick;
 		this.botCommandPrefix = desc.getCommandPrefix();
@@ -213,17 +229,32 @@ class JabberIMConnection extends AbstractIMConnection {
 				// ignore
 			}
 		}
+		ProxyInfo pi;
+		switch (this.proxytype) {
+			case HTTP:
+				pi = ProxyInfo.forHttpProxy(this.proxyhost, this.proxyport, this.proxyuser, this.proxypass);
+				break;
+			case SOCKS4:
+				pi = ProxyInfo.forSocks4Proxy(this.proxyhost, this.proxyport, this.proxyuser, this.proxypass);
+				break;
+			case SOCKS5:
+				pi = ProxyInfo.forSocks5Proxy(this.proxyhost, this.proxyport, this.proxyuser, this.proxypass);
+				break;
+			default:
+				pi = ProxyInfo.forNoProxy();
+				break;
+		}
 		String serviceName = desc.getServiceName();
 		final ConnectionConfiguration cfg;
 		if (serviceName == null) {
 			cfg = new ConnectionConfiguration(
-					this.hostname, this.port);
+					this.hostname, this.port, pi);
 		} else if (this.hostname == null) {
-			cfg = new ConnectionConfiguration(serviceName);
+			cfg = new ConnectionConfiguration(serviceName, pi);
 		} else {
 			cfg = new ConnectionConfiguration(
 					this.hostname, this.port,
-					serviceName);
+					serviceName, pi);
 		}
 		// Currently, we handle reconnects ourself.
 		// Maybe we should change it in the future, but currently I'm
@@ -260,7 +291,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 
 		if (this.connection.isConnected()) {
-			this.connection.login(this.desc.getUserName(), this.passwd, "Hudson");
+			this.connection.login(this.desc.getUserName(), this.passwd, "Jenkins");
 			
 			setupSubscriptionMode();
 			
