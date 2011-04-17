@@ -153,7 +153,7 @@ class JabberIMConnection extends AbstractIMConnection {
 								+ (this.connection.isUsingTLS() ? " using TLS" : "")
 								+ (this.connection.isUsingCompression() ? " using compression" : ""));
 			
-						// I've read somewhere that status must be set, before one can do anything other
+						// kutzi: I've read somewhere that status must be set, before one can do anything other
 						// Don't know if it's true, but can't hurt, either.
 						sendPresence();
 						
@@ -229,6 +229,7 @@ class JabberIMConnection extends AbstractIMConnection {
 				// ignore
 			}
 		}
+		
 		ProxyInfo pi;
 		switch (this.proxytype) {
 			case HTTP:
@@ -244,6 +245,9 @@ class JabberIMConnection extends AbstractIMConnection {
 				pi = ProxyInfo.forNoProxy();
 				break;
 		}
+		
+		
+		
 		String serviceName = desc.getServiceName();
 		final ConnectionConfiguration cfg;
 		if (serviceName == null) {
@@ -272,6 +276,15 @@ class JabberIMConnection extends AbstractIMConnection {
 		//SASLAuthentication.unregisterSASLMechanism("GSSAPI");
 
         cfg.setSASLAuthenticationEnabled(this.enableSASL);
+        
+        LOGGER.info("Trying to connect to XMPP on "
+                + cfg.getHost() + ":" + cfg.getPort()
+                + "/" + cfg.getServiceName()
+                + (cfg.isSASLAuthenticationEnabled() ? " with SASL" : "")
+                + (cfg.isCompressionEnabled() ? " using compression" : "")
+                + (pi.getProxyType() != ProxyInfo.ProxyType.NONE ? " via proxy " + pi.getProxyType() + " "
+                        + pi.getProxyAddress() + ":" + pi.getProxyPort() : "")
+                );
 
         boolean retryWithLegacySSL = false;
         Exception originalException = null;
@@ -319,7 +332,8 @@ class JabberIMConnection extends AbstractIMConnection {
 			if (originalException != null) {
 				// use the original connection exception as legacy SSL should only
 				// be a fallback
-				throw new XMPPException(originalException);
+			    LOGGER.warning("Retrying with legacy SSL failed: " + e.getMessage());
+				throw new XMPPException("Exception of original (without legacy SSL) connection attempt", originalException);
 			} else {
 				throw new XMPPException(e);
 			}
