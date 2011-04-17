@@ -77,7 +77,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	 */
 	private final String nick;
 	/**
-	 * The nick name of the Hudson bot to use in group chats.
+	 * The nick name of the Jenkins bot to use in group chats.
 	 * May be null in which case the nick is used.
 	 */
 	private final String groupChatNick;
@@ -264,7 +264,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		cfg.setDebuggerEnabled(true);
 
 		// try workaround for SASL error in Smack 3.1.0
-		// See: HUDSON-6032
+		// See: JENKINS-6032
 		// http://www.igniterealtime.org/community/message/198558
 		// and also http://www.igniterealtime.org/community/message/201908#201908
 		SASLAuthentication.unregisterSASLMechanism("DIGEST-MD5");
@@ -305,7 +305,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	 * Transparently retries the connection attempt with legacy SSL if original attempt fails.
 	 * @param originalException the exception of the original attempt (may be null)
 	 * 
-	 * See HUDSON-6863
+	 * See JENKINS-6863
 	 */
 	private void retryConnectionWithLegacySSL(
 			final ConnectionConfiguration cfg, Exception originalException)

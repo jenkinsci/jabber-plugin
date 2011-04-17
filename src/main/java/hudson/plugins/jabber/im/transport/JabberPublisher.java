@@ -142,8 +142,6 @@ public class JabberPublisher extends IMPublisher
         return sb.toString().trim();
 	}
     
-
-    // since Hudson 1.319:
 	@Override
 	public BuildStepMonitor getRequiredMonitorService() {
 		return BuildStepMonitor.BUILD;

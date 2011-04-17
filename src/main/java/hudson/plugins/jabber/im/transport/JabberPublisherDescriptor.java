@@ -274,7 +274,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     		 try {
 				Hudson.getInstance().getSecurityRealm().getSecurityComponents().manager.authenticate(auth);
 			} catch (AuthenticationException e) {
-				throw new FormException(e, "Bad Hudson credentials");
+				throw new FormException(e, "Bad Jenkins credentials");
 			}
     	 }
      }
