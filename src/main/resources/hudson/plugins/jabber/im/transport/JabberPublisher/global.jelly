@@ -29,7 +29,7 @@
         <f:textbox name="${descriptor.PARAMETERNAME_PORT}" value="${descriptor.portString}"
         checkUrl="'${rootURL}/publisher/JabberPublisher/serverCheck?field=port&amp;hostname='+escape(this.form.elements['jabberPlugin.hostname'].value)+'&amp;port='+escape(this.value)+'&amp;proxyType='+escape(this.form.elements['jabberPlugin.proxyType'].value)"/>
       </f:entry>
-      <f:entry title="Default ID suffix" description="This suffix will be used to determine the Jabber ID from the Hudson ID, if no Jabber ID is specified in the user settings">
+      <f:entry title="Default ID suffix" description="This suffix will be used to determine the Jabber ID from the Jenkins ID, if no Jabber ID is specified in the user settings">
 			<f:textbox name="${descriptor.PARAMETERNAME_DEFAULT_ID_SUFFIX}"
 				value="${descriptor.defaultIdSuffix}" />
 	  </f:entry>
