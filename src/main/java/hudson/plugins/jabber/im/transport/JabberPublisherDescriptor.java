@@ -43,30 +43,32 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.springframework.util.Assert;
 
 public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> implements IMPublisherDescriptor {
+
     private static final Logger LOGGER = Logger.getLogger(JabberPublisherDescriptor.class.getName());
     
     private static final String PREFIX = "jabberPlugin.";
 	private static final int DEFAULT_PROXYPORT = 3128;
 
-    public static final String PARAMETERNAME_ENABLED = JabberPublisherDescriptor.PREFIX + "enabled";
-    public static final String PARAMETERNAME_PORT = JabberPublisherDescriptor.PREFIX + "port";
-    public static final String PARAMETERNAME_HOSTNAME = JabberPublisherDescriptor.PREFIX + "hostname";
-    public static final String PARAMETERNAME_PROXYTYPE = JabberPublisherDescriptor.PREFIX + "proxyType";
-    public static final String PARAMETERNAME_PROXYHOST = JabberPublisherDescriptor.PREFIX + "proxyHost";
-    public static final String PARAMETERNAME_PROXYPORT = JabberPublisherDescriptor.PREFIX + "proxyPort";
-    public static final String PARAMETERNAME_PROXYUSER = JabberPublisherDescriptor.PREFIX + "proxyUser";
-    public static final String PARAMETERNAME_PROXYPASS = JabberPublisherDescriptor.PREFIX + "proxyPass";
-    public static final String PARAMETERNAME_SSL = JabberPublisherDescriptor.PREFIX + "ssl";
-    public static final String PARAMETERNAME_SASL = JabberPublisherDescriptor.PREFIX + "enableSASL";
-    public static final String PARAMETERNAME_PRESENCE = JabberPublisherDescriptor.PREFIX + "exposePresence";
-    public static final String PARAMETERNAME_PASSWORD = JabberPublisherDescriptor.PREFIX + "password";
-    public static final String PARAMETERNAME_JABBERID = JabberPublisherDescriptor.PREFIX + "jabberId";
-    public static final String PARAMETERNAME_GROUP_NICKNAME = JabberPublisherDescriptor.PREFIX + "groupNick";
-    public static final String PARAMETERNAME_TARGETS = JabberPublisherDescriptor.PREFIX + "targets";
-    public static final String PARAMETERNAME_INITIAL_GROUPCHATS = JabberPublisherDescriptor.PREFIX + "initialGroupChats";
-    public static final String PARAMETERNAME_COMMAND_PREFIX = JabberPublisherDescriptor.PREFIX + "commandPrefix";
-    public static final String PARAMETERNAME_DEFAULT_ID_SUFFIX = JabberPublisherDescriptor.PREFIX + "defaultIdSuffix";
-    public static final String PARAMETERNAME_SUBSCRIPTION_MODE = JabberPublisherDescriptor.PREFIX + "subscriptionMode";
+    public static final String PARAMETERNAME_ENABLED = PREFIX + "enabled";
+    public static final String PARAMETERNAME_PORT = PREFIX + "port";
+    public static final String PARAMETERNAME_HOSTNAME = PREFIX + "hostname";
+    public static final String PARAMETERNAME_USEPROXY = PREFIX + "useProxy";
+    public static final String PARAMETERNAME_PROXYTYPE = PREFIX + "proxyType";
+    public static final String PARAMETERNAME_PROXYHOST = PREFIX + "proxyHost";
+    public static final String PARAMETERNAME_PROXYPORT = PREFIX + "proxyPort";
+    public static final String PARAMETERNAME_PROXYUSER = PREFIX + "proxyUser";
+    public static final String PARAMETERNAME_PROXYPASS = PREFIX + "proxyPass";
+    public static final String PARAMETERNAME_SSL = PREFIX + "ssl";
+    public static final String PARAMETERNAME_SASL = PREFIX + "enableSASL";
+    public static final String PARAMETERNAME_PRESENCE = PREFIX + "exposePresence";
+    public static final String PARAMETERNAME_PASSWORD = PREFIX + "password";
+    public static final String PARAMETERNAME_JABBERID = PREFIX + "jabberId";
+    public static final String PARAMETERNAME_GROUP_NICKNAME = PREFIX + "groupNick";
+    public static final String PARAMETERNAME_TARGETS = PREFIX + "targets";
+    public static final String PARAMETERNAME_INITIAL_GROUPCHATS = PREFIX + "initialGroupChats";
+    public static final String PARAMETERNAME_COMMAND_PREFIX = PREFIX + "commandPrefix";
+    public static final String PARAMETERNAME_DEFAULT_ID_SUFFIX = PREFIX + "defaultIdSuffix";
+    public static final String PARAMETERNAME_SUBSCRIPTION_MODE = PREFIX + "subscriptionMode";
     public static final String[] PARAMETERVALUE_SUBSCRIPTION_MODE;
     public static final String[] PARAMETERVALUE_PROXYTYPES;
     static {
@@ -163,7 +165,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	// TODO: reuse the checkHostAccessibility method for this
     private void applyHostname(final HttpServletRequest req, boolean check) throws FormException
     {
-        final String s = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_HOSTNAME);
+        final String s = req.getParameter(PARAMETERNAME_HOSTNAME);
         if (check && (s != null) && (s.trim().length() > 0))
         {
             try
@@ -174,7 +176,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
             catch (final UnknownHostException e)
             {
                 throw new FormException("Cannot find Host '" + s + "'.",
-                        JabberPublisherDescriptor.PARAMETERNAME_HOSTNAME);
+                        PARAMETERNAME_HOSTNAME);
             }
         }
         else
@@ -185,30 +187,30 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 
     private void applyNickname(final HttpServletRequest req, boolean check) throws FormException
     {
-        this.hudsonNickname = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_JABBERID);
+        this.hudsonNickname = req.getParameter(PARAMETERNAME_JABBERID);
         if (check) {
 	        if ((this.hostname != null) && ((this.hudsonNickname == null) || (this.hudsonNickname.trim().length() == 0)))
 	        {
 	            throw new FormException("Account/Nickname cannot be empty.",
-	                    JabberPublisherDescriptor.PARAMETERNAME_JABBERID);
+	                    PARAMETERNAME_JABBERID);
 	        }
         }
     }
 
     private void applyPassword(final HttpServletRequest req, boolean check) throws FormException
     {
-        this.hudsonPassword = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PASSWORD);
+        this.hudsonPassword = req.getParameter(PARAMETERNAME_PASSWORD);
         if (check) {
 	        if (((this.hostname != null) && (this.hudsonPassword == null))
 	    		|| (this.hudsonPassword.trim().length() == 0)) {
-	            throw new FormException("Password cannot be empty.", JabberPublisherDescriptor.PARAMETERNAME_PASSWORD);
+	            throw new FormException("Password cannot be empty.", PARAMETERNAME_PASSWORD);
 	        }
         }
     }
 
     private void applyGroupChatNickname(final HttpServletRequest req) throws FormException
     {
-        this.groupChatNickname = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_GROUP_NICKNAME);
+        this.groupChatNickname = req.getParameter(PARAMETERNAME_GROUP_NICKNAME);
         if (this.groupChatNickname != null && this.groupChatNickname.trim().length() == 0)
         {
             this.groupChatNickname = null;
@@ -217,20 +219,20 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 
     private void applyPort(final HttpServletRequest req, boolean check) throws FormException
     {
-        final String p = Util.fixEmptyAndTrim(req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PORT));
+        final String p = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_PORT));
         if (p != null)
         {
             try
             {
                 final int i = Integer.parseInt(p);
                 if (check && ((i < 0) || (i > 65535))) {
-                    throw new FormException("Port out of range.", JabberPublisherDescriptor.PARAMETERNAME_PORT);
+                    throw new FormException("Port out of range.", PARAMETERNAME_PORT);
                 }
                 this.port = i;
             }
             catch (final NumberFormatException e)
             {
-                throw new FormException("Port cannot be parsed.", JabberPublisherDescriptor.PARAMETERNAME_PORT);
+                throw new FormException("Port cannot be parsed.", PARAMETERNAME_PORT);
             }
         } else {
             this.port = DEFAULT_PORT;
@@ -238,11 +240,11 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     }
 
     private void applyInitialGroupChats(final HttpServletRequest req) {
-    	this.initialGroupChats = Util.fixEmptyAndTrim(req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_INITIAL_GROUPCHATS));
+    	this.initialGroupChats = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_INITIAL_GROUPCHATS));
     }
     
     private void applyCommandPrefix(final HttpServletRequest req) {
-    	String prefix = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_COMMAND_PREFIX);
+    	String prefix = req.getParameter(PARAMETERNAME_COMMAND_PREFIX);
     	if ((prefix != null) && (prefix.trim().length() > 0)) {
     		this.commandPrefix = prefix;
     	} else {
@@ -251,7 +253,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     }
 
      private void applyDefaultIdSuffix(final HttpServletRequest req) {
-    	String suffix = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_DEFAULT_ID_SUFFIX);
+    	String suffix = req.getParameter(PARAMETERNAME_DEFAULT_ID_SUFFIX);
     	if ((suffix != null) && (suffix.trim().length() > 0)) {
     		this.defaultIdSuffix = suffix.trim();
     	} else {
@@ -274,28 +276,28 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     
     private void applyProxy(final HttpServletRequest req) throws FormException {
         
-        boolean enabled = "on".equals(req.getParameter("useProxy"));
+        boolean enabled = "on".equals(req.getParameter(PARAMETERNAME_USEPROXY));
         
         if (!enabled) {
             this.proxyType = ProxyType.NONE;
             return;
         }
-        
-        String s = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PROXYTYPE);
+
+        this.proxyType = ProxyType.NONE;
+        String s = req.getParameter(PARAMETERNAME_PROXYTYPE);
         if (s != null) {
             try {
                 this.proxyType = ProxyType.valueOf(s);
             } catch (RuntimeException e) {
-                this.proxyType = ProxyType.NONE;
                 throw new FormException("Proxy type cannot be parsed.",
-                        JabberPublisherDescriptor.PARAMETERNAME_PROXYTYPE);
+                        PARAMETERNAME_PROXYTYPE);
             }
         }
 
         if (ProxyType.NONE == this.proxyType)
             return;
 
-        s = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PROXYHOST);
+        s = req.getParameter(PARAMETERNAME_PROXYHOST);
         if ((s != null) && (s.trim().length() > 0)) {
             try {
                 InetAddress.getByName(s); // try to resolve
@@ -303,33 +305,33 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
             } catch (final UnknownHostException e) {
                 this.proxyType = ProxyType.NONE;
                 throw new FormException("Cannot find Proxy host '" + s + "'.",
-                        JabberPublisherDescriptor.PARAMETERNAME_PROXYHOST);
+                        PARAMETERNAME_PROXYHOST);
             }
         } else
             this.proxyType = ProxyType.NONE;
        if (ProxyType.NONE == this.proxyType)
             return;
 
-        s = Util.fixEmptyAndTrim(req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PROXYPORT));
+        s = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_PROXYPORT));
         if (s != null) {
             try {
                 final int i = Integer.parseInt(s);
                 if ((i < 0) || (i > 65535)) {
                     throw new FormException("Proxy port out of range.",
-                            JabberPublisherDescriptor.PARAMETERNAME_PROXYPORT);
+                            PARAMETERNAME_PROXYPORT);
                 }
                 this.proxyPort = i;
             }
             catch (final NumberFormatException e) {
                 this.proxyType = ProxyType.NONE;
                 throw new FormException("Proxy port cannot be parsed.",
-                        JabberPublisherDescriptor.PARAMETERNAME_PROXYPORT);
+                        PARAMETERNAME_PROXYPORT);
             }
         } else
             this.proxyPort = DEFAULT_PROXYPORT;
 
-        this.proxyUser = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PROXYUSER);
-        this.proxyPass = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PROXYPASS);
+        this.proxyUser = req.getParameter(PARAMETERNAME_PROXYUSER);
+        this.proxyPass = req.getParameter(PARAMETERNAME_PROXYPASS);
         if ((null != this.proxyUser) && (this.proxyUser.length() > 0) && (null == this.proxyPass))
             this.proxyPass = "";
     }
@@ -482,7 +484,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public JabberPublisher newInstance(final StaplerRequest req, JSONObject formData) throws FormException
     {
         Assert.notNull(req, "Parameter 'req' must not be null.");
-        final String t = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_TARGETS);
+        final String t = req.getParameter(PARAMETERNAME_TARGETS);
         final String[] split;
         if (t != null) {
         	split = t.split("\\s");
@@ -503,10 +505,10 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 			    }
 			}
 		} catch (IMMessageTargetConversionException e) {
-			throw new FormException("Invalid Jabber address", e, JabberPublisherDescriptor.PARAMETERNAME_TARGETS);
+			throw new FormException("Invalid Jabber address", e, PARAMETERNAME_TARGETS);
 		}
         
-        String n = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_STRATEGY);
+        String n = req.getParameter(PARAMETERNAME_STRATEGY);
         if (n == null) {
         	n = PARAMETERVALUE_STRATEGY_DEFAULT;
         } else {
@@ -539,7 +541,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
             		req.bindJSON(BuildToChatNotifier.class,formData.getJSONObject("buildToChatNotifier")),
             		matrixJobMultiplier);
         } catch (final IMMessageTargetConversionException e) {
-            throw new FormException(e, JabberPublisherDescriptor.PARAMETERNAME_TARGETS);
+            throw new FormException(e, PARAMETERNAME_TARGETS);
         }
     }
 
@@ -550,9 +552,9 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	public boolean configure(StaplerRequest req, JSONObject json) throws hudson.model.Descriptor.FormException {
 		String en = req.getParameter(PARAMETERNAME_ENABLED);
 		this.enabled = Boolean.valueOf(en != null);
-		this.exposePresence = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PRESENCE) != null;
-        this.enableSASL = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_SASL) != null;
-		this.subscriptionMode = Util.fixEmptyAndTrim(req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_SUBSCRIPTION_MODE));
+		this.exposePresence = req.getParameter(PARAMETERNAME_PRESENCE) != null;
+        this.enableSASL = req.getParameter(PARAMETERNAME_SASL) != null;
+		this.subscriptionMode = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_SUBSCRIPTION_MODE));
         applyHostname(req, this.enabled);
         applyPort(req, this.enabled);
         applyNickname(req, this.enabled);

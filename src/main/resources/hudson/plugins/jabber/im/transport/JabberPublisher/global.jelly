@@ -57,7 +57,7 @@
 
       <super:global-jenkinsLogin />
 
-      <f:optionalBlock title="Use Proxy" name="useProxy" checked="${descriptor.proxyTypeString!='NONE'}">
+      <f:optionalBlock title="Use Proxy" name="${descriptor.PARAMETERNAME_USEPROXY}" checked="${descriptor.proxyTypeString!='NONE'}">
           <f:entry title="${%JabberProxy}">
             <select class="setting-input" name="${descriptor.PARAMETERNAME_PROXYTYPE}">
     	       <j:forEach var="value" items="${descriptor.PARAMETERVALUE_PROXYTYPES}">
