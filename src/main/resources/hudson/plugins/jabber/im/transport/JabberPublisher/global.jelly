@@ -57,28 +57,31 @@
 
       <super:global-jenkinsLogin />
 
-      <f:entry title="${%JabberProxy}">
-        <select class="setting-input" name="${descriptor.PARAMETERNAME_PROXYTYPE}">
-	       <j:forEach var="value" items="${descriptor.PARAMETERVALUE_PROXYTYPES}">
-	          <f:option selected="${instance.proxyTypeString==value}">${value}</f:option>
-	       </j:forEach>
-	    </select>
-      </f:entry>
-      <f:entry title="${%JabberProxyHost}">
-        <f:textbox name="${descriptor.PARAMETERNAME_PROXYHOST}" value="${descriptor.proxyHost}"
-          checkUrl="'${rootURL}/publisher/JabberPublisher/proxyCheck?field=proxyHost&amp;proxyType='+escape(this.form.elements['jabberPlugin.proxyType'].value)+'&amp;proxyHost='+escape(this.value)+'&amp;proxyPort='+escape(this.form.elements['jabberPlugin.proxyPort'].value)"/>
-      </f:entry>
-      <f:entry title="${%JabberProxyPort}">
-        <f:textbox name="${descriptor.PARAMETERNAME_PROXYPORT}" value="${descriptor.proxyPortString}"
-          checkUrl="'${rootURL}/publisher/JabberPublisher/proxyCheck?field=proxyPort&amp;proxyType='+escape(this.form.elements['jabberPlugin.proxyType'].value)+'&amp;proxyPort='+escape(this.value)+'&amp;proxyHost='+escape(this.form.elements['jabberPlugin.proxyHost'].value)"/>
-      </f:entry>
-      <f:entry title="${%JabberProxyUser}">
-        <f:textbox name="${descriptor.PARAMETERNAME_PROXYUSER}" value="${descriptor.proxyUser}" />
-      </f:entry>
-      <f:entry title="${%JabberProxyPass}">
-        <input type="password" name="${descriptor.PARAMETERNAME_PROXYPASS}" class="setting-input"
-                                value="${descriptor.proxyPass}"/>
-      </f:entry>
+      <f:optionalBlock title="Use Proxy" name="useProxy" checked="${descriptor.proxyTypeString!='NONE'}">
+          <f:entry title="${%JabberProxy}">
+            <select class="setting-input" name="${descriptor.PARAMETERNAME_PROXYTYPE}">
+    	       <j:forEach var="value" items="${descriptor.PARAMETERVALUE_PROXYTYPES}">
+    	          <f:option selected="${instance.proxyTypeString==value}">${value}</f:option>
+    	       </j:forEach>
+    	    </select>
+          </f:entry>
+          <f:entry title="${%JabberProxyHost}">
+            <f:textbox name="${descriptor.PARAMETERNAME_PROXYHOST}" value="${descriptor.proxyHost}"
+              checkUrl="'${rootURL}/publisher/JabberPublisher/proxyCheck?field=proxyHost&amp;proxyType='+escape(this.form.elements['jabberPlugin.proxyType'].value)+'&amp;proxyHost='+escape(this.value)+'&amp;proxyPort='+escape(this.form.elements['jabberPlugin.proxyPort'].value)"/>
+          </f:entry>
+          <f:entry title="${%JabberProxyPort}">
+            <f:textbox name="${descriptor.PARAMETERNAME_PROXYPORT}" value="${descriptor.proxyPortString}"
+              checkUrl="'${rootURL}/publisher/JabberPublisher/proxyCheck?field=proxyPort&amp;proxyType='+escape(this.form.elements['jabberPlugin.proxyType'].value)+'&amp;proxyPort='+escape(this.value)+'&amp;proxyHost='+escape(this.form.elements['jabberPlugin.proxyHost'].value)"/>
+          </f:entry>
+          <f:entry title="${%JabberProxyUser}">
+            <f:textbox name="${descriptor.PARAMETERNAME_PROXYUSER}" value="${descriptor.proxyUser}" />
+          </f:entry>
+          <f:entry title="${%JabberProxyPass}">
+            <input type="password" name="${descriptor.PARAMETERNAME_PROXYPASS}" class="setting-input"
+                                    value="${descriptor.proxyPass}"/>
+          </f:entry>
+      </f:optionalBlock>
+      
     </f:advanced>
     </f:optionalBlock>
   </f:section>

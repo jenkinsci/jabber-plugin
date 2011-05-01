@@ -273,12 +273,20 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      }
     
     private void applyProxy(final HttpServletRequest req) throws FormException {
+        
+        boolean enabled = "on".equals(req.getParameter("useProxy"));
+        
+        if (!enabled) {
+            this.proxyType = ProxyType.NONE;
+            return;
+        }
+        
         String s = req.getParameter(JabberPublisherDescriptor.PARAMETERNAME_PROXYTYPE);
-        this.proxyType = ProxyType.NONE;
         if (s != null) {
             try {
                 this.proxyType = ProxyType.valueOf(s);
-            } catch (final IllegalArgumentException e) {
+            } catch (RuntimeException e) {
+                this.proxyType = ProxyType.NONE;
                 throw new FormException("Proxy type cannot be parsed.",
                         JabberPublisherDescriptor.PARAMETERNAME_PROXYTYPE);
             }
