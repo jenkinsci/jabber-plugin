@@ -1,5 +1,6 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
-	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
+	xmlns:super="/hudson/plugins/im/IMPublisher">
 
   <j:set var="base" value="/plugin/jabber"/>
 
@@ -53,14 +54,9 @@
         <f:textbox name="${descriptor.PARAMETERNAME_GROUP_NICKNAME}"
           value="${descriptor.groupChatNickname}" />
       </f:entry>
-      <f:entry title="Hudson Username" help="${base}/help-hudson-login.html">
-        <f:textbox name="${descriptor.PARAMETERNAME_HUDSON_LOGIN}"
-          value="${descriptor.hudsonUserName}" />
-      </f:entry>
-      <f:entry title="Hudson Password">
-        <f:password name="${descriptor.PARAMETERNAME_HUDSON_PASSWORD}"
-          value="${descriptor.hudsonPassword}" />
-      </f:entry>
+
+      <super:global-jenkinsLogin />
+
       <f:entry title="${%JabberProxy}">
         <select class="setting-input" name="${descriptor.PARAMETERNAME_PROXYTYPE}">
 	       <j:forEach var="value" items="${descriptor.PARAMETERVALUE_PROXYTYPES}">
