@@ -10,7 +10,7 @@
     <artifactId>jabber</artifactId>
     <packaging>hpi</packaging>
     <name>Jenkins Jabber notifier plugin</name>
-    <version>1.17</version>
+    <version>1.18-SNAPSHOT</version>
     <url>http://wiki.jenkins-ci.org/display/JENKINS/Jabber+Plugin</url>
     <developers>
         <developer>
@@ -54,8 +54,8 @@
     </dependencies>
 
   <scm>
-    <connection>scm:svn:https://guest@svn.jenkins-ci.org/tags/jabber-1.17</connection>
-    <developerConnection>scm:svn:https://svn.jenkins-ci.org/tags/jabber-1.17</developerConnection>
-    <url>http://fisheye.jenkins-ci.org/browse/Jenkins/tags/jabber-1.17</url>
+    <connection>scm:svn:https://guest@svn.jenkins-ci.org/trunk/hudson/plugins/jabber</connection>
+    <developerConnection>scm:svn:https://svn.jenkins-ci.org/trunk/hudson/plugins/jabber</developerConnection>
+    <url>http://fisheye.jenkins-ci.org/browse/Jenkins/trunk/hudson/plugins/jabber</url>
   </scm>
 </project>
