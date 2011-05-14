@@ -8,6 +8,7 @@ import java.io.Writer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.XMPPConnection;
@@ -25,7 +26,7 @@ public class JabberConnectionDebugger implements SmackDebugger {
     private static final Logger LOGGER = Logger.getLogger(JabberConnectionDebugger.class.getName());
     private static final Level MIN_LOG_LEVEL = Level.FINE;
     
-    private final XMPPConnection connection;
+    private final Connection connection;
     private Writer writer;
     private Reader reader;
 
@@ -33,7 +34,7 @@ public class JabberConnectionDebugger implements SmackDebugger {
 
     private ConnectionListener connListener;
 
-    public JabberConnectionDebugger(XMPPConnection connection, Writer writer, Reader reader) {
+    public JabberConnectionDebugger(Connection connection, Writer writer, Reader reader) {
         this.connection = connection;
         this.writer = writer;
         this.reader = reader;
