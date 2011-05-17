@@ -54,8 +54,8 @@
     </dependencies>
 
   <scm>
-    <connection>scm:svn:https://guest@svn.jenkins-ci.org/trunk/hudson/plugins/jabber</connection>
-    <developerConnection>scm:svn:https://svn.jenkins-ci.org/trunk/hudson/plugins/jabber</developerConnection>
+    <connection>scm:git:github.com:jenkinsci/jabber-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:jenkinsci/jabber-plugin.git</developerConnection>
     <url>http://fisheye.jenkins-ci.org/browse/Jenkins/trunk/hudson/plugins/jabber</url>
   </scm>
 </project>
