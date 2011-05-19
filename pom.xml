@@ -29,7 +29,7 @@
     </licenses>
     
     <properties>
-  	  <version.instant-messaging.plugin>1.16</version.instant-messaging.plugin>
+  	  <version.instant-messaging.plugin>1.18-SNAPSHOT</version.instant-messaging.plugin>
   	</properties>
     
     <dependencies>
