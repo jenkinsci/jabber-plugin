@@ -600,31 +600,13 @@ class JabberIMConnection extends AbstractIMConnection {
 			if (packet instanceof Message) {
 				Message m = (Message)packet;
 
-				boolean composing = false;
-				boolean xhtmlMessage = false;
 				for (PacketExtension ext : m.getExtensions()) {
 					if (ext instanceof DelayInformation) {
 						// ignore delayed messages
 						return;
 					}
-					if (ext instanceof MessageEvent) {
-						MessageEvent me = (MessageEvent)ext;
-						if (me.isComposing()) {
-							// ignore messages which are still being composed
-							composing = true;
-						}
-					}
-					if (ext instanceof XHTMLExtension) {
-						xhtmlMessage = true;
-					}
 				}
-				
-				if (composing && !xhtmlMessage) {
-					// pretty strange: if composing extension AND NOT XHTMLExtension, this seems
-					// to mean that the message was delivered
-					return;
-				}
-				
+                
 				if (m.getBody() != null) {
 					LOGGER.info("Message from " + m.getFrom() + " : " + m.getBody());
 					
