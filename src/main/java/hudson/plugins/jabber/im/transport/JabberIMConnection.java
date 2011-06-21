@@ -50,9 +50,9 @@ import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.packet.DelayInformation;
-import org.jivesoftware.smackx.packet.MessageEvent;
-import org.jivesoftware.smackx.packet.XHTMLExtension;
 import org.springframework.util.Assert;
+
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Smack-specific implementation of {@link IMConnection}.
@@ -80,6 +80,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	 * The nick name of the Jenkins bot to use in group chats.
 	 * May be null in which case the nick is used.
 	 */
+	@Nullable
 	private final String groupChatNick;
 	/**
 	 * Server name of the Jabber server.
@@ -377,9 +378,8 @@ class JabberIMConnection extends AbstractIMConnection {
 		if (ref != null) {
 			groupChat = ref.get();
 		}
-		boolean create = (groupChat == null);
 		
-		if (create) {
+		if (groupChat == null) {
 			groupChat = new MultiUserChat(this.connection, groupChatName);
 			try {
 				groupChat.join(this.groupChatNick);
@@ -534,10 +534,15 @@ class JabberIMConnection extends AbstractIMConnection {
 	public boolean isAuthorized(String xmppAddress) {
 		String bareAddress = StringUtils.parseBareAddress(xmppAddress);
 		
-		RosterEntry entry = this.roster.getEntry(bareAddress);
-        boolean authorized = entry != null
-        	&& (entry.getType() == ItemType.both
-        	|| entry.getType() == ItemType.from);
+		// is this a (private) message send from a user in a chat I'm part of?
+		boolean authorized = this.groupChatCache.containsKey(bareAddress);
+		
+		if (!authorized) {
+    		RosterEntry entry = this.roster.getEntry(bareAddress);
+            authorized = entry != null
+            	&& (entry.getType() == ItemType.both
+            	    || entry.getType() == ItemType.from);
+		}
         
         return authorized;
 	}
@@ -608,7 +613,7 @@ class JabberIMConnection extends AbstractIMConnection {
 				}
                 
 				if (m.getBody() != null) {
-					LOGGER.info("Message from " + m.getFrom() + " : " + m.getBody());
+					LOGGER.fine("Message from " + m.getFrom() + " : " + m.getBody());
 					
 					final String chatPartner = m.getFrom();
 					getOrCreatePrivateChat(chatPartner, m);
