@@ -69,6 +69,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public static final String PARAMETERNAME_COMMAND_PREFIX = PREFIX + "commandPrefix";
     public static final String PARAMETERNAME_DEFAULT_ID_SUFFIX = PREFIX + "defaultIdSuffix";
     public static final String PARAMETERNAME_SUBSCRIPTION_MODE = PREFIX + "subscriptionMode";
+    public static final String PARAMETERNAME_EMAIL_ADDRESS_AS_JABBERID = PREFIX + "emailAsJabberId";
     public static final String[] PARAMETERVALUE_SUBSCRIPTION_MODE;
     public static final String[] PARAMETERVALUE_PROXYTYPES;
     static {
@@ -115,6 +116,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     private String hudsonCiLogin;
     private String hudsonCiPassword;
     private String subscriptionMode = SubscriptionMode.accept_all.name();
+    private boolean emailAddressAsJabberId;
 
     // Proxy parameters
     private ProxyType proxyType = ProxyType.NONE;
@@ -433,6 +435,10 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     	return Util.fixEmptyAndTrim(this.initialGroupChats);
     }
 
+    public boolean isEmailAddressAsJabberId() {
+        return emailAddressAsJabberId;
+    }
+
     @Override
     public String getDefaultIdSuffix() {
         return this.defaultIdSuffix;
@@ -555,6 +561,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 		this.exposePresence = req.getParameter(PARAMETERNAME_PRESENCE) != null;
         this.enableSASL = req.getParameter(PARAMETERNAME_SASL) != null;
 		this.subscriptionMode = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_SUBSCRIPTION_MODE));
+		this.emailAddressAsJabberId = req.getParameter(PARAMETERNAME_EMAIL_ADDRESS_AS_JABBERID) != null;
         applyHostname(req, this.enabled);
         applyPort(req, this.enabled);
         applyNickname(req, this.enabled);

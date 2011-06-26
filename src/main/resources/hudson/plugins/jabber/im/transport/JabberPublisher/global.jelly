@@ -33,6 +33,9 @@
 			<f:textbox name="${descriptor.PARAMETERNAME_DEFAULT_ID_SUFFIX}"
 				value="${descriptor.defaultIdSuffix}" />
 	  </f:entry>
+      <f:entry title="E-mail address as Jabber ID" help="${base}/help-email-address-as-jabberid.html">
+        <f:checkbox name="${descriptor.PARAMETERNAME_EMAIL_ADDRESS_AS_JABBERID}" checked="${descriptor.emailAddressAsJabberId}"/>
+      </f:entry>
          <f:entry title="Enable SASL authentication" help="${base}/help-sasl.html">
 			  <f:checkbox name="${descriptor.PARAMETERNAME_SASL}" checked="${descriptor.enableSASL}"/>
 		</f:entry>

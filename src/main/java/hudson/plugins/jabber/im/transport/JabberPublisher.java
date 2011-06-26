@@ -1,6 +1,7 @@
 package hudson.plugins.jabber.im.transport;
 
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.User;
 import hudson.plugins.im.DefaultIMMessageTarget;
 import hudson.plugins.im.GroupChatIMMessageTarget;
@@ -15,6 +16,7 @@ import hudson.plugins.im.build_notify.BuildToChatNotifier;
 import hudson.plugins.jabber.user.JabberUserProperty;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
+import hudson.tasks.Mailer;
 import hudson.tasks.Publisher;
 
 import java.util.List;
@@ -106,7 +108,7 @@ public class JabberPublisher extends IMPublisher
     }
 
     @Override
-    public BuildStepDescriptor<Publisher> getDescriptor() {
+    public JabberPublisherDescriptor getDescriptor() {
         return JabberPublisher.DESCRIPTOR;
     }
 
@@ -122,9 +124,20 @@ public class JabberPublisher extends IMPublisher
 
 	@Override
 	protected String getConfiguredIMId(User user) {
-		JabberUserProperty jabberUserProperty = (JabberUserProperty) user.getProperties().get(JabberUserProperty.DESCRIPTOR);
-		if (jabberUserProperty != null) {
-			return jabberUserProperty.getJid();
+	    // if set, user property override all other settings:
+        JabberUserProperty jabberUserProperty = (JabberUserProperty) user.getProperties().get(JabberUserProperty.DESCRIPTOR);
+        if (jabberUserProperty != null) {
+            return jabberUserProperty.getJid();
+        }
+	    
+		if (getDescriptor().isEmailAddressAsJabberId()) {
+			Mailer.UserProperty mailProperty = user.getProperty(Mailer.UserProperty.class);
+			if (mailProperty != null) {
+				String emailAddress = mailProperty.getAddress();
+				if (Util.fixEmpty(emailAddress) != null) {
+					return emailAddress;
+				}
+			}
 		}
 		return null;
 	}
