@@ -1,5 +1,7 @@
 package hudson.plugins.jabber.im.transport;
 
+import org.jivesoftware.smack.util.StringUtils;
+
 import hudson.Util;
 
 /**
@@ -67,18 +69,7 @@ public class JabberUtil {
 	 * @return the domain or null if no '@' and '/' was found
 	 */
 	public static String getResourcePart(String jabberId) {
-		int atIdx = jabberId.indexOf('@');
-        if (atIdx == -1) {
-            return null;
-        } else {
-        	int slashIdx = jabberId.indexOf('/', atIdx);
-        	if (slashIdx == -1) {
-        		return null;
-        	} else if (slashIdx + 1 < jabberId.length()){
-        		return jabberId.substring(slashIdx+1);
-        	} else {
-        		return null;
-        	}
-        }
+		String resource = StringUtils.parseResource(jabberId);
+		return resource.length() > 0 ? resource : null;
 	}
 }
