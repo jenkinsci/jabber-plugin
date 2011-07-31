@@ -3,7 +3,6 @@ package hudson.plugins.jabber.im.transport;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.User;
-import hudson.plugins.im.DefaultIMMessageTarget;
 import hudson.plugins.im.GroupChatIMMessageTarget;
 import hudson.plugins.im.IMConnection;
 import hudson.plugins.im.IMException;
@@ -14,14 +13,11 @@ import hudson.plugins.im.IMPublisher;
 import hudson.plugins.im.MatrixJobMultiplier;
 import hudson.plugins.im.build_notify.BuildToChatNotifier;
 import hudson.plugins.jabber.user.JabberUserProperty;
-import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Mailer;
-import hudson.tasks.Publisher;
 
 import java.util.List;
 
-import org.springframework.util.Assert;
 
 /**
  * Jabber-specific implementation of the {@link IMPublisher}.
@@ -31,63 +27,6 @@ import org.springframework.util.Assert;
  */
 public class JabberPublisher extends IMPublisher
 {
-    private static class JabberIMMessageTargetConverter implements IMMessageTargetConverter
-    {
-        private void checkValidity(final String f) throws IMMessageTargetConversionException {
-        	// See: http://xmpp.org/rfcs/rfc3920.html#addressing
-        	// obviously, there is no easy regexp to validate this.
-        	// Additionally, we require the part before the @.
-            // So, just some very simple validation:
-            final int i = f.indexOf('@');
-            if (i == -1) {
-            	throw new IMMessageTargetConversionException("Invalid input for target: '" + f + "'." +
-            			"\nDoesn't contain a @.");
-            } else if (f.indexOf('@', i + 1) != -1)
-            {
-                throw new IMMessageTargetConversionException("Invalid input for target: '" + f + "'." +
-                		"\nContains more than on @.");
-            }
-        }
-
-        @Override
-        public IMMessageTarget fromString(final String targetAsString) throws IMMessageTargetConversionException {
-            String f = targetAsString.trim();
-            if (f.length() > 0)
-            {
-            	IMMessageTarget target;
-            	if (f.startsWith("*")) {
-            		f = f.substring(1);
-            		// group chat
-            		if (! f.contains("@")) {
-            			f += "@conference." + JabberPublisher.DESCRIPTOR.getHost();
-            		}
-            		target = new GroupChatIMMessageTarget(f);
-            	} else if (f.contains("@conference.")) {
-            		target = new GroupChatIMMessageTarget(f);
-            	} else {
-	                if (!f.contains("@")) {
-	                    f += "@" + JabberPublisher.DESCRIPTOR.getHost();
-	                }
-	                target = new DefaultIMMessageTarget(f);
-            	}
-                checkValidity(f);
-                return target;
-            }
-            else
-            {
-                return null;
-            }
-        }
-        
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-		public String toString(final IMMessageTarget target) {
-            Assert.notNull(target, "Parameter 'target' must not be null.");
-            return target.toString();
-        }
-    }
     @Extension
     public static final JabberPublisherDescriptor DESCRIPTOR = new JabberPublisherDescriptor();
 
