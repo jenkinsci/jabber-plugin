@@ -85,7 +85,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	/**
 	 * Server name of the Jabber server.
 	 */
-	private final String hostname;
+	private final String hostnameOverride;
 	private final int port;
 
 	private final String[] groupChats;
@@ -120,7 +120,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		Assert.notNull(desc, "Parameter 'desc' must not be null.");
 		this.desc = desc;
 		this.authentication = authentication;
-		this.hostname = desc.getHost();
+		this.hostnameOverride = desc.getHostname();
 		this.port = desc.getPort();
 		this.nick = JabberUtil.getUserPart(desc.getJabberId());
 		this.passwd = desc.getPassword();
@@ -247,18 +247,17 @@ class JabberIMConnection extends AbstractIMConnection {
 				break;
 		}
 		
-		
-		
 		String serviceName = desc.getServiceName();
 		final ConnectionConfiguration cfg;
 		if (serviceName == null) {
 			cfg = new ConnectionConfiguration(
-					this.hostname, this.port, pi);
-		} else if (this.hostname == null) {
+					this.hostnameOverride, this.port, pi);
+		} else if (this.hostnameOverride == null) {
+		    // uses DNS lookup, to get the actual hostname for this service: 
 			cfg = new ConnectionConfiguration(serviceName, pi);
 		} else {
 			cfg = new ConnectionConfiguration(
-					this.hostname, this.port,
+					this.hostnameOverride, this.port,
 					serviceName, pi);
 		}
 		// Currently, we handle reconnects ourself.

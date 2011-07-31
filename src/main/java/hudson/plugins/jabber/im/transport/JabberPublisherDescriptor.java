@@ -359,9 +359,11 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     	return Boolean.TRUE.equals(this.enabled);
     }
 
+    /**
+     * Returns the overriden hostname in case e.g. DNS lookup by service name doesn't work. 
+     */
     @Override
-    public String getHostname()
-    {
+    public String getHostname() {
         return this.hostname;
     }
     
@@ -723,7 +725,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      * {@inheritDoc}
      */
 	@Override
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings("rawtypes")
 	public boolean isApplicable(Class<? extends AbstractProject> jobType) {
 		return true;
 	}
@@ -766,4 +768,15 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 		// not implemented for Jabber bot
 		return Collections.emptyList();
 	}
+	
+	// FIXME: provide a clean migration path for old nicknames without @
+	// See https://issues.jenkins-ci.org/browse/JENKINS-10523
+//	public Object readResolve() {
+//	    if (Util.fixEmptyAndTrim(this.hudsonNickname) != null && !this.hudsonNickname.contains("@")) {
+//	        if (Util.fixEmptyAndTrim(this.hostname) != null) {
+//	            this.hudsonNickname = this.hudsonNickname + "@" + this.hostname;
+//	        }
+//	    }
+//	    return this;
+//	}
 }

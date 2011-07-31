@@ -59,14 +59,14 @@ public class JabberPublisher extends IMPublisher
             		f = f.substring(1);
             		// group chat
             		if (! f.contains("@")) {
-            			f += "@conference." + JabberPublisher.DESCRIPTOR.getHostname();
+            			f += "@conference." + JabberPublisher.DESCRIPTOR.getHost();
             		}
             		target = new GroupChatIMMessageTarget(f);
             	} else if (f.contains("@conference.")) {
             		target = new GroupChatIMMessageTarget(f);
             	} else {
 	                if (!f.contains("@")) {
-	                    f += "@" + JabberPublisher.DESCRIPTOR.getHostname();
+	                    f += "@" + JabberPublisher.DESCRIPTOR.getHost();
 	                }
 	                target = new DefaultIMMessageTarget(f);
             	}
