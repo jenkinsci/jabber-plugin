@@ -360,8 +360,10 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     }
 
     /**
-     * Returns the overriden hostname in case e.g. DNS lookup by service name doesn't work. 
+     * Returns the overridden hostname in case e.g. DNS lookup by service name doesn't work. 
      */
+    // Note: unlike the same method in the interface this one is NOT deprecated
+    // as we need it for hostname overriding
     @Override
     public String getHostname() {
         return this.hostname;
@@ -716,9 +718,14 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         }
 		if (pt == ProxyType.NONE) {
 			// Only try connect if not using a proxy
-        Socket s = new Socket(address, iPort);
-        s.close();
-    }
+		    Socket s = new Socket(address, iPort);
+		    s.close();
+		} else {
+		    // TODO:
+		    // Socket s = new Socket(Proxy)
+		    // s.connect(host, port)
+		    // s.close();
+		}
 	}
 
     /**
@@ -771,7 +778,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	
 	// FIXME: provide a clean migration path for old nicknames without @
 	// See https://issues.jenkins-ci.org/browse/JENKINS-10523
-//	public Object readResolve() {
+//	protected Object readResolve() {
 //	    if (Util.fixEmptyAndTrim(this.hudsonNickname) != null && !this.hudsonNickname.contains("@")) {
 //	        if (Util.fixEmptyAndTrim(this.hostname) != null) {
 //	            this.hudsonNickname = this.hudsonNickname + "@" + this.hostname;
