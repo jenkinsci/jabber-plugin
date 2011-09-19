@@ -13,7 +13,11 @@ import hudson.plugins.im.IMMessageTarget;
 import hudson.plugins.im.IMPresence;
 import hudson.plugins.im.bot.Bot;
 import hudson.plugins.im.tools.ExceptionHelper;
+import hudson.util.IOUtils;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -50,6 +54,7 @@ import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.packet.DelayInformation;
+import org.jivesoftware.smackx.packet.VCard;
 import org.springframework.util.Assert;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -307,7 +312,7 @@ class JabberIMConnection extends AbstractIMConnection {
 			this.connection.login(this.desc.getUserName(), this.passwd, "Jenkins");
 			
 			setupSubscriptionMode();
-			
+			setAvatar();
 			listenForPrivateChats();
 		}
 		
@@ -356,7 +361,49 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 		this.roster.setSubscriptionMode(mode);
 	}
-	
+
+	/** Sets the Jenkins vCard avatar for this account, if not done so already. */
+	private void setAvatar() {
+		// Retrieve our existing vCard from the server
+		VCard vcard = null;
+		try {
+			vcard = new VCard();
+			vcard.load(connection);
+		} catch (XMPPException e) {}
+
+		// If we need to create or update the vCard, attempt to do so
+		if (vcard == null || !nick.equals(vcard.getNickName())) {
+			vcard = createVCard();
+			try {
+				vcard.save(connection);
+			} catch (XMPPException ignore) {}
+		}
+	}
+
+	/**
+	 * Constructs a vCard for Mr Jenkins.
+	 *
+	 * @return The vCard for Jenkins, including headshot if available.
+	 */
+	private VCard createVCard() {
+		byte[] avatar = null;
+		try {
+			InputStream input = getClass().getResourceAsStream("/headshot.png");
+			ByteArrayOutputStream output = new ByteArrayOutputStream();
+			IOUtils.copy(input, output);
+			avatar = output.toByteArray();
+		} catch (IOException ignore) {}
+
+		VCard vCard = new VCard();
+		vCard.setFirstName("Mr.");
+		vCard.setLastName("Jenkins");
+		vCard.setNickName(nick);
+		if (avatar != null) {
+			vCard.setAvatar(avatar, "image/png");
+		}
+		return vCard;
+	}
+
 	/**
 	 * Listens on the connection for private chat requests.
 	 */
