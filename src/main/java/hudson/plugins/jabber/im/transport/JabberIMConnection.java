@@ -391,7 +391,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		InputStream input = null;
 		ByteArrayOutputStream output = null;
 		try {
-			input = getClass().getResourceAsStream("/headshot.png");
+			input = JabberIMConnection.class.getResourceAsStream("headshot.png");
 			output = new ByteArrayOutputStream();
 			IOUtils.copy(input, output);
 			avatar = output.toByteArray();
