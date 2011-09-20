@@ -49,6 +49,7 @@ import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.RosterPacket.ItemType;
+import org.jivesoftware.smack.packet.XMPPError.Condition;
 import org.jivesoftware.smack.proxy.ProxyInfo;
 import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
 import org.jivesoftware.smack.util.StringUtils;
@@ -364,35 +365,49 @@ class JabberIMConnection extends AbstractIMConnection {
 
 	/** Sets the Jenkins vCard avatar for this account, if not done so already. */
 	private void setAvatar() {
-		// Retrieve our existing vCard from the server
-		VCard vcard = null;
-		try {
-			vcard = new VCard();
-			vcard.load(this.connection);
-
-			// If we need to create or update the vCard, attempt to do so
-			if (!this.nick.equals(vcard.getNickName()) || vcard.getAvatar() == null) {
-				vcard = createVCard();
-				vcard.save(this.connection);
-			}
+	    try {
+    	    if (!vCardExists()) {
+    	        createVCard();
+    	    }
 		} catch (XMPPException e) {
 			LOGGER.warning(ExceptionHelper.dump(e));
 		}
 	}
+	
+	// Unfortunately the Smack API doesn't specify what concretely happens, if a vCard doesn't exist, yet.
+	// It could be just an empty vCard or an XMPPException thrown.
+	private boolean vCardExists() throws XMPPException {
+	    try {
+            VCard vcard = new VCard();
+            vcard.load(this.connection);
+            
+            // TODO: how to reliably recognize an existing vCard which we wouldn't want to overwrite?
+            if (this.nick.equals(vcard.getNickName())) {
+                return true;
+            }
+            return false;
+        } catch (XMPPException e) {
+            // See http://xmpp.org/extensions/xep-0054.html#sect-id304495
+            if (e.getXMPPError() != null && Condition.item_not_found.toString().equals(e.getXMPPError().getCondition())) {
+                return false;
+            }
+            
+            // there was probably a 'real' problem
+            throw new XMPPException(e);
+        }
+	}
 
 	/**
 	 * Constructs a vCard for Mr Jenkins.
-	 *
-	 * @return The vCard for Jenkins, including headshot if available.
 	 */
-	private VCard createVCard() {
+	private void createVCard() throws XMPPException {
 
 		VCard vCard = new VCard();
 		vCard.setFirstName("Mr.");
 		vCard.setLastName("Jenkins");
 		vCard.setNickName(this.nick);
 		setAvatar(vCard);
-		return vCard;
+		vCard.save(this.connection);
 	}
 	
 	private void setAvatar(VCard vCard) {
