@@ -16,6 +16,7 @@ import hudson.plugins.im.tools.ExceptionHelper;
 import hudson.util.IOUtils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
@@ -369,14 +370,14 @@ class JabberIMConnection extends AbstractIMConnection {
 		try {
 			vcard = new VCard();
 			vcard.load(connection);
-		} catch (XMPPException e) {}
 
-		// If we need to create or update the vCard, attempt to do so
-		if (vcard == null || !nick.equals(vcard.getNickName())) {
-			vcard = createVCard();
-			try {
+			// If we need to create or update the vCard, attempt to do so
+			if (vcard == null || !nick.equals(vcard.getNickName())) {
+				vcard = createVCard();
 				vcard.save(connection);
-			} catch (XMPPException ignore) {}
+			}
+		} catch (XMPPException e) {
+			LOGGER.warning(ExceptionHelper.dump(e));
 		}
 	}
 
@@ -387,12 +388,19 @@ class JabberIMConnection extends AbstractIMConnection {
 	 */
 	private VCard createVCard() {
 		byte[] avatar = null;
+		InputStream input = null;
+		ByteArrayOutputStream output = null;
 		try {
-			InputStream input = getClass().getResourceAsStream("/headshot.png");
-			ByteArrayOutputStream output = new ByteArrayOutputStream();
+			input = getClass().getResourceAsStream("/headshot.png");
+			output = new ByteArrayOutputStream();
 			IOUtils.copy(input, output);
 			avatar = output.toByteArray();
-		} catch (IOException ignore) {}
+		} catch (IOException e) {
+			LOGGER.warning(ExceptionHelper.dump(e));
+		} finally {
+			close(input);
+			close(output);
+		}
 
 		VCard vCard = new VCard();
 		vCard.setFirstName("Mr.");
@@ -402,6 +410,16 @@ class JabberIMConnection extends AbstractIMConnection {
 			vCard.setAvatar(avatar, "image/png");
 		}
 		return vCard;
+	}
+	
+	private void close(Closeable closeable) {
+		if (closeable != null) {
+			try {
+				closeable.close();
+			} catch (IOException e) {
+				LOGGER.warning(ExceptionHelper.dump(e));
+			}
+		}
 	}
 
 	/**
