@@ -16,7 +16,6 @@ import hudson.plugins.im.tools.ExceptionHelper;
 import hudson.util.IOUtils;
 
 import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
@@ -369,12 +368,12 @@ class JabberIMConnection extends AbstractIMConnection {
 		VCard vcard = null;
 		try {
 			vcard = new VCard();
-			vcard.load(connection);
+			vcard.load(this.connection);
 
 			// If we need to create or update the vCard, attempt to do so
-			if (vcard == null || !nick.equals(vcard.getNickName())) {
+			if (!this.nick.equals(vcard.getNickName()) || vcard.getAvatar() == null) {
 				vcard = createVCard();
-				vcard.save(connection);
+				vcard.save(this.connection);
 			}
 		} catch (XMPPException e) {
 			LOGGER.warning(ExceptionHelper.dump(e));
@@ -387,42 +386,33 @@ class JabberIMConnection extends AbstractIMConnection {
 	 * @return The vCard for Jenkins, including headshot if available.
 	 */
 	private VCard createVCard() {
-		byte[] avatar = null;
-		InputStream input = null;
-		ByteArrayOutputStream output = null;
-		try {
-			input = JabberIMConnection.class.getResourceAsStream("headshot.png");
-			output = new ByteArrayOutputStream();
-			IOUtils.copy(input, output);
-			avatar = output.toByteArray();
-		} catch (IOException e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
-		} finally {
-			close(input);
-			close(output);
-		}
 
 		VCard vCard = new VCard();
 		vCard.setFirstName("Mr.");
 		vCard.setLastName("Jenkins");
-		vCard.setNickName(nick);
-		if (avatar != null) {
-			vCard.setAvatar(avatar, "image/png");
-		}
+		vCard.setNickName(this.nick);
+		setAvatar(vCard);
 		return vCard;
 	}
 	
-	private void close(Closeable closeable) {
-		if (closeable != null) {
-			try {
-				closeable.close();
-			} catch (IOException e) {
-				LOGGER.warning(ExceptionHelper.dump(e));
-			}
-		}
-	}
+	private void setAvatar(VCard vCard) {
+        InputStream input = null;
+        ByteArrayOutputStream output = null;
+        try {
+            input = JabberIMConnection.class.getResourceAsStream("headshot.png");
+            output = new ByteArrayOutputStream();
+            IOUtils.copy(input, output);
+            byte[] avatar = output.toByteArray();
+            vCard.setAvatar(avatar, "image/png");
+        } catch (IOException e) {
+            LOGGER.warning(ExceptionHelper.dump(e));
+        } finally {
+            IOUtils.closeQuietly(input);
+            IOUtils.closeQuietly(output);
+        }
+    }
 
-	/**
+    /**
 	 * Listens on the connection for private chat requests.
 	 */
 	private void listenForPrivateChats() {
