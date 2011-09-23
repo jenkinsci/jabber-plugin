@@ -3,6 +3,7 @@
  */
 package hudson.plugins.jabber.im.transport;
 
+import hudson.Util;
 import hudson.plugins.im.AbstractIMConnection;
 import hudson.plugins.im.AuthenticationHolder;
 import hudson.plugins.im.GroupChatIMMessageTarget;
@@ -313,7 +314,7 @@ class JabberIMConnection extends AbstractIMConnection {
 			this.connection.login(this.desc.getUserName(), this.passwd, "Jenkins");
 			
 			setupSubscriptionMode();
-			setAvatar();
+			createVCardIfNeeded();
 			listenForPrivateChats();
 		}
 		
@@ -364,7 +365,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	}
 
 	/** Sets the Jenkins vCard avatar for this account, if not done so already. */
-	private void setAvatar() {
+	private void createVCardIfNeeded() {
 	    try {
     	    if (!vCardExists()) {
     	        createVCard();
@@ -381,8 +382,8 @@ class JabberIMConnection extends AbstractIMConnection {
             VCard vcard = new VCard();
             vcard.load(this.connection);
             
-            // TODO: how to reliably recognize an existing vCard which we wouldn't want to overwrite?
-            if (this.nick.equals(vcard.getNickName())) {
+            // Best effort check to see if the vcard already exists.
+            if (Util.fixEmpty(vcard.getNickName()) != null) {
                 return true;
             }
             return false;
@@ -406,11 +407,11 @@ class JabberIMConnection extends AbstractIMConnection {
 		vCard.setFirstName("Mr.");
 		vCard.setLastName("Jenkins");
 		vCard.setNickName(this.nick);
-		setAvatar(vCard);
+		setAvatarImage(vCard);
 		vCard.save(this.connection);
 	}
 	
-	private void setAvatar(VCard vCard) {
+	private void setAvatarImage(VCard vCard) {
         InputStream input = null;
         ByteArrayOutputStream output = null;
         try {
