@@ -6,6 +6,7 @@ package hudson.plugins.jabber.im.transport;
 import hudson.Util;
 import hudson.model.AbstractProject;
 import hudson.model.Hudson;
+import hudson.plugins.im.GroupChatIMMessageTarget;
 import hudson.plugins.im.IMException;
 import hudson.plugins.im.IMMessageTarget;
 import hudson.plugins.im.IMMessageTargetConversionException;
@@ -24,7 +25,6 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -110,7 +110,15 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     private String groupChatNickname;
     private boolean exposePresence = true;
     private boolean enableSASL = true;
+
+    /**
+     * @deprecated replaced by {@link #defaultTargets}
+     * Still needed to deserialize old descriptors
+     */
+    @Deprecated
     private String initialGroupChats;
+    private List<IMMessageTarget> defaultTargets;
+    
     private String commandPrefix = DEFAULT_COMMAND_PREFIX;
     private String defaultIdSuffix;
     private String hudsonCiLogin;
@@ -242,7 +250,17 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     }
 
     private void applyInitialGroupChats(final HttpServletRequest req) {
-    	this.initialGroupChats = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_INITIAL_GROUPCHATS));
+        String[] chatNames = req.getParameterValues("jabberPlugin.chat.name");
+        String[] chatPasswords = req.getParameterValues("jabberPlugin.chat.password");
+        this.defaultTargets = new ArrayList<IMMessageTarget>();
+        
+        if (chatNames != null) {
+            for (int i = 0; i < chatNames.length; i++) {
+                String chatName = chatNames[i];
+                String chatPassword = Util.fixEmptyAndTrim(chatPasswords[i]);
+                this.defaultTargets.add(new GroupChatIMMessageTarget(chatName, chatPassword));
+            }
+        }
     }
     
     private void applyCommandPrefix(final HttpServletRequest req) {
@@ -429,14 +447,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     
     public String getSubscriptionMode() {
     	return this.subscriptionMode;
-    }
-
-    /**
-     * Gets the whitespace separated list of group chats to join,
-     * or null if nothing is configured.
-     */
-    public String getInitialGroupChats() {
-    	return Util.fixEmptyAndTrim(this.initialGroupChats);
     }
 
     public boolean isEmailAddressAsJabberId() {
@@ -772,18 +782,24 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 
 	@Override
 	public List<IMMessageTarget> getDefaultTargets() {
-		// not implemented for Jabber bot
-		return Collections.emptyList();
+		return this.defaultTargets;
 	}
 	
-	// FIXME: provide a clean migration path for old nicknames without @
-	// See https://issues.jenkins-ci.org/browse/JENKINS-10523
-//	protected Object readResolve() {
-//	    if (Util.fixEmptyAndTrim(this.hudsonNickname) != null && !this.hudsonNickname.contains("@")) {
-//	        if (Util.fixEmptyAndTrim(this.hostname) != null) {
-//	            this.hudsonNickname = this.hudsonNickname + "@" + this.hostname;
-//	        }
-//	    }
-//	    return this;
-//	}
+	/**
+     * Deserialize old descriptors.
+     */
+    private Object readResolve() {
+        if (this.initialGroupChats != null) {
+            String[] split = this.initialGroupChats.trim().split("\\s");
+            this.defaultTargets = new ArrayList<IMMessageTarget>();
+            for (String chatName : split) {
+                this.defaultTargets.add(new GroupChatIMMessageTarget(chatName));
+            }
+            this.initialGroupChats = null;
+            save();
+        }
+        
+        return this;
+    }
+	
 }

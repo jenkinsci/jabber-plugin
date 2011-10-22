@@ -15,9 +15,18 @@
            <f:password name="${descriptor.PARAMETERNAME_PASSWORD}"
 				value="${descriptor.password}"/>
 		</f:entry>
-		<f:entry title="Initial group chats" description="Group chats to automatically join on startup with a bot (whitespace separated)">
-			<f:textbox name="${descriptor.PARAMETERNAME_INITIAL_GROUPCHATS}"
-				value="${descriptor.initialGroupChats}" />
+		<f:entry title="Initial group chats" description="Group chats to automatically join on startup. Name, (optional) password pairs.">
+		  <f:repeatable name="jabberPlugin.initialChats" var="ch" items="${descriptor.defaultTargets}">
+              <table width="100%">
+                <tr>
+                    <td><input type="text" width="100%" style="text-align:left" name="jabberPlugin.chat.name" value="${ch.name}" /></td>
+                    <td><input type="password" width="100%" style="text-align:left" name="jabberPlugin.chat.password" value="${ch.password}" /></td>
+                    <td>
+                        <div align="right"><f:repeatableDeleteButton /></div>
+                    </td>
+                </tr>
+            </table>
+          </f:repeatable>
 		</f:entry>
     <f:advanced>
       <f:entry title="Server" help="${base}/help-server.html">

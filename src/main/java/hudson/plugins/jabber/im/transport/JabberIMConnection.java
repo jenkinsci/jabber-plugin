@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -95,7 +96,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	private final String hostnameOverride;
 	private final int port;
 
-	private final String[] groupChats;
+	private final List<IMMessageTarget> groupChats;
 	
 	private IMPresence impresence;
 
@@ -140,11 +141,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.groupChatNick = desc.getGroupChatNickname() != null ?
 				desc.getGroupChatNickname() : this.nick;
 		this.botCommandPrefix = desc.getCommandPrefix();
-		if (desc.getInitialGroupChats() != null) {
-			this.groupChats = desc.getInitialGroupChats().trim().split("\\s");
-		} else {
-			this.groupChats = new String[0];
-		}
+		this.groupChats = desc.getDefaultTargets();
 		this.impresence = desc.isExposePresence() ? IMPresence.AVAILABLE : IMPresence.UNAVAILABLE;
 	}
 
@@ -166,15 +163,15 @@ class JabberIMConnection extends AbstractIMConnection {
 						sendPresence();
 						
 						groupChatCache.clear();
-						for (String groupChatName : this.groupChats) {
+						for (IMMessageTarget chat : this.groupChats) {
+						    GroupChatIMMessageTarget groupChat = (GroupChatIMMessageTarget) chat;
 							try {
-								groupChatName = groupChatName.trim();
-								getOrCreateGroupChat(groupChatName);
-								LOGGER.info("Joined groupchat " + groupChatName);
+								getOrCreateGroupChat(groupChat);
+								LOGGER.info("Joined groupchat " + groupChat.getName());
 							} catch (IMException e) {
 								// if we got here, the XMPP connection could be established, but probably the groupchat name
 								// is invalid
-								LOGGER.warning("Unable to connect to groupchat '" + groupChatName + "'. Did you append @conference or so to the name?\n"
+								LOGGER.warning("Unable to connect to groupchat '" + groupChat.getName() + "'. Did you append @conference or so to the name?\n"
 										+ "Exception: " + ExceptionHelper.dump(e));
 							}
 						}
@@ -442,19 +439,19 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.connection.addPacketListener(listener, filter);
 	}
 
-	private MultiUserChat getOrCreateGroupChat(String groupChatName) throws IMException {
-		WeakReference<MultiUserChat> ref = groupChatCache.get(groupChatName);
+	private MultiUserChat getOrCreateGroupChat(GroupChatIMMessageTarget chat) throws IMException {
+		WeakReference<MultiUserChat> ref = groupChatCache.get(chat.getName());
 		MultiUserChat groupChat = null;
 		if (ref != null) {
 			groupChat = ref.get();
 		}
 		
 		if (groupChat == null) {
-			groupChat = new MultiUserChat(this.connection, groupChatName);
+			groupChat = new MultiUserChat(this.connection, chat.getName());
 			try {
-				groupChat.join(this.groupChatNick);
+				groupChat.join(this.groupChatNick, chat.getPassword());
 			} catch (XMPPException e) {
-				LOGGER.warning("Cannot join group chat '" + groupChatName + "'. Exception:\n" + ExceptionHelper.dump(e));
+				LOGGER.warning("Cannot join group chat '" + chat + "'. Exception:\n" + ExceptionHelper.dump(e));
 				throw new IMException(e);
 			}
 
@@ -466,7 +463,7 @@ class JabberIMConnection extends AbstractIMConnection {
 					this.groupChatNick, this.desc.getHost(),
 					this.botCommandPrefix, this.authentication));
 
-			groupChatCache.put(groupChatName, new WeakReference<MultiUserChat>(groupChat));
+			groupChatCache.put(chat.getName(), new WeakReference<MultiUserChat>(groupChat));
 		}
 		return groupChat;
 	}
@@ -505,7 +502,7 @@ class JabberIMConnection extends AbstractIMConnection {
             }
             try {
             		if (target instanceof GroupChatIMMessageTarget) {
-            			getOrCreateGroupChat(target.toString()).sendMessage(
+            			getOrCreateGroupChat((GroupChatIMMessageTarget) target).sendMessage(
             					text);
             		} else {
             			final Chat chat = getOrCreatePrivateChat(target.toString(), null);
