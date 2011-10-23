@@ -65,7 +65,7 @@ public class JabberPublisher extends IMPublisher
 	protected String getConfiguredIMId(User user) {
 	    // if set, user property override all other settings:
         JabberUserProperty jabberUserProperty = (JabberUserProperty) user.getProperties().get(JabberUserProperty.DESCRIPTOR);
-        if (jabberUserProperty != null) {
+        if (jabberUserProperty != null && jabberUserProperty.getJid() != null) {
             return jabberUserProperty.getJid();
         }
 	    
