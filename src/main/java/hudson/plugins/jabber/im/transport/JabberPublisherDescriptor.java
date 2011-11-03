@@ -32,9 +32,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import net.sf.json.JSONObject;
 
-import org.acegisecurity.Authentication;
-import org.acegisecurity.AuthenticationException;
-import org.acegisecurity.providers.UsernamePasswordAuthenticationToken;
 import org.apache.commons.lang.StringUtils;
 import org.jivesoftware.smack.Roster.SubscriptionMode;
 import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
@@ -122,7 +119,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     private String commandPrefix = DEFAULT_COMMAND_PREFIX;
     private String defaultIdSuffix;
     private String hudsonCiLogin;
-    private String hudsonCiPassword;
     private String subscriptionMode = SubscriptionMode.accept_all.name();
     private boolean emailAddressAsJabberId;
 
@@ -283,15 +279,16 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      
      private void applyHudsonLoginPassword(HttpServletRequest req) throws FormException {
     	 this.hudsonCiLogin = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_HUDSON_LOGIN));
-    	 this.hudsonCiPassword = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_HUDSON_PASSWORD));
-    	 if(this.hudsonCiLogin != null) {
-    		 Authentication auth = new UsernamePasswordAuthenticationToken(this.hudsonCiLogin, this.hudsonCiPassword);
-    		 try {
-				Hudson.getInstance().getSecurityRealm().getSecurityComponents().manager.authenticate(auth);
-			} catch (AuthenticationException e) {
-				throw new FormException(e, "Bad Jenkins credentials");
-			}
-    	 }
+    	 
+    	 // TODO: add validation of login name, again?
+//    	 if(this.hudsonCiLogin != null) {
+//    		 Authentication auth = new UsernamePasswordAuthenticationToken(this.hudsonCiLogin, this.hudsonCiPassword);
+//    		 try {
+//				Hudson.getInstance().getSecurityRealm().getSecurityComponents().manager.authenticate(auth);
+//			} catch (AuthenticationException e) {
+//				throw new FormException(e, "Bad Jenkins credentials");
+//			}
+//    	 }
      }
     
     private void applyProxy(final HttpServletRequest req) throws FormException {
@@ -764,11 +761,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     String getServiceName() {
         return JabberUtil.getDomainPart(getJabberId());
     }
-
-	@Override
-	public String getHudsonPassword() {
-		return this.hudsonCiPassword;
-	}
 
 	@Override
 	public String getHudsonUserName() {
