@@ -10,7 +10,7 @@
     <artifactId>jabber</artifactId>
     <packaging>hpi</packaging>
     <name>Jenkins Jabber notifier plugin</name>
-    <version>1.22-SNAPSHOT</version>
+    <version>1.22</version>
     <url>http://wiki.jenkins-ci.org/display/JENKINS/Jabber+Plugin</url>
     <developers>
         <developer>
