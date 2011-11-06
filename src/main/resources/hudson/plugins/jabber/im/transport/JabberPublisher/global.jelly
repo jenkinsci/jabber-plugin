@@ -15,17 +15,23 @@
            <f:password name="${descriptor.PARAMETERNAME_PASSWORD}"
 				value="${descriptor.password}"/>
 		</f:entry>
-		<f:entry title="Initial group chats" description="Group chats to automatically join on startup. Name, (optional) password pairs.">
+		<f:entry title="Initial group chats" description="Group chats to automatically join on startup. Name and (optional) password. Check 'Notification only' if you want to disallow bot commands.">
+		     <!-- Note that this strange separation of the table headers into a separate table is done one purpose. I didn't find another way
+		          without breaking the rendering of the whole config page! -->
+		     <table width="100%">
+		     <tr style="text-align:left"><th width="30%">Name</th><th width="30%">Password</th><th width="10%">Notification only</th><th width="30%"/></tr>
+		     </table>
 		  <f:repeatable name="jabberPlugin.initialChats" var="ch" items="${descriptor.defaultTargets}">
-              <table width="100%">
+		     <table width="100%">
                 <tr>
-                    <td><input type="text" width="100%" style="text-align:left" name="jabberPlugin.chat.name" value="${ch.name}" /></td>
-                    <td><input type="password" width="100%" style="text-align:left" name="jabberPlugin.chat.password" value="${ch.password}" /></td>
-                    <td>
+                    <td width="30%"><input type="text" width="100%" style="text-align:left" name="jabberPlugin.chat.name" value="${ch.name}" /></td>
+                    <td width="30%"><input type="password" width="100%" style="text-align:left" name="jabberPlugin.chat.password" value="${ch.password}" /></td>
+                    <td width="10%"><f:checkbox name="jabberPlugin.chat.notificationOnly" checked="${ch.notificationOnly}"/></td>
+                    <td width="30%">
                         <div align="right"><f:repeatableDeleteButton /></div>
                     </td>
                 </tr>
-            </table>
+             </table>
           </f:repeatable>
 		</f:entry>
     <f:advanced>

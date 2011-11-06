@@ -459,7 +459,7 @@ class JabberIMConnection extends AbstractIMConnection {
 			while (groupChat.pollMessage() != null) {
 			}
 
-			this.bots.add(new Bot(new JabberMultiUserChat(groupChat, this),
+			this.bots.add(new Bot(new JabberMultiUserChat(groupChat, this, !chat.isNotificationOnly()),
 					this.groupChatNick, this.desc.getHost(),
 					this.botCommandPrefix, this.authentication));
 

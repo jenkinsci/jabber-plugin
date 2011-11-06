@@ -52,4 +52,9 @@ public class JabberChat implements IMChat {
 	public boolean isMultiUserChat() {
         return false;
     }
+
+    @Override
+    public boolean isCommandsAccepted() {
+        return true;
+    }
 }

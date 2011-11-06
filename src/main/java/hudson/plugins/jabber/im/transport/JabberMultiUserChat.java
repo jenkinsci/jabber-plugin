@@ -8,14 +8,21 @@ import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.Occupant;
 
+/**
+ * Handle for a multi-user chat (aka. conference room) in XMPP/Jabber.
+ * 
+ * @author kutzi
+ */
 public class JabberMultiUserChat implements IMChat {
     
     private final MultiUserChat chat;
 	private final JabberIMConnection connection;
+    private final boolean commandsAccepted;
 
-    public JabberMultiUserChat (MultiUserChat chat, JabberIMConnection connection) {
+    public JabberMultiUserChat (MultiUserChat chat, JabberIMConnection connection, boolean commandsAccepted) {
          this.chat = chat;
          this.connection = connection;
+         this.commandsAccepted = commandsAccepted;
      }
 
     public void sendMessage(String msg) throws IMException {
@@ -61,5 +68,9 @@ public class JabberMultiUserChat implements IMChat {
 
 	public boolean isMultiUserChat() {
         return true;
+    }
+
+    public boolean isCommandsAccepted() {
+        return this.commandsAccepted;
     }
 }

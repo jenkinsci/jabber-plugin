@@ -248,13 +248,15 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     private void applyInitialGroupChats(final HttpServletRequest req) {
         String[] chatNames = req.getParameterValues("jabberPlugin.chat.name");
         String[] chatPasswords = req.getParameterValues("jabberPlugin.chat.password");
+        String[] notifyOnlys = req.getParameterValues("jabberPlugin.chat.notificationOnly");
         this.defaultTargets = new ArrayList<IMMessageTarget>();
         
         if (chatNames != null) {
             for (int i = 0; i < chatNames.length; i++) {
                 String chatName = chatNames[i];
                 String chatPassword = Util.fixEmptyAndTrim(chatPasswords[i]);
-                this.defaultTargets.add(new GroupChatIMMessageTarget(chatName, chatPassword));
+                boolean notifyOnly = notifyOnlys != null ? "on".equalsIgnoreCase(notifyOnlys[i]) : false; 
+                this.defaultTargets.add(new GroupChatIMMessageTarget(chatName, chatPassword, notifyOnly));
             }
         }
     }
@@ -785,7 +787,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
             String[] split = this.initialGroupChats.trim().split("\\s");
             this.defaultTargets = new ArrayList<IMMessageTarget>();
             for (String chatName : split) {
-                this.defaultTargets.add(new GroupChatIMMessageTarget(chatName));
+                this.defaultTargets.add(new GroupChatIMMessageTarget(chatName, null, false));
             }
             this.initialGroupChats = null;
             save();
