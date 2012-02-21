@@ -3,6 +3,9 @@
  */
 package hudson.plugins.jabber.user;
 
+import org.kohsuke.stapler.export.Exported;
+import org.kohsuke.stapler.export.ExportedBean;
+
 import hudson.Extension;
 import hudson.model.UserProperty;
 import hudson.model.UserPropertyDescriptor;
@@ -11,6 +14,7 @@ import hudson.model.UserPropertyDescriptor;
  * Jabber user property.
  * @author Pascal Bleser
  */
+@ExportedBean(defaultVisibility = 999)
 public class JabberUserProperty extends UserProperty {
 
 	@Extension
@@ -33,6 +37,7 @@ public class JabberUserProperty extends UserProperty {
 		}
 	}
 	
+	@Exported
 	public String getJid() {
 		return this.jid;
 	}
