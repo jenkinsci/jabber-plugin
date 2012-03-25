@@ -316,7 +316,8 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 
 		if (this.connection.isConnected()) {
-			this.connection.login(this.desc.getUserName(), this.passwd, this.resource);
+			this.connection.login(this.desc.getUserName(), this.passwd,
+				this.resource != null ? this.resource : "Jenkins");
 			
 			setupSubscriptionMode();
 			createVCardIfNeeded();
