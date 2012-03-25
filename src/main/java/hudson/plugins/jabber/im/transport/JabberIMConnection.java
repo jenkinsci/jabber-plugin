@@ -84,6 +84,13 @@ class JabberIMConnection extends AbstractIMConnection {
 	 * I.e. for 'john.doe@gmail.com' it is 'john.doe'.
 	 */
 	private final String nick;
+    /**
+     * The 'resource' part of the Jabber ID.
+     * I.e. for 'john.doe@gmail.com/Jenkins' it is 'Jenkins' or
+     * for 'john.doe@gmail.com' it is null.
+     */
+	@Nullable
+	private final String resource;
 	/**
 	 * The nick name of the Jenkins bot to use in group chats.
 	 * May be null in which case the nick is used.
@@ -131,6 +138,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.hostnameOverride = desc.getHostname();
 		this.port = desc.getPort();
 		this.nick = JabberUtil.getUserPart(desc.getJabberId());
+		this.resource = JabberUtil.getResourcePart(desc.getJabberId());
 		this.passwd = desc.getPassword();
         this.enableSASL = desc.isEnableSASL();
 		this.proxytype = desc.getProxyType();
@@ -308,7 +316,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 
 		if (this.connection.isConnected()) {
-			this.connection.login(this.desc.getUserName(), this.passwd, "Jenkins");
+			this.connection.login(this.desc.getUserName(), this.passwd, this.resource);
 			
 			setupSubscriptionMode();
 			createVCardIfNeeded();
