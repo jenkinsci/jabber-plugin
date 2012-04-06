@@ -547,7 +547,13 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         boolean notifyCulprits = "on".equals(req.getParameter(PARAMETERNAME_NOTIFY_CULPRITS));
         boolean notifyFixers = "on".equals(req.getParameter(PARAMETERNAME_NOTIFY_FIXERS));
         boolean notifyUpstream = "on".equals(req.getParameter(PARAMETERNAME_NOTIFY_UPSTREAM_COMMITTERS));
-        
+		boolean customGroupMessages = "on".equals(req.getParameter(PARAMETERNAME_CUSTOM_GROUP_MESSAGES));
+		String customStartMessage = req.getParameter(PARAMETERNAME_CUSTOM_START_MESSAGE);
+		String customSuccessMessage = req.getParameter(PARAMETERNAME_CUSTOM_SUCCESS_MESSAGE);
+		String customFixedMessage = req.getParameter(PARAMETERNAME_CUSTOM_FIXED_MESSAGE);
+		String customUnstableMessage = req.getParameter(PARAMETERNAME_CUSTOM_UNSTABLE_MESSAGE);
+		String customFailedMessage = req.getParameter(PARAMETERNAME_CUSTOM_FAILED_MESSAGE);
+
         MatrixJobMultiplier matrixJobMultiplier = MatrixJobMultiplier.ONLY_CONFIGURATIONS;
         if (formData.has("matrixNotifier")) {
             String o = formData.getString("matrixNotifier");
@@ -558,7 +564,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
             return new JabberPublisher(targets, n, notifyStart, notifySuspects, notifyCulprits,
             		notifyFixers, notifyUpstream,
             		req.bindJSON(BuildToChatNotifier.class,formData.getJSONObject("buildToChatNotifier")),
-            		matrixJobMultiplier);
+            		matrixJobMultiplier, customGroupMessages, customStartMessage, customSuccessMessage,
+					customFixedMessage, customUnstableMessage, customFailedMessage);
         } catch (final IMMessageTargetConversionException e) {
             throw new FormException(e, PARAMETERNAME_TARGETS);
         }

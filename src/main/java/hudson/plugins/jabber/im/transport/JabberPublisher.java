@@ -39,11 +39,18 @@ public class JabberPublisher extends IMPublisher
     		boolean notifyFixers,
     		boolean notifyUpstreamCommitters,
     		BuildToChatNotifier buildToChatNotifier,
-    		MatrixJobMultiplier matrixJobMultiplier) throws IMMessageTargetConversionException
+    		MatrixJobMultiplier matrixJobMultiplier,
+			boolean customGroupMessages,
+			String customStartMessage,
+			String customSuccessMessage,
+			String customFixedMessage,
+			String customUnstableMessage,
+			String customFailedMessage) throws IMMessageTargetConversionException
     {
         super(targets, notificationStrategy, notifyGroupChatsOnBuildStart,
         		notifySuspects, notifyCulprits, notifyFixers, notifyUpstreamCommitters,
-        		buildToChatNotifier, matrixJobMultiplier);
+        		buildToChatNotifier, matrixJobMultiplier, customGroupMessages, customStartMessage,
+				customSuccessMessage, customFixedMessage, customUnstableMessage, customFailedMessage);
     }
 
     @Override
