@@ -19,6 +19,7 @@ import hudson.plugins.im.tools.ExceptionHelper;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
+import hudson.util.Scrambler;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -108,6 +109,12 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     private boolean exposePresence = true;
     private boolean enableSASL = true;
 
+    /**
+     * Marks if passwords are scrambled as they are since 1.23.
+     * Needed to migrate old, unscrambled passwords.
+     */
+    private boolean scrambledPasswords = false;
+    
     /**
      * @deprecated replaced by {@link #defaultTargets}
      * Still needed to deserialize old descriptors
@@ -205,13 +212,15 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 
     private void applyPassword(final HttpServletRequest req, boolean check) throws FormException
     {
-        this.hudsonPassword = req.getParameter(PARAMETERNAME_PASSWORD);
+        this.scrambledPasswords = true;
+        String password = req.getParameter(PARAMETERNAME_PASSWORD);
         if (check) {
-	        if (((this.hostname != null) && (this.hudsonPassword == null))
-	    		|| (this.hudsonPassword.trim().length() == 0)) {
+	        if ((this.hostname != null)
+	              && ((password == null) || (password.trim().length() == 0))) {
 	            throw new FormException("Password cannot be empty.", PARAMETERNAME_PASSWORD);
 	        }
         }
+        this.hudsonPassword = Scrambler.scramble(password);
     }
 
     private void applyGroupChatNickname(final HttpServletRequest req) throws FormException
@@ -411,9 +420,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     }
 
     @Override
-    public String getPassword()
-    {
-        return this.hudsonPassword;
+    public String getPassword() {
+        return Scrambler.descramble(this.hudsonPassword);
     }
 
     public String getGroupChatNickname()
@@ -790,6 +798,12 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
                 this.defaultTargets.add(new GroupChatIMMessageTarget(chatName, null, false));
             }
             this.initialGroupChats = null;
+            save();
+        }
+        
+        if (!this.scrambledPasswords) {
+            this.hudsonPassword = Scrambler.scramble(this.hudsonPassword);
+            this.scrambledPasswords = true;
             save();
         }
         
