@@ -791,9 +791,13 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      * Deserialize old descriptors.
      */
     private Object readResolve() {
+        
+        if (this.defaultTargets == null) {
+            this.defaultTargets = new ArrayList<IMMessageTarget>();
+        }
+        
         if (this.initialGroupChats != null) {
             String[] split = this.initialGroupChats.trim().split("\\s");
-            this.defaultTargets = new ArrayList<IMMessageTarget>();
             for (String chatName : split) {
                 this.defaultTargets.add(new GroupChatIMMessageTarget(chatName, null, false));
             }
