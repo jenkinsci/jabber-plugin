@@ -813,13 +813,15 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
                 this.defaultTargets.add(new GroupChatIMMessageTarget(chatName, null, false));
             }
             this.initialGroupChats = null;
-            save();
         }
         
         if (!this.scrambledPasswords) {
             this.hudsonPassword = Scrambler.scramble(this.hudsonPassword);
             this.scrambledPasswords = true;
-            save();
+            // JENKINS-15469: seems to be a bad idea to save in readResolve
+            // as the file to be saved/replaced is currently open for reading and thus
+            // save() will fail on Windows
+            //save();
         }
         
         return this;
