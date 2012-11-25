@@ -62,7 +62,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public static final String PARAMETERNAME_PRESENCE = PREFIX + "exposePresence";
     public static final String PARAMETERNAME_PASSWORD = PREFIX + "password";
     public static final String PARAMETERNAME_JABBERID = PREFIX + "jabberId";
-    public static final String PARAMETERNAME_GROUP_NICKNAME = PREFIX + "groupNick";
+    public static final String PARAMETERNAME_NICKNAME = PREFIX + "nickname";
     public static final String PARAMETERNAME_TARGETS = PREFIX + "targets";
     public static final String PARAMETERNAME_INITIAL_GROUPCHATS = PREFIX + "initialGroupChats";
     public static final String PARAMETERNAME_COMMAND_PREFIX = PREFIX + "commandPrefix";
@@ -106,6 +106,11 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     // the following 2 are actually the Jabber nick and password. For backward compatibility I cannot rename them
     private String hudsonNickname;
     private String hudsonPassword;
+    /**
+     * Nickname to be used in private chats and chat rooms.
+     * <p>
+     * For historical reason still called 'groupChatNickname'.
+     */
     private String groupChatNickname;
     private boolean exposePresence = true;
     private boolean enableSASL = true;
@@ -226,7 +231,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 
     private void applyGroupChatNickname(final HttpServletRequest req) throws FormException
     {
-        this.groupChatNickname = req.getParameter(PARAMETERNAME_GROUP_NICKNAME);
+        this.groupChatNickname = req.getParameter(PARAMETERNAME_NICKNAME);
         if (this.groupChatNickname != null && this.groupChatNickname.trim().length() == 0)
         {
             this.groupChatNickname = null;
@@ -425,11 +430,14 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         return Scrambler.descramble(this.hudsonPassword);
     }
 
-    public String getGroupChatNickname()
-    {
-        return this.groupChatNickname;
+    public String getNickname() {
+        if (Util.fixEmptyAndTrim(this.groupChatNickname) != null) {
+            return this.groupChatNickname;
+        } else {
+            return JabberUtil.getUserPart(getJabberId());
+        }
     }
-
+    
     @Override
     public int getPort()
     {

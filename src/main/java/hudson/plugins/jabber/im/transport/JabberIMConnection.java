@@ -57,6 +57,7 @@ import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.packet.DelayInformation;
+import org.jivesoftware.smackx.packet.Nick;
 import org.jivesoftware.smackx.packet.VCard;
 import org.springframework.util.Assert;
 
@@ -137,7 +138,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.authentication = authentication;
 		this.hostnameOverride = desc.getHostname();
 		this.port = desc.getPort();
-		this.nick = JabberUtil.getUserPart(desc.getJabberId());
+		this.nick = desc.getNickname();
 		this.resource = JabberUtil.getResourcePart(desc.getJabberId());
 		this.passwd = desc.getPassword();
         this.enableSASL = desc.isEnableSASL();
@@ -146,8 +147,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.proxyport = desc.getProxyPort();
 		this.proxyuser = desc.getProxyUser();
 		this.proxypass = desc.getProxyPass();
-		this.groupChatNick = desc.getGroupChatNickname() != null ?
-				desc.getGroupChatNickname() : this.nick;
+		this.groupChatNick = desc.getNickname();
 		this.botCommandPrefix = desc.getCommandPrefix();
 		this.groupChats = desc.getDefaultTargets();
 		this.impresence = desc.isExposePresence() ? IMPresence.AVAILABLE : IMPresence.UNAVAILABLE;
@@ -587,6 +587,8 @@ class JabberIMConnection extends AbstractIMConnection {
             		throw new IllegalStateException("Don't know how to handle "
             				+ impresence);
             	}
+            	
+            	presence.addExtension(new Nick(this.nick));
             	this.connection.sendPacket(presence);
             } finally {
                 unlock();

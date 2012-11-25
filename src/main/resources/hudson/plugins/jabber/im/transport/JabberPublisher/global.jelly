@@ -68,9 +68,9 @@
         <f:textbox name="${descriptor.PARAMETERNAME_COMMAND_PREFIX}"
           value="${descriptor.commandPrefix}" />
       </f:entry>
-      <f:entry title="Group chat nickname" help="${base}/help-group-nick.html">
-        <f:textbox name="${descriptor.PARAMETERNAME_GROUP_NICKNAME}"
-          value="${descriptor.groupChatNickname}" />
+      <f:entry title="Nickname" help="${base}/help-nick.html">
+        <f:textbox name="${descriptor.PARAMETERNAME_NICKNAME}"
+          value="${descriptor.nickname}" />
       </f:entry>
 
       <super:global-jenkinsLogin />
