@@ -1,19 +1,12 @@
 /**
- * 
+ *
  */
 package hudson.plugins.jabber.im.transport;
 
 import hudson.Util;
 import hudson.model.AbstractProject;
 import hudson.model.Hudson;
-import hudson.plugins.im.GroupChatIMMessageTarget;
-import hudson.plugins.im.IMException;
-import hudson.plugins.im.IMMessageTarget;
-import hudson.plugins.im.IMMessageTargetConversionException;
-import hudson.plugins.im.IMMessageTargetConverter;
-import hudson.plugins.im.IMPublisherDescriptor;
-import hudson.plugins.im.MatrixJobMultiplier;
-import hudson.plugins.im.NotificationStrategy;
+import hudson.plugins.im.*;
 import hudson.plugins.im.build_notify.BuildToChatNotifier;
 import hudson.plugins.im.config.ParameterNames;
 import hudson.plugins.im.tools.ExceptionHelper;
@@ -21,7 +14,15 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
 import hudson.util.Scrambler;
+import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
+import org.jivesoftware.smack.Roster.SubscriptionMode;
+import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+import org.springframework.util.Assert;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -30,23 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import javax.servlet.http.HttpServletRequest;
-
-import net.sf.json.JSONObject;
-
-import org.apache.commons.lang.StringUtils;
-import org.jivesoftware.smack.Roster.SubscriptionMode;
-import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.springframework.util.Assert;
-
 public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> implements IMPublisherDescriptor {
-
-    private static final Logger LOGGER = Logger.getLogger(JabberPublisherDescriptor.class.getName());
-    
-    private static final String PREFIX = "jabberPlugin.";
-	private static final int DEFAULT_PROXYPORT = 3128;
 
     public static final String PARAMETERNAME_ENABLED = PREFIX + "enabled";
     public static final String PARAMETERNAME_PORT = PREFIX + "port";
@@ -71,70 +56,67 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public static final String PARAMETERNAME_EMAIL_ADDRESS_AS_JABBERID = PREFIX + "emailAsJabberId";
     public static final String[] PARAMETERVALUE_SUBSCRIPTION_MODE;
     public static final String[] PARAMETERVALUE_PROXYTYPES;
+
     static {
-    	SubscriptionMode[] modes = SubscriptionMode.values();
-    	PARAMETERVALUE_SUBSCRIPTION_MODE = new String[modes.length];
-    	for (int i=0; i < modes.length; i++) {
-    		PARAMETERVALUE_SUBSCRIPTION_MODE[i] = modes[i].name();
-    	}
-    	ProxyType[] ptypes = ProxyType.values();
-    	PARAMETERVALUE_PROXYTYPES = new String[ptypes.length];
-    	for (int i=0; i < ptypes.length; i++) {
-    		PARAMETERVALUE_PROXYTYPES[i] = ptypes[i].name();
+        SubscriptionMode[] modes = SubscriptionMode.values();
+        PARAMETERVALUE_SUBSCRIPTION_MODE = new String[modes.length];
+        for (int i = 0; i < modes.length; i++) {
+            PARAMETERVALUE_SUBSCRIPTION_MODE[i] = modes[i].name();
+        }
+        ProxyType[] ptypes = ProxyType.values();
+        PARAMETERVALUE_PROXYTYPES = new String[ptypes.length];
+        for (int i = 0; i < ptypes.length; i++) {
+            PARAMETERVALUE_PROXYTYPES[i] = ptypes[i].name();
+        }
     }
-    }
-    
+
     public static final String[] PARAMETERVALUE_STRATEGY_VALUES = NotificationStrategy.getDisplayNames();
     public static final String PARAMETERVALUE_STRATEGY_DEFAULT = NotificationStrategy.STATECHANGE_ONLY.getDisplayName();
     public static final String DEFAULT_COMMAND_PREFIX = "!";
-    
+    private static final Logger LOGGER = Logger.getLogger(JabberPublisherDescriptor.class.getName());
+    private static final String PREFIX = "jabberPlugin.";
+    private static final int DEFAULT_PROXYPORT = 3128;
     private static final int DEFAULT_PORT = 5222;
-    
     // big Boolean to support backwards compatibility
     private Boolean enabled;
     private int port = DEFAULT_PORT;
     private String hostname;
-    
     /**
      * Only left here for deserialization compatibility with old instances.
+     *
      * @deprecated not supported anymore. Any half decent jabber server doesn't need this.
      */
     @SuppressWarnings("unused")
-	@Deprecated
-	private transient boolean legacySSL;
-    
+    @Deprecated
+    private transient boolean legacySSL;
     // the following 2 are actually the Jabber nick and password. For backward compatibility I cannot rename them
     private String hudsonNickname;
     private String hudsonPassword;
     /**
      * Nickname to be used in private chats and chat rooms.
-     * <p>
+     * <p/>
      * For historical reason still called 'groupChatNickname'.
      */
     private String groupChatNickname;
     private boolean exposePresence = true;
     private boolean enableSASL = true;
-
     /**
      * Marks if passwords are scrambled as they are since 1.23.
      * Needed to migrate old, unscrambled passwords.
      */
     private boolean scrambledPasswords = false;
-    
     /**
      * @deprecated replaced by {@link #defaultTargets}
-     * Still needed to deserialize old descriptors
+     *             Still needed to deserialize old descriptors
      */
     @Deprecated
     private String initialGroupChats;
     private List<IMMessageTarget> defaultTargets;
-    
     private String commandPrefix = DEFAULT_COMMAND_PREFIX;
     private String defaultIdSuffix;
     private String hudsonCiLogin;
     private String subscriptionMode = SubscriptionMode.accept_all.name();
     private boolean emailAddressAsJabberId;
-
     // Proxy parameters
     private ProxyType proxyType = ProxyType.NONE;
     private int proxyPort = DEFAULT_PROXYPORT;
@@ -142,117 +124,121 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     private String proxyUser = null;
     private String proxyPass = null;
 
-    public JabberPublisherDescriptor()
-    {
+    public JabberPublisherDescriptor() {
         super(JabberPublisher.class);
         load();
-        
+
         if (isEnabled()) {
             try {
-            	JabberIMConnectionProvider.setDesc(this);
+                JabberIMConnectionProvider.setDesc(this);
             } catch (final Exception e) {
                 // Server temporarily unavailable or misconfigured?
                 LOGGER.warning(ExceptionHelper.dump(e));
             }
         } else {
             try {
-				JabberIMConnectionProvider.setDesc(null);
-			} catch (IMException e) {
-				// ignore
-				LOGGER.info(ExceptionHelper.dump(e));
-			}
+                JabberIMConnectionProvider.setDesc(null);
+            } catch (IMException e) {
+                // ignore
+                LOGGER.info(ExceptionHelper.dump(e));
+            }
         }
     }
-    
-    @Override
-	public void load() {
-		super.load();
-    	if (this.enabled == null) {
-        	// migrate from plugin < v1.0
-        	if (Util.fixEmptyAndTrim(this.hudsonNickname) != null) {
-        		this.enabled = Boolean.TRUE;
-        	} else {
-        		this.enabled = Boolean.FALSE;
-        	}
-        }
-    	
-    	if (this.subscriptionMode == null) {
-    		this.subscriptionMode = SubscriptionMode.accept_all.name();
-    	}
-	}
 
-	// TODO: reuse the checkHostAccessibility method for this
-    private void applyHostname(final HttpServletRequest req, boolean check) throws FormException
-    {
+    private static void checkHostAccessibility(String hostname, String port, ProxyType pt)
+            throws UnknownHostException, IOException, NumberFormatException {
+        hostname = Util.fixEmptyAndTrim(hostname);
+        port = Util.fixEmptyAndTrim(port);
+        int iPort = DEFAULT_PORT;
+        InetAddress address = InetAddress.getByName(hostname);
+
+        if (port != null) {
+            iPort = Integer.parseInt(port);
+        }
+        if (pt == ProxyType.NONE) {
+            // Only try connect if not using a proxy
+            Socket s = new Socket(address, iPort);
+            s.close();
+        } else {
+            // TODO:
+            // Socket s = new Socket(Proxy)
+            // s.connect(host, port)
+            // s.close();
+        }
+    }
+
+    @Override
+    public void load() {
+        super.load();
+        if (this.enabled == null) {
+            // migrate from plugin < v1.0
+            if (Util.fixEmptyAndTrim(this.hudsonNickname) != null) {
+                this.enabled = Boolean.TRUE;
+            } else {
+                this.enabled = Boolean.FALSE;
+            }
+        }
+
+        if (this.subscriptionMode == null) {
+            this.subscriptionMode = SubscriptionMode.accept_all.name();
+        }
+    }
+
+    // TODO: reuse the checkHostAccessibility method for this
+    private void applyHostname(final HttpServletRequest req, boolean check) throws FormException {
         final String s = req.getParameter(PARAMETERNAME_HOSTNAME);
-        if (check && (s != null) && (s.trim().length() > 0))
-        {
-            try
-            {
+        if (check && (s != null) && (s.trim().length() > 0)) {
+            try {
                 InetAddress.getByName(s); // try to resolve
                 this.hostname = s;
-            }
-            catch (final UnknownHostException e)
-            {
+            } catch (final UnknownHostException e) {
                 throw new FormException("Cannot find Host '" + s + "'.",
                         PARAMETERNAME_HOSTNAME);
             }
-        }
-        else
-        {
+        } else {
             this.hostname = null;
         }
     }
 
-    private void applyNickname(final HttpServletRequest req, boolean check) throws FormException
-    {
+    private void applyNickname(final HttpServletRequest req, boolean check) throws FormException {
         this.hudsonNickname = req.getParameter(PARAMETERNAME_JABBERID);
         if (check) {
-	        if ((this.hostname != null) && ((this.hudsonNickname == null) || (this.hudsonNickname.trim().length() == 0)))
-	        {
-	            throw new FormException("Account/Nickname cannot be empty.",
-	                    PARAMETERNAME_JABBERID);
-	        }
+            if ((this.hostname != null) && ((this.hudsonNickname == null) || (this.hudsonNickname.trim().length() == 0))) {
+                throw new FormException("Account/Nickname cannot be empty.",
+                        PARAMETERNAME_JABBERID);
+            }
         }
     }
 
-    private void applyPassword(final HttpServletRequest req, boolean check) throws FormException
-    {
+    private void applyPassword(final HttpServletRequest req, boolean check) throws FormException {
         this.scrambledPasswords = true;
         String password = req.getParameter(PARAMETERNAME_PASSWORD);
         if (check) {
-	        if ((this.hostname != null)
-	              && ((password == null) || (password.trim().length() == 0))) {
-	            throw new FormException("Password cannot be empty.", PARAMETERNAME_PASSWORD);
-	        }
+            if ((this.hostname != null)
+                    && ((password == null) || (password.trim().length() == 0))) {
+                throw new FormException("Password cannot be empty.", PARAMETERNAME_PASSWORD);
+            }
         }
         this.hudsonPassword = Scrambler.scramble(password);
     }
 
-    private void applyGroupChatNickname(final HttpServletRequest req) throws FormException
-    {
+    private void applyGroupChatNickname(final HttpServletRequest req) throws FormException {
         this.groupChatNickname = req.getParameter(PARAMETERNAME_NICKNAME);
-        if (this.groupChatNickname != null && this.groupChatNickname.trim().length() == 0)
-        {
+        if (this.groupChatNickname != null && this.groupChatNickname.trim().length() == 0) {
             this.groupChatNickname = null;
         }
     }
 
-    private void applyPort(final HttpServletRequest req, boolean check) throws FormException
-    {
+    private void applyPort(final HttpServletRequest req, boolean check) throws FormException {
         final String p = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_PORT));
-        if (p != null)
-        {
-            try
-            {
+        if (p != null) {
+            try {
                 final int i = Integer.parseInt(p);
                 if (check && ((i < 0) || (i > 65535))) {
                     throw new FormException("Port out of range.", PARAMETERNAME_PORT);
                 }
                 this.port = i;
-            }
-            catch (final NumberFormatException e)
-            {
+            } catch (final NumberFormatException e) {
                 throw new FormException("Port cannot be parsed.", PARAMETERNAME_PORT);
             }
         } else {
@@ -265,39 +251,39 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         String[] chatPasswords = req.getParameterValues("jabberPlugin.chat.password");
         String[] notifyOnlys = req.getParameterValues("jabberPlugin.chat.notificationOnly");
         this.defaultTargets = new ArrayList<IMMessageTarget>();
-        
+
         if (chatNames != null) {
             for (int i = 0; i < chatNames.length; i++) {
                 String chatName = chatNames[i];
                 String chatPassword = Util.fixEmptyAndTrim(chatPasswords[i]);
-                boolean notifyOnly = notifyOnlys != null ? "on".equalsIgnoreCase(notifyOnlys[i]) : false; 
+                boolean notifyOnly = notifyOnlys != null ? "on".equalsIgnoreCase(notifyOnlys[i]) : false;
                 this.defaultTargets.add(new GroupChatIMMessageTarget(chatName, chatPassword, notifyOnly));
             }
         }
     }
-    
+
     private void applyCommandPrefix(final HttpServletRequest req) {
-    	String prefix = req.getParameter(PARAMETERNAME_COMMAND_PREFIX);
-    	if ((prefix != null) && (prefix.trim().length() > 0)) {
-    		this.commandPrefix = prefix;
-    	} else {
-    		this.commandPrefix = DEFAULT_COMMAND_PREFIX;
-    	}
+        String prefix = req.getParameter(PARAMETERNAME_COMMAND_PREFIX);
+        if ((prefix != null) && (prefix.trim().length() > 0)) {
+            this.commandPrefix = prefix;
+        } else {
+            this.commandPrefix = DEFAULT_COMMAND_PREFIX;
+        }
     }
 
-     private void applyDefaultIdSuffix(final HttpServletRequest req) {
-    	String suffix = req.getParameter(PARAMETERNAME_DEFAULT_ID_SUFFIX);
-    	if ((suffix != null) && (suffix.trim().length() > 0)) {
-    		this.defaultIdSuffix = suffix.trim();
-    	} else {
-    		this.defaultIdSuffix = "";
-    	}
+    private void applyDefaultIdSuffix(final HttpServletRequest req) {
+        String suffix = req.getParameter(PARAMETERNAME_DEFAULT_ID_SUFFIX);
+        if ((suffix != null) && (suffix.trim().length() > 0)) {
+            this.defaultIdSuffix = suffix.trim();
+        } else {
+            this.defaultIdSuffix = "";
+        }
     }
-     
-     private void applyHudsonLoginPassword(HttpServletRequest req) throws FormException {
-    	 this.hudsonCiLogin = Util.fixEmptyAndTrim(req.getParameter(getParamNames().getJenkinsLogin()));
-    	 
-    	 // TODO: add validation of login name, again?
+
+    private void applyHudsonLoginPassword(HttpServletRequest req) throws FormException {
+        this.hudsonCiLogin = Util.fixEmptyAndTrim(req.getParameter(getParamNames().getJenkinsLogin()));
+
+        // TODO: add validation of login name, again?
 //    	 if(this.hudsonCiLogin != null) {
 //    		 Authentication auth = new UsernamePasswordAuthenticationToken(this.hudsonCiLogin, this.hudsonCiPassword);
 //    		 try {
@@ -306,12 +292,12 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 //				throw new FormException(e, "Bad Jenkins credentials");
 //			}
 //    	 }
-     }
-    
+    }
+
     private void applyProxy(final HttpServletRequest req) throws FormException {
-        
+
         boolean enabled = "on".equals(req.getParameter(PARAMETERNAME_USEPROXY));
-        
+
         if (!enabled) {
             this.proxyType = ProxyType.NONE;
             return;
@@ -343,7 +329,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
             }
         } else
             this.proxyType = ProxyType.NONE;
-       if (ProxyType.NONE == this.proxyType)
+        if (ProxyType.NONE == this.proxyType)
             return;
 
         s = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_PROXYPORT));
@@ -355,8 +341,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
                             PARAMETERNAME_PROXYPORT);
                 }
                 this.proxyPort = i;
-            }
-            catch (final NumberFormatException e) {
+            } catch (final NumberFormatException e) {
                 this.proxyType = ProxyType.NONE;
                 throw new FormException("Proxy port cannot be parsed.",
                         PARAMETERNAME_PROXYPORT);
@@ -377,7 +362,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public String getDisplayName() {
         return "Jabber Notification";
     }
-    
+
     @Override
     public String getPluginDescription() {
         return "Jabber plugin";
@@ -388,11 +373,11 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      */
     @Override
     public boolean isEnabled() {
-    	return Boolean.TRUE.equals(this.enabled);
+        return Boolean.TRUE.equals(this.enabled);
     }
 
     /**
-     * Returns the overridden hostname in case e.g. DNS lookup by service name doesn't work. 
+     * Returns the overridden hostname in case e.g. DNS lookup by service name doesn't work.
      */
     // Note: unlike the same method in the interface this one is NOT deprecated
     // as we need it for hostname overriding
@@ -400,7 +385,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public String getHostname() {
         return this.hostname;
     }
-    
+
     /**
      * Returns the real host to use.
      * I.e. when hostname is set returns hostname.
@@ -417,11 +402,10 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 
     /**
      * Returns the jabber ID.
-     * 
+     * <p/>
      * The jabber ID may have the syntax <user>[@<domain>[/<resource]]
      */
-    public String getJabberId()
-    {
+    public String getJabberId() {
         return this.hudsonNickname;
     }
 
@@ -437,10 +421,9 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
             return JabberUtil.getUserPart(getJabberId());
         }
     }
-    
+
     @Override
-    public int getPort()
-    {
+    public int getPort() {
         return this.port;
     }
 
@@ -449,8 +432,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      * If the port is default, leave it empty.
      */
     public String getPortString() {
-        if(port==5222)  return null;
-        else            return String.valueOf(port);
+        if (port == 5222) return null;
+        else return String.valueOf(port);
     }
 
     public boolean isEnableSASL() {
@@ -460,9 +443,9 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public boolean isExposePresence() {
         return this.exposePresence;
     }
-    
+
     public String getSubscriptionMode() {
-    	return this.subscriptionMode;
+        return this.subscriptionMode;
     }
 
     public boolean isEmailAddressAsJabberId() {
@@ -476,7 +459,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 
     @Override
     public String getCommandPrefix() {
-    	return this.commandPrefix;
+        return this.commandPrefix;
     }
 
     public String getProxyHost() {
@@ -517,81 +500,80 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      * Creates a new instance of {@link JabberPublisher} from a submitted form.
      */
     @Override
-    public JabberPublisher newInstance(final StaplerRequest req, JSONObject formData) throws FormException
-    {
+    public JabberPublisher newInstance(final StaplerRequest req, JSONObject formData) throws FormException {
         Assert.notNull(req, "Parameter 'req' must not be null.");
         final String t = req.getParameter(PARAMETERNAME_TARGETS);
         final String[] split;
         if (t != null) {
-        	split = t.split("\\s");
+            split = t.split("\\s");
         } else {
-        	split = new String[0];
+            split = new String[0];
         }
-        
-    	List<IMMessageTarget> targets = new ArrayList<IMMessageTarget>(split.length);
-    	
-        
+
+        List<IMMessageTarget> targets = new ArrayList<IMMessageTarget>(split.length);
+
+
         try {
-			final IMMessageTargetConverter conv = getIMMessageTargetConverter();
-			for (String fragment : split) {
-			    IMMessageTarget createIMMessageTarget;
-			    createIMMessageTarget = conv.fromString(fragment);
-			    if (createIMMessageTarget != null)  {
-			        targets.add(createIMMessageTarget);
-			    }
-			}
-		} catch (IMMessageTargetConversionException e) {
-			throw new FormException("Invalid Jabber address", e, PARAMETERNAME_TARGETS);
-		}
-        
+            final IMMessageTargetConverter conv = getIMMessageTargetConverter();
+            for (String fragment : split) {
+                IMMessageTarget createIMMessageTarget;
+                createIMMessageTarget = conv.fromString(fragment);
+                if (createIMMessageTarget != null) {
+                    targets.add(createIMMessageTarget);
+                }
+            }
+        } catch (IMMessageTargetConversionException e) {
+            throw new FormException("Invalid Jabber address", e, PARAMETERNAME_TARGETS);
+        }
+
         String n = req.getParameter(getParamNames().getStrategy());
         if (n == null) {
-        	n = PARAMETERVALUE_STRATEGY_DEFAULT;
+            n = PARAMETERVALUE_STRATEGY_DEFAULT;
         } else {
-        	boolean foundStrategyValueMatch = false;
-        	for (final String strategyValue : PARAMETERVALUE_STRATEGY_VALUES) {
-        		if (strategyValue.equals(n)) {
-        			foundStrategyValueMatch = true;
-        			break;
-        		}
-        	}
-        	if (! foundStrategyValueMatch) {
-        		n = PARAMETERVALUE_STRATEGY_DEFAULT;
-        	}
+            boolean foundStrategyValueMatch = false;
+            for (final String strategyValue : PARAMETERVALUE_STRATEGY_VALUES) {
+                if (strategyValue.equals(n)) {
+                    foundStrategyValueMatch = true;
+                    break;
+                }
+            }
+            if (!foundStrategyValueMatch) {
+                n = PARAMETERVALUE_STRATEGY_DEFAULT;
+            }
         }
         boolean notifyStart = "on".equals(req.getParameter(getParamNames().getNotifyStart()));
         boolean notifySuspects = "on".equals(req.getParameter(getParamNames().getNotifySuspects()));
         boolean notifyCulprits = "on".equals(req.getParameter(getParamNames().getNotifyCulprits()));
         boolean notifyFixers = "on".equals(req.getParameter(getParamNames().getNotifyFixers()));
         boolean notifyUpstream = "on".equals(req.getParameter(getParamNames().getNotifyUpstreamCommitters()));
-        
+
         MatrixJobMultiplier matrixJobMultiplier = MatrixJobMultiplier.ONLY_CONFIGURATIONS;
         if (formData.has("matrixNotifier")) {
             String o = formData.getString("matrixNotifier");
             matrixJobMultiplier = MatrixJobMultiplier.valueOf(o);
         }
-        
+
         try {
             return new JabberPublisher(targets, n, notifyStart, notifySuspects, notifyCulprits,
-            		notifyFixers, notifyUpstream,
-            		req.bindJSON(BuildToChatNotifier.class,formData.getJSONObject("buildToChatNotifier")),
-            		matrixJobMultiplier);
+                    notifyFixers, notifyUpstream,
+                    req.bindJSON(BuildToChatNotifier.class, formData.getJSONObject("buildToChatNotifier")),
+                    matrixJobMultiplier);
         } catch (final IMMessageTargetConversionException e) {
             throw new FormException(e, PARAMETERNAME_TARGETS);
         }
     }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean configure(StaplerRequest req, JSONObject json) throws hudson.model.Descriptor.FormException {
-		String en = req.getParameter(PARAMETERNAME_ENABLED);
-		this.enabled = Boolean.valueOf(en != null);
-		this.exposePresence = req.getParameter(PARAMETERNAME_PRESENCE) != null;
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean configure(StaplerRequest req, JSONObject json) throws hudson.model.Descriptor.FormException {
+        String en = req.getParameter(PARAMETERNAME_ENABLED);
+        this.enabled = Boolean.valueOf(en != null);
+        this.exposePresence = req.getParameter(PARAMETERNAME_PRESENCE) != null;
         this.enableSASL = req.getParameter(PARAMETERNAME_SASL) != null;
-		this.subscriptionMode = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_SUBSCRIPTION_MODE));
-		this.emailAddressAsJabberId = req.getParameter(PARAMETERNAME_EMAIL_ADDRESS_AS_JABBERID) != null;
+        this.subscriptionMode = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_SUBSCRIPTION_MODE));
+        this.emailAddressAsJabberId = req.getParameter(PARAMETERNAME_EMAIL_ADDRESS_AS_JABBERID) != null;
         applyHostname(req, this.enabled);
         applyPort(req, this.enabled);
         applyNickname(req, this.enabled);
@@ -605,50 +587,49 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 
         if (isEnabled()) {
             try {
-            	JabberIMConnectionProvider.setDesc(this);
+                JabberIMConnectionProvider.setDesc(this);
                 JabberIMConnectionProvider.getInstance().currentConnection();
             } catch (final Exception e) {
                 //throw new FormException("Unable to create Client: " + ExceptionHelper.dump(e), null);
-            	LOGGER.warning(ExceptionHelper.dump(e));
+                LOGGER.warning(ExceptionHelper.dump(e));
             }
         } else {
-        	JabberIMConnectionProvider.getInstance().releaseConnection();
-        	try {
-				JabberIMConnectionProvider.setDesc(null);
-			} catch (IMException e) {
-				// ignore
-				LOGGER.info(ExceptionHelper.dump(e));
-			}
+            JabberIMConnectionProvider.getInstance().releaseConnection();
+            try {
+                JabberIMConnectionProvider.setDesc(null);
+            } catch (IMException e) {
+                // ignore
+                LOGGER.info(ExceptionHelper.dump(e));
+            }
             LOGGER.info("No hostname specified.");
         }
         save();
-        return super.configure(req, json);		
-	}
+        return super.configure(req, json);
+    }
 
-	
-	public FormValidation doJabberIdCheck(@QueryParameter String jabberId,
-			@QueryParameter final String hostname, @QueryParameter final String port, @QueryParameter final String proxyType) {
-	    if(!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) {
+    public FormValidation doJabberIdCheck(@QueryParameter String jabberId,
+                                          @QueryParameter final String hostname, @QueryParameter final String port, @QueryParameter final String proxyType) {
+        if (!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) {
             return FormValidation.ok();
         }
-	    
-	    if (jabberId == null || jabberId.trim().length() == 0) {
-	        return FormValidation.error("Jabber ID must not be empty!");
-	    } else if (Util.fixEmptyAndTrim(hostname) != null) {
-	    	// validation has already been done for the hostname field
-	    	return FormValidation.ok();
-	    } else if (JabberUtil.getDomainPart(jabberId) != null) {
-			String pts = Util.fixEmptyAndTrim(proxyType);
-	        String host = JabberUtil.getDomainPart(jabberId);
-			ProxyType pt = ProxyType.NONE;
-	        try {
-				if (pts != null) {
-					pt = ProxyType.valueOf(pts);
-				}
-			} catch (IllegalArgumentException e) {
-				return FormValidation.error("Invalid proxy type " + proxyType);
-			}
-	        try {
+
+        if (jabberId == null || jabberId.trim().length() == 0) {
+            return FormValidation.error("Jabber ID must not be empty!");
+        } else if (Util.fixEmptyAndTrim(hostname) != null) {
+            // validation has already been done for the hostname field
+            return FormValidation.ok();
+        } else if (JabberUtil.getDomainPart(jabberId) != null) {
+            String pts = Util.fixEmptyAndTrim(proxyType);
+            String host = JabberUtil.getDomainPart(jabberId);
+            ProxyType pt = ProxyType.NONE;
+            try {
+                if (pts != null) {
+                    pt = ProxyType.valueOf(pts);
+                }
+            } catch (IllegalArgumentException e) {
+                return FormValidation.error("Invalid proxy type " + proxyType);
+            }
+            try {
                 checkHostAccessibility(host, port, pt);
                 return FormValidation.ok();
             } catch (UnknownHostException e) {
@@ -656,124 +637,102 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
             } catch (NumberFormatException e) {
                 return FormValidation.error("Invalid port " + port);
             } catch (IOException e) {
-                return FormValidation.error("Unable to connect to "+hostname+":"+port+" : "+e.getMessage());
+                return FormValidation.error("Unable to connect to " + hostname + ":" + port + " : " + e.getMessage());
             }
-	    } else {
-	    	return FormValidation.error("No hostname specified - neither via 'Jabber ID' nor via 'Server'!");
-	    }
-	}
-	
-	public FormValidation doProxyCheck(@QueryParameter final String proxyType,
-			@QueryParameter final String proxyHost, @QueryParameter final String proxyPort) {
-		if(!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) {
-			return FormValidation.ok();
-		}
-		String host = Util.fixEmptyAndTrim(proxyHost);
-		String p = Util.fixEmptyAndTrim(proxyPort);
-		String pts = Util.fixEmptyAndTrim(proxyType);
-		if (host == null) {
-			return FormValidation.ok();
-		} else {
-			ProxyType pt = ProxyType.NONE;
-			try {
-				if (pts != null) {
-					pt = ProxyType.valueOf(pts);
-				}
-			} catch (IllegalArgumentException e) {
-				return FormValidation.error("Invalid proxy type " + proxyType);
-			}
-			if (pt != ProxyType.NONE) {
-				try {
-					checkHostAccessibility(host, p, ProxyType.NONE);
-				} catch (UnknownHostException e) {
-					return FormValidation.error("Unknown proxy host " + proxyHost);
-				} catch (NumberFormatException e) {
-					return FormValidation.error("Invalid proxy port " + proxyPort);
-				} catch (IOException e) {
-					return FormValidation.error("Unable to connect to "+host+":"+p+" : "+e.getMessage());
-				}
-			}
-			return FormValidation.ok();
-		}
-	}
+        } else {
+            return FormValidation.error("No hostname specified - neither via 'Jabber ID' nor via 'Server'!");
+        }
+    }
+
+    public FormValidation doProxyCheck(@QueryParameter final String proxyType,
+                                       @QueryParameter final String proxyHost, @QueryParameter final String proxyPort) {
+        if (!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) {
+            return FormValidation.ok();
+        }
+        String host = Util.fixEmptyAndTrim(proxyHost);
+        String p = Util.fixEmptyAndTrim(proxyPort);
+        String pts = Util.fixEmptyAndTrim(proxyType);
+        if (host == null) {
+            return FormValidation.ok();
+        } else {
+            ProxyType pt = ProxyType.NONE;
+            try {
+                if (pts != null) {
+                    pt = ProxyType.valueOf(pts);
+                }
+            } catch (IllegalArgumentException e) {
+                return FormValidation.error("Invalid proxy type " + proxyType);
+            }
+            if (pt != ProxyType.NONE) {
+                try {
+                    checkHostAccessibility(host, p, ProxyType.NONE);
+                } catch (UnknownHostException e) {
+                    return FormValidation.error("Unknown proxy host " + proxyHost);
+                } catch (NumberFormatException e) {
+                    return FormValidation.error("Invalid proxy port " + proxyPort);
+                } catch (IOException e) {
+                    return FormValidation.error("Unable to connect to " + host + ":" + p + " : " + e.getMessage());
+                }
+            }
+            return FormValidation.ok();
+        }
+    }
 
     /**
      * Validates the connection information.
      */
     public FormValidation doServerCheck(@QueryParameter final String hostname,
-			@QueryParameter final String port, @QueryParameter final String proxyType) {
-        if(!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) {
+                                        @QueryParameter final String port, @QueryParameter final String proxyType) {
+        if (!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) {
             return FormValidation.ok();
         }
         String host = Util.fixEmptyAndTrim(hostname);
         String p = Util.fixEmptyAndTrim(port);
-		String pts = Util.fixEmptyAndTrim(proxyType);
+        String pts = Util.fixEmptyAndTrim(proxyType);
         if (host == null) {
             return FormValidation.ok();
         } else {
-			ProxyType pt = ProxyType.NONE;
+            ProxyType pt = ProxyType.NONE;
             try {
-				if (pts != null) {
-					pt = ProxyType.valueOf(pts);
-				}
-			} catch (IllegalArgumentException e) {
-				return FormValidation.error("Invalid proxy type " + proxyType);
-			}
-			try {
-				checkHostAccessibility(host, port, pt);
+                if (pts != null) {
+                    pt = ProxyType.valueOf(pts);
+                }
+            } catch (IllegalArgumentException e) {
+                return FormValidation.error("Invalid proxy type " + proxyType);
+            }
+            try {
+                checkHostAccessibility(host, port, pt);
                 return FormValidation.ok();
             } catch (UnknownHostException e) {
                 return FormValidation.error("Unknown host " + host);
             } catch (NumberFormatException e) {
                 return FormValidation.error("Invalid port " + port);
             } catch (IOException e) {
-                return FormValidation.error("Unable to connect to "+hostname+":"+p+" : "+e.getMessage());
+                return FormValidation.error("Unable to connect to " + hostname + ":" + p + " : " + e.getMessage());
             }
         }
     }
-    
-	private static void checkHostAccessibility(String hostname, String port, ProxyType pt)
-        throws UnknownHostException, IOException, NumberFormatException {
-        hostname = Util.fixEmptyAndTrim(hostname);
-        port = Util.fixEmptyAndTrim(port);
-        int iPort = DEFAULT_PORT;
-        InetAddress address = InetAddress.getByName(hostname);
-        
-        if (port != null) {
-            iPort = Integer.parseInt(port);
-        }
-		if (pt == ProxyType.NONE) {
-			// Only try connect if not using a proxy
-		    Socket s = new Socket(address, iPort);
-		    s.close();
-		} else {
-		    // TODO:
-		    // Socket s = new Socket(Proxy)
-		    // s.connect(host, port)
-		    // s.close();
-		}
-	}
 
     /**
      * {@inheritDoc}
      */
-	@Override
-	@SuppressWarnings("rawtypes")
-	public boolean isApplicable(Class<? extends AbstractProject> jobType) {
-		return true;
-	}
-	
-	/**
-	 * Returns the 'user' part of the Jabber ID. E.g. returns
-	 * 'john.doe' for 'john.doe@gmail.com' or
-	 * 'alfred.e.neumann' for 'alfred.e.neumann'.
-	 */
-	@Override
-	public String getUserName() {
-		return JabberUtil.getUserPart(getJabberId());
-	}
-	
-	/**
+    @Override
+    @SuppressWarnings("rawtypes")
+    public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+        return true;
+    }
+
+    /**
+     * Returns the 'user' part of the Jabber ID. E.g. returns
+     * 'john.doe' for 'john.doe@gmail.com' or
+     * 'alfred.e.neumann' for 'alfred.e.neumann'.
+     */
+    @Override
+    public String getUserName() {
+        return JabberUtil.getUserPart(getJabberId());
+    }
+
+    /**
      * Returns 'gmail.com' portion of the nick name 'john.doe@gmail.com', or
      * null if not found.
      */
@@ -781,22 +740,22 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         return JabberUtil.getDomainPart(getJabberId());
     }
 
-	@Override
-	public String getHudsonUserName() {
-		return this.hudsonCiLogin;
-	}
-	
-	@Override
-	public IMMessageTargetConverter getIMMessageTargetConverter() {
-		return JabberPublisher.CONVERTER;
-	}
+    @Override
+    public String getHudsonUserName() {
+        return this.hudsonCiLogin;
+    }
 
-	@Override
-	public List<IMMessageTarget> getDefaultTargets() {
-		return this.defaultTargets;
-	}
-	
-	@Override
+    @Override
+    public IMMessageTargetConverter getIMMessageTargetConverter() {
+        return JabberPublisher.CONVERTER;
+    }
+
+    @Override
+    public List<IMMessageTarget> getDefaultTargets() {
+        return this.defaultTargets;
+    }
+
+    @Override
     public ParameterNames getParamNames() {
         return new ParameterNames() {
             @Override
@@ -810,11 +769,11 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      * Deserialize old descriptors.
      */
     private Object readResolve() {
-        
+
         if (this.defaultTargets == null) {
             this.defaultTargets = new ArrayList<IMMessageTarget>();
         }
-        
+
         if (this.initialGroupChats != null) {
             String[] split = this.initialGroupChats.trim().split("\\s");
             for (String chatName : split) {
@@ -822,7 +781,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
             }
             this.initialGroupChats = null;
         }
-        
+
         if (!this.scrambledPasswords) {
             this.hudsonPassword = Scrambler.scramble(this.hudsonPassword);
             this.scrambledPasswords = true;
@@ -831,8 +790,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
             // save() will fail on Windows
             //save();
         }
-        
+
         return this;
     }
-	
+
 }
