@@ -11,12 +11,12 @@ import hudson.plugins.im.IMPlugin;
  */
 public class JabberPluginImpl extends Plugin {
 
-	private transient final IMPlugin imPlugin;
+    private transient final IMPlugin imPlugin;
 
-	public JabberPluginImpl() {
-		this.imPlugin = new IMPlugin(JabberIMConnectionProvider.getInstance());
-	}
-	
+    public JabberPluginImpl() {
+        this.imPlugin = new IMPlugin(JabberIMConnectionProvider.getInstance());
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -31,7 +31,7 @@ public class JabberPluginImpl extends Plugin {
      */
     @Override
     public void stop() throws Exception {
-    	this.imPlugin.stop();
+        this.imPlugin.stop();
         super.stop();
     }
 }

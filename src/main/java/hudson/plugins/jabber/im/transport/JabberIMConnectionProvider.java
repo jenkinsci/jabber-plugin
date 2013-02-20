@@ -7,26 +7,25 @@ import hudson.plugins.im.IMPublisherDescriptor;
 
 /**
  * Jabber implementation of an {@link IMConnectionProvider}.
- * 
+ *
  * @author Uwe Schaefer
  * @author kutzi
  */
-final class JabberIMConnectionProvider extends IMConnectionProvider
-{
+final class JabberIMConnectionProvider extends IMConnectionProvider {
     private static final IMConnectionProvider INSTANCE = new JabberIMConnectionProvider();
-    
+
+    private JabberIMConnectionProvider() {
+        super();
+        init();
+    }
+
     static final synchronized IMConnectionProvider getInstance() {
         return INSTANCE;
     }
-    
-    static final synchronized void setDesc(IMPublisherDescriptor desc) throws IMException {
-    	INSTANCE.setDescriptor(desc);
-    	INSTANCE.releaseConnection();
-    }
 
-    private JabberIMConnectionProvider() {
-    	super();
-    	init();
+    static final synchronized void setDesc(IMPublisherDescriptor desc) throws IMException {
+        INSTANCE.setDescriptor(desc);
+        INSTANCE.releaseConnection();
     }
 
     @Override
@@ -34,13 +33,13 @@ final class JabberIMConnectionProvider extends IMConnectionProvider
         releaseConnection();
 
         if (getDescriptor() == null) {
-        	throw new IMException("Descriptor not set");
+            throw new IMException("Descriptor not set");
         }
-        
-        IMConnection imConnection = new JabberIMConnection((JabberPublisherDescriptor)getDescriptor(),
-        		getAuthenticationHolder());
+
+        IMConnection imConnection = new JabberIMConnection((JabberPublisherDescriptor) getDescriptor(),
+                getAuthenticationHolder());
         if (imConnection.connect()) {
-        	return imConnection;
+            return imConnection;
         }
         throw new IMException("Connection failed");
     }

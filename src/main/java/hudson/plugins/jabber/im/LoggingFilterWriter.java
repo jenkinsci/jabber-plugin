@@ -22,11 +22,11 @@ public class LoggingFilterWriter extends FilterWriter {
         this.logger = logger;
         this.level = level;
     }
-    
+
     private boolean isEnabled() {
         return this.logger.isLoggable(this.level);
     }
-    
+
     @Override
     public void write(char[] cbuf, int off, int len) throws IOException {
         this.wrappedWriter.write(cbuf, off, len);

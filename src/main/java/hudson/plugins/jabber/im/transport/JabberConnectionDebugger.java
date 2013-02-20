@@ -2,12 +2,6 @@ package hudson.plugins.jabber.im.transport;
 
 import hudson.plugins.jabber.im.LoggingFilterReader;
 import hudson.plugins.jabber.im.LoggingFilterWriter;
-
-import java.io.Reader;
-import java.io.Writer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.PacketListener;
@@ -15,22 +9,24 @@ import org.jivesoftware.smack.debugger.SmackDebugger;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.util.StringUtils;
 
+import java.io.Reader;
+import java.io.Writer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * Logs detailed info to the log in level FINE or FINEST.
  *
  * @author kutzi
  */
 public class JabberConnectionDebugger implements SmackDebugger {
-    
+
     private static final Logger LOGGER = Logger.getLogger(JabberConnectionDebugger.class.getName());
     private static final Level MIN_LOG_LEVEL = Level.FINE;
-    
     private final Connection connection;
     private Writer writer;
     private Reader reader;
-
     private PacketListener listener;
-
     private ConnectionListener connListener;
 
     public JabberConnectionDebugger(Connection connection, Writer writer, Reader reader) {
@@ -39,9 +35,9 @@ public class JabberConnectionDebugger implements SmackDebugger {
         this.reader = reader;
         init();
     }
-    
+
     private void init() {
-        
+
         LoggingFilterReader debugReader = new LoggingFilterReader(this.reader,
                 LOGGER, MIN_LOG_LEVEL);
         this.reader = debugReader;
@@ -125,7 +121,7 @@ public class JabberConnectionDebugger implements SmackDebugger {
     @Override
     public Writer newConnectionWriter(Writer newWriter) {
         LoggingFilterWriter debugWriter = new LoggingFilterWriter(newWriter,
-                LOGGER, MIN_LOG_LEVEL); 
+                LOGGER, MIN_LOG_LEVEL);
         this.writer = debugWriter;
         return this.writer;
     }
@@ -138,7 +134,7 @@ public class JabberConnectionDebugger implements SmackDebugger {
                     + ((isAnonymous) ? "" : StringUtils.parseBareAddress(user))
                     + "@" + this.connection.getServiceName() + ":"
                     + this.connection.getPort();
-    
+
             title = title + "/" + StringUtils.parseResource(user);
             LOGGER.fine(title);
         }

@@ -12,7 +12,7 @@ import java.util.logging.Logger;
  * @author kutzi
  */
 public class LoggingFilterReader extends FilterReader {
-    
+
     private final Reader wrapped;
     private final Logger logger;
     private final Level level;
@@ -23,7 +23,7 @@ public class LoggingFilterReader extends FilterReader {
         this.logger = logger;
         this.level = level;
     }
-    
+
     @Override
     public int read(char[] cbuf, int off, int len) throws IOException {
         int count = this.wrapped.read(cbuf, off, len);
