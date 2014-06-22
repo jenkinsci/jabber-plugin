@@ -8,7 +8,7 @@ import org.jivesoftware.smack.MessageListener;
 import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.PacketExtension;
-import org.jivesoftware.smackx.packet.DelayInformation;
+import org.jivesoftware.smackx.delay.packet.DelayInformation;
 
 /**
  * Wraps an {@link IMMessageListener} in a Smack {@link PacketListener}.
@@ -26,7 +26,6 @@ class JabberMessageListenerAdapter implements MessageListener {
         this.connection = connection;
     }
     
-	@Override
 	public void processMessage(Chat chat, Message msg) {
 		// don't react to old messages
         for (PacketExtension pe : msg.getExtensions()) {

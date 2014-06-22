@@ -377,8 +377,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public String getDisplayName() {
         return "Jabber Notification";
     }
-    
-    @Override
+
     public String getPluginDescription() {
         return "Jabber plugin";
     }
@@ -386,7 +385,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     /**
      * {@inheritDoc}
      */
-    @Override
     public boolean isEnabled() {
     	return Boolean.TRUE.equals(this.enabled);
     }
@@ -396,7 +394,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      */
     // Note: unlike the same method in the interface this one is NOT deprecated
     // as we need it for hostname overriding
-    @Override
     public String getHostname() {
         return this.hostname;
     }
@@ -406,7 +403,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      * I.e. when hostname is set returns hostname.
      * Otherwise returns {@link #getServiceName()}
      */
-    @Override
     public String getHost() {
         if (StringUtils.isNotBlank(this.hostname)) {
             return this.hostname;
@@ -425,7 +421,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         return this.hudsonNickname;
     }
 
-    @Override
     public String getPassword() {
         return Scrambler.descramble(this.hudsonPassword);
     }
@@ -437,8 +432,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
             return JabberUtil.getUserPart(getJabberId());
         }
     }
-    
-    @Override
+
     public int getPort()
     {
         return this.port;
@@ -469,12 +463,10 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         return emailAddressAsJabberId;
     }
 
-    @Override
     public String getDefaultIdSuffix() {
         return this.defaultIdSuffix;
     }
 
-    @Override
     public String getCommandPrefix() {
     	return this.commandPrefix;
     }
@@ -768,7 +760,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	 * 'john.doe' for 'john.doe@gmail.com' or
 	 * 'alfred.e.neumann' for 'alfred.e.neumann'.
 	 */
-	@Override
 	public String getUserName() {
 		return JabberUtil.getUserPart(getJabberId());
 	}
@@ -781,22 +772,18 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         return JabberUtil.getDomainPart(getJabberId());
     }
 
-	@Override
 	public String getHudsonUserName() {
 		return this.hudsonCiLogin;
 	}
-	
-	@Override
+
 	public IMMessageTargetConverter getIMMessageTargetConverter() {
 		return JabberPublisher.CONVERTER;
 	}
 
-	@Override
 	public List<IMMessageTarget> getDefaultTargets() {
 		return this.defaultTargets;
 	}
-	
-	@Override
+
     public ParameterNames getParamNames() {
         return new ParameterNames() {
             @Override
