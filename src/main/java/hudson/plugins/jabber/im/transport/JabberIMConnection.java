@@ -30,14 +30,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import javax.net.ssl.SSLSocketFactory;
-import javax.security.sasl.SaslException;
 
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.Roster.SubscriptionMode;
 import org.jivesoftware.smack.filter.AndFilter;
 import org.jivesoftware.smack.filter.MessageTypeFilter;
 import org.jivesoftware.smack.filter.PacketFilter;
-import org.jivesoftware.smack.filter.ToContainsFilter;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.PacketExtension;
@@ -48,6 +46,7 @@ import org.jivesoftware.smack.proxy.ProxyInfo;
 import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.util.StringUtils;
+import org.jivesoftware.smack.util.dns.HostAddress;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.delay.packet.DelayInformation;
 import org.jivesoftware.smackx.nick.packet.Nick;
@@ -61,6 +60,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * 
  * @author kutzi
  * @author Uwe Schaefer (original author)
+ * @author jenky-hm
  */
 class JabberIMConnection extends AbstractIMConnection {
 	
@@ -225,7 +225,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 	}
 
-	private boolean createConnection() throws XMPPException, IOException, SmackException {
+	private boolean createConnection() throws Exception {
 		if (this.connection != null) {
 			try {
 				this.connection.disconnect();
@@ -277,12 +277,21 @@ class JabberIMConnection extends AbstractIMConnection {
 		SASLAuthentication.unregisterSASLMechanism("DIGEST-MD5");
 		
 		//SASLAuthentication.unregisterSASLMechanism("GSSAPI");
-        cfg.setSASLAuthenticationEnabled(this.enableSASL);
-        
+        // Not needed any more sasl by default
+        //cfg.setSASLAuthenticationEnabled(this.enableSASL);
+
+
+        List<HostAddress> hostlist = cfg.getHostAddresses();
+        String loggerString = "";
+        for(HostAddress host : hostlist ){
+            loggerString = loggerString+"HostAddress: "+ host+ "FQDN: "+ host.getFQDN() +"HostPort: "+ host.getPort();
+        }
+
         LOGGER.info("Trying to connect to XMPP on "
-                + cfg.getHost() + ":" + cfg.getPort()
+                + loggerString
                 + "/" + cfg.getServiceName()
-                + (cfg.isSASLAuthenticationEnabled() ? " with SASL" : "")
+                // not needed
+                //+ (cfg.isSASLAuthenticationEnabled() ? " with SASL" : "")
                 + (cfg.isCompressionEnabled() ? " using compression" : "")
                 + (pi.getProxyType() != ProxyInfo.ProxyType.NONE ? " via proxy " + pi.getProxyType() + " "
                         + pi.getProxyAddress() + ":" + pi.getProxyPort() : "")
@@ -329,7 +338,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	 */
 	private void retryConnectionWithLegacySSL(
 			final ConnectionConfiguration cfg, Exception originalException)
-			throws XMPPException {
+            throws Exception {
 		try {
 			LOGGER.info("Retrying connection with legacy SSL");
 			cfg.setSocketFactory(SSLSocketFactory.getDefault());
@@ -340,9 +349,11 @@ class JabberIMConnection extends AbstractIMConnection {
 				// use the original connection exception as legacy SSL should only
 				// be a fallback
 			    LOGGER.warning("Retrying with legacy SSL failed: " + e.getMessage());
-				throw new XMPPException("Exception of original (without legacy SSL) connection attempt", originalException);
+                //throw new XMPPException("Exception of original (without legacy SSL) connection attempt", originalException);
+                throw originalException;
+
 			} else {
-				throw new XMPPException(e);
+				throw e;
 			}
 		} catch (SmackException e) {
             LOGGER.warning(ExceptionHelper.dump(e));
@@ -396,18 +407,21 @@ class JabberIMConnection extends AbstractIMConnection {
             }
             return false;
         } catch (XMPPException e) {
-            // See http://xmpp.org/extensions/xep-0054.html#sect-id304495
-            if (e.getXMPPError() != null && Condition.item_not_found.toString().equals(e.getXMPPError().getCondition())) {
-                return false;
+            if (e instanceof  XMPPException.XMPPErrorException){
+                XMPPException.XMPPErrorException ex =(XMPPException.XMPPErrorException) e;
+                // See http://xmpp.org/extensions/xep-0054.html#sect-id304495
+                if (ex.getXMPPError() != null && Condition.item_not_found.toString().equals(ex.getXMPPError().getCondition())) {
+                    return false;
+                }
             }
-            
             // there was probably a 'real' problem
-            throw new XMPPException(e);
+            throw e;
         } catch (SmackException.NotConnectedException e) {
             LOGGER.warning(ExceptionHelper.dump(e));
         } catch (SmackException.NoResponseException e) {
             LOGGER.warning(ExceptionHelper.dump(e));
         }
+        return false;
     }
 
 	/**
@@ -444,12 +458,16 @@ class JabberIMConnection extends AbstractIMConnection {
 	 * Listens on the connection for private chat requests.
 	 */
 	private void listenForPrivateChats() {
-		PacketFilter filter = new AndFilter(new MessageTypeFilter(Message.Type.chat), 
-				new ToContainsFilter(this.desc.getUserName()));
+		//PacketFilter filter = new AndFilter(new MessageTypeFilter(Message.Type.chat),
+		//		new ToContainsFilter(this.desc.getUserName()));
 		// Actually, this should be the full user name (including '@server')
 		// but since via this connection only message to me should be delivered (right?)
 		// this doesn't matter anyway.
-		
+
+
+        // removed ToContainsFilter which was removed in 4.0.0
+        PacketFilter filter = new MessageTypeFilter(Message.Type.chat);
+
 		PacketListener listener = new PrivateChatListener();
 		this.connection.addPacketListener(listener, filter);
 	}
@@ -496,7 +514,7 @@ class JabberIMConnection extends AbstractIMConnection {
 			}
 		}
 		
-		final Chat chat = this.connection.getChatManager().createChat(chatPartner, null);
+		final Chat chat = ChatManager.getInstanceFor(this.connection).createChat(chatPartner, null);
 		Bot bot = new Bot(new JabberChat(chat, this), this.groupChatNick,
 					this.desc.getHost(), this.botCommandPrefix, this.authentication);
 		this.bots.add(bot);

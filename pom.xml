@@ -37,20 +37,79 @@
         	<groupId>org.jvnet.hudson.plugins</groupId>
         	<artifactId>instant-messaging</artifactId>
         	<version>${version.instant-messaging.plugin}</version>
-	    	<scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>jivesoftware</groupId>
-            <artifactId>smack</artifactId>
-            <version>3.2.1</version>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-core</artifactId>
+            <version>4.0.0</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>jivesoftware</groupId>
-            <artifactId>smackx</artifactId>
-            <version>3.2.1</version>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-extensions</artifactId>
+            <version>4.0.0</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-resolver-javax</artifactId>
+            <version>4.0.0</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-resolver-dnsjava</artifactId>
+            <version>4.0.0</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-tcp</artifactId>
+            <version>4.0.0</version>
+            <scope>compile</scope>
+        </dependency>
+<!--        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-jingle</artifactId>
+            <version>4.0.0</version>
+            <scope>compile</scope>
+        </dependency>-->
+<!--        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-debug</artifactId>
+            <version>4.0.0</version>
+        </dependency>-->
+<!--        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-compression-jzlib</artifactId>
+            <version>4.0.0</version>
+        </dependency>-->
+<!--        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-bosh</artifactId>
+            <version>4.0.0</version>
+        </dependency>-->
+<!--        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-legacy</artifactId>
+            <version>4.0.0</version>
+        </dependency>-->
+
+
+
+
+        <!--<dependency>-->
+            <!--<groupId>jivesoftware</groupId>-->
+            <!--<artifactId>smack</artifactId>-->
+            <!--<version>3.2.1</version>-->
+            <!--<scope>compile</scope>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+            <!--<groupId>jivesoftware</groupId>-->
+            <!--<artifactId>smackx</artifactId>-->
+            <!--<version>3.2.1</version>-->
+            <!--<scope>compile</scope>-->
+        <!--</dependency>-->
     </dependencies>
 
     <!-- get every artifact through maven.glassfish.org, which proxies all 
