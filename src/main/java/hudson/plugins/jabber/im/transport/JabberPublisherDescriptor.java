@@ -377,7 +377,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public String getDisplayName() {
         return "Jabber Notification";
     }
-    
+
     @Override
     public String getPluginDescription() {
         return "Jabber plugin";
@@ -437,7 +437,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
             return JabberUtil.getUserPart(getJabberId());
         }
     }
-    
+
     @Override
     public int getPort()
     {
@@ -768,7 +768,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	 * 'john.doe' for 'john.doe@gmail.com' or
 	 * 'alfred.e.neumann' for 'alfred.e.neumann'.
 	 */
-	@Override
+    @Override
 	public String getUserName() {
 		return JabberUtil.getUserPart(getJabberId());
 	}
@@ -781,22 +781,22 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         return JabberUtil.getDomainPart(getJabberId());
     }
 
-	@Override
+    @Override
 	public String getHudsonUserName() {
 		return this.hudsonCiLogin;
 	}
-	
-	@Override
+
+    @Override
 	public IMMessageTargetConverter getIMMessageTargetConverter() {
 		return JabberPublisher.CONVERTER;
 	}
 
-	@Override
+    @Override
 	public List<IMMessageTarget> getDefaultTargets() {
 		return this.defaultTargets;
 	}
-	
-	@Override
+
+    @Override
     public ParameterNames getParamNames() {
         return new ParameterNames() {
             @Override

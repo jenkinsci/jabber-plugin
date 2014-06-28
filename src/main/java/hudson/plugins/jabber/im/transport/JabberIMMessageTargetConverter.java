@@ -63,10 +63,10 @@ class JabberIMMessageTargetConverter implements IMMessageTargetConverter {
             return null;
         }
     }
-    
-    /**
-     * {@inheritDoc}
-     */
+
+   /**
+    * {@inheritDoc}
+    */
     @Override
 	public String toString(final IMMessageTarget target) {
         Assert.notNull(target, "Parameter 'target' must not be null.");

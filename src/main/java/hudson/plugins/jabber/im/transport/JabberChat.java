@@ -5,6 +5,7 @@ import hudson.plugins.im.IMException;
 import hudson.plugins.im.IMMessageListener;
 
 import org.jivesoftware.smack.Chat;
+import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
 
 /**
@@ -26,6 +27,8 @@ public class JabberChat implements IMChat {
             this.chat.sendMessage(msg);
         } catch (XMPPException e) {
             throw new IMException(e);
+        } catch (SmackException.NotConnectedException e) {
+            throw new IMException(e);
         }
     }
 
@@ -33,7 +36,7 @@ public class JabberChat implements IMChat {
     public String getNickName(String sender) {
     	return JabberUtil.getUserPart(sender);
     }
-    
+
     @Override
     public String getIMId(String senderId) {
         return JabberUtil.getUserPart(senderId) + '@' + JabberUtil.getDomainPart(senderId);

@@ -8,7 +8,7 @@ import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smackx.muc.MultiUserChat;
-import org.jivesoftware.smackx.packet.DelayInformation;
+import org.jivesoftware.smackx.delay.packet.DelayInformation;
 
 /**
  * Wraps an {@link IMMessageListener} in a Smack {@link PacketListener}.
@@ -27,7 +27,7 @@ class JabberMUCMessageListenerAdapter implements PacketListener {
         this.connection = connection;
         this.muc = muc;
     }
-    
+
     @Override
     public void processPacket(Packet p) {
         if (p instanceof Message) {

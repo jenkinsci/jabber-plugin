@@ -4,6 +4,7 @@ import hudson.plugins.im.IMChat;
 import hudson.plugins.im.IMException;
 import hudson.plugins.im.IMMessageListener;
 
+import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.Occupant;
@@ -30,6 +31,8 @@ public class JabberMultiUserChat implements IMChat {
             this.chat.sendMessage(msg);
         } catch (XMPPException e) {
             throw new IMException(e);
+        } catch (SmackException.NotConnectedException e ){
+            throw new IMException(e);
         }
     }
 
@@ -46,7 +49,7 @@ public class JabberMultiUserChat implements IMChat {
         }
         return sender;
     }
-    
+
     @Override
     public String getIMId(String senderId) {
         Occupant occ = this.chat.getOccupant(senderId);

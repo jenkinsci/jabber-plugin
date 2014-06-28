@@ -8,9 +8,9 @@ import java.io.Writer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.PacketListener;
+import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.debugger.SmackDebugger;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.util.StringUtils;
@@ -25,7 +25,7 @@ public class JabberConnectionDebugger implements SmackDebugger {
     private static final Logger LOGGER = Logger.getLogger(JabberConnectionDebugger.class.getName());
     private static final Level MIN_LOG_LEVEL = Level.FINE;
     
-    private final Connection connection;
+    private final XMPPConnection connection;
     private Writer writer;
     private Reader reader;
 
@@ -33,7 +33,7 @@ public class JabberConnectionDebugger implements SmackDebugger {
 
     private ConnectionListener connListener;
 
-    public JabberConnectionDebugger(Connection connection, Writer writer, Reader reader) {
+    public JabberConnectionDebugger(XMPPConnection connection, Writer writer, Reader reader) {
         this.connection = connection;
         this.writer = writer;
         this.reader = reader;
@@ -59,6 +59,14 @@ public class JabberConnectionDebugger implements SmackDebugger {
         };
 
         this.connListener = new ConnectionListener() {
+            public void connected(XMPPConnection connection) {
+                //FIXME TODO
+            }
+
+            public void authenticated(XMPPConnection connection) {
+                //FIXME TODO
+            }
+
             public void connectionClosed() {
                 if (LOGGER.isLoggable(MIN_LOG_LEVEL)) {
                     LOGGER.fine("Connection closed");
