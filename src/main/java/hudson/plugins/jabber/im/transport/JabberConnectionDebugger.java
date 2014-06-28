@@ -102,22 +102,27 @@ public class JabberConnectionDebugger implements SmackDebugger {
         };
     }
 
+    @Override
     public Reader getReader() {
         return this.reader;
     }
 
+    @Override
     public PacketListener getReaderListener() {
         return this.listener;
     }
 
+    @Override
     public Writer getWriter() {
         return this.writer;
     }
 
+    @Override
     public PacketListener getWriterListener() {
         return null;
     }
 
+    @Override
     public Reader newConnectionReader(Reader newReader) {
         LoggingFilterReader debugReader = new LoggingFilterReader(newReader,
                 LOGGER, MIN_LOG_LEVEL);
@@ -125,6 +130,7 @@ public class JabberConnectionDebugger implements SmackDebugger {
         return this.reader;
     }
 
+    @Override
     public Writer newConnectionWriter(Writer newWriter) {
         LoggingFilterWriter debugWriter = new LoggingFilterWriter(newWriter,
                 LOGGER, MIN_LOG_LEVEL); 
@@ -132,6 +138,7 @@ public class JabberConnectionDebugger implements SmackDebugger {
         return this.writer;
     }
 
+    @Override
     public void userHasLogged(String user) {
         if (LOGGER.isLoggable(MIN_LOG_LEVEL)) {
             boolean isAnonymous = "".equals(StringUtils.parseName(user));

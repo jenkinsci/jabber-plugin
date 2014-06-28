@@ -28,6 +28,7 @@ class JabberMUCMessageListenerAdapter implements PacketListener {
         this.muc = muc;
     }
 
+    @Override
     public void processPacket(Packet p) {
         if (p instanceof Message) {
             // don't react to old messages

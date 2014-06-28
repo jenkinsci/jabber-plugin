@@ -146,6 +146,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.impresence = desc.isExposePresence() ? IMPresence.AVAILABLE : IMPresence.UNAVAILABLE;
 	}
 
+    @Override
 	public boolean connect() {
 	    lock();
 	    try {
@@ -197,6 +198,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 	}
 
+    @Override
     public void close() {
 	    lock();
 	    try {
@@ -564,6 +566,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	 * This implementation ignores the new presence if
 	 * {@link JabberPublisherDescriptor#isExposePresence()} is false.
 	 */
+    @Override
 	public void setPresence(final IMPresence impresence, String statusMessage)
 			throws IMException {
 		Assert.notNull(impresence, "Parameter 'impresence' must not be null.");
@@ -628,7 +631,8 @@ class JabberIMConnection extends AbstractIMConnection {
             // ignore
         }
 	}
-	
+
+    @Override
     public boolean isConnected() {
 	    lock();
 		try {
@@ -662,6 +666,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		try {
 			ConnectionListener l = new ConnectionListener() {
 
+                @Override
 				public void connectionClosedOnError(Exception e) {
 					listener.connectionBroken(e);
 				}
@@ -672,13 +677,19 @@ class JabberIMConnection extends AbstractIMConnection {
                 public void authenticated(XMPPConnection connection) {
                 }
 
+                @Override
                 public void connectionClosed() {
 				}
 
+                @Override
 				public void reconnectingIn(int paramInt) {
 				}
+
+                @Override
 				public void reconnectionFailed(Exception paramException) {
 				}
+
+                @Override
 				public void reconnectionSuccessful() {
 				}
 			};
@@ -689,6 +700,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 	}
 
+    @Override
 	public void removeConnectionListener(IMConnectionListener listener) {
 		lock();
 		try {

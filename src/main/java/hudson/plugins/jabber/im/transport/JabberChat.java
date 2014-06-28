@@ -32,10 +32,12 @@ public class JabberChat implements IMChat {
         }
     }
 
+    @Override
     public String getNickName(String sender) {
     	return JabberUtil.getUserPart(sender);
     }
 
+    @Override
     public String getIMId(String senderId) {
         return JabberUtil.getUserPart(senderId) + '@' + JabberUtil.getDomainPart(senderId);
     }
@@ -54,6 +56,7 @@ public class JabberChat implements IMChat {
         return false;
     }
 
+    @Override
     public boolean isCommandsAccepted() {
         return true;
     }

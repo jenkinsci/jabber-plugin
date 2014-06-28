@@ -25,7 +25,8 @@ class JabberMessageListenerAdapter implements MessageListener {
         this.listener = listener;
         this.connection = connection;
     }
-    
+
+    @Override
 	public void processMessage(Chat chat, Message msg) {
 		// don't react to old messages
         for (PacketExtension pe : msg.getExtensions()) {

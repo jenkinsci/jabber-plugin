@@ -31,6 +31,10 @@ class JabberIMMessageTargetConverter implements IMMessageTargetConverter {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public IMMessageTarget fromString(final String targetAsString) throws IMMessageTargetConversionException {
         String f = targetAsString.trim();
         if (f.length() > 0)
@@ -60,6 +64,10 @@ class JabberIMMessageTargetConverter implements IMMessageTargetConverter {
         }
     }
 
+   /**
+    * {@inheritDoc}
+    */
+    @Override
 	public String toString(final IMMessageTarget target) {
         Assert.notNull(target, "Parameter 'target' must not be null.");
         return target.toString();
