@@ -14,7 +14,6 @@ import hudson.plugins.im.IMMessageTarget;
 import hudson.plugins.im.IMPresence;
 import hudson.plugins.im.bot.Bot;
 import hudson.plugins.im.tools.ExceptionHelper;
-import hudson.util.IOUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -32,6 +31,7 @@ import java.util.logging.Logger;
 import javax.net.ssl.SSLSocketFactory;
 import javax.security.sasl.SaslException;
 
+import org.apache.commons.io.IOUtils;
 import org.jivesoftware.smack.AbstractConnectionListener;
 import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.ChatManager;
