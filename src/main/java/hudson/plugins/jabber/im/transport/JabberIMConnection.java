@@ -293,7 +293,10 @@ class JabberIMConnection extends AbstractIMConnection {
 		//SASLAuthentication.unregisterSASLMechanism("GSSAPI");
         // Not needed any more sasl by default
         //cfg.setSASLAuthenticationEnabled(this.enableSASL);
-
+		// FIXME: as long as we're still offering the enableSASL option, we should also respect it?
+		// E.g.
+		// mechs = SmackConfiguration.getSaslMechs();
+		// SmackConfiguration.removeSaslMechs(mechs)
 
         StringBuilder hosts = new StringBuilder();
         for(HostAddress host : cfg.getHostAddresses()) {
