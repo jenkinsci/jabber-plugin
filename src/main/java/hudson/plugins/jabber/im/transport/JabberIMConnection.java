@@ -30,8 +30,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import javax.net.ssl.SSLSocketFactory;
+import javax.security.sasl.SaslException;
 
+import org.jivesoftware.smack.AbstractConnectionListener;
 import org.jivesoftware.smack.Chat;
+import org.jivesoftware.smack.ChatManager;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.PacketListener;
@@ -40,12 +43,11 @@ import org.jivesoftware.smack.Roster.SubscriptionMode;
 import org.jivesoftware.smack.RosterEntry;
 import org.jivesoftware.smack.SASLAuthentication;
 import org.jivesoftware.smack.SmackConfiguration;
+import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smack.filter.AndFilter;
 import org.jivesoftware.smack.filter.MessageTypeFilter;
 import org.jivesoftware.smack.filter.PacketFilter;
-import org.jivesoftware.smack.filter.ToContainsFilter;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.PacketExtension;
@@ -54,11 +56,13 @@ import org.jivesoftware.smack.packet.RosterPacket.ItemType;
 import org.jivesoftware.smack.packet.XMPPError.Condition;
 import org.jivesoftware.smack.proxy.ProxyInfo;
 import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
+import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.util.StringUtils;
+import org.jivesoftware.smack.util.dns.HostAddress;
 import org.jivesoftware.smackx.muc.MultiUserChat;
-import org.jivesoftware.smackx.packet.DelayInformation;
-import org.jivesoftware.smackx.packet.Nick;
-import org.jivesoftware.smackx.packet.VCard;
+import org.jivesoftware.smackx.delay.packet.DelayInformation;
+import org.jivesoftware.smackx.nick.packet.Nick;
+import org.jivesoftware.smackx.vcardtemp.packet.VCard;
 import org.springframework.util.Assert;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -68,6 +72,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * 
  * @author kutzi
  * @author Uwe Schaefer (original author)
+ * @author jenky-hm
  */
 class JabberIMConnection extends AbstractIMConnection {
 	
@@ -126,7 +131,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	private final int proxyport;
 
 	static {
-		SmackConfiguration.setPacketReplyTimeout(20000);
+		SmackConfiguration.setDefaultPacketReplyTimeout(20000);
 		
 		System.setProperty("smack.debuggerClass", JabberConnectionDebugger.class.getName());
 	}
@@ -163,7 +168,7 @@ class JabberIMConnection extends AbstractIMConnection {
 						LOGGER.info("Connected to XMPP on "
 								+ this.connection.getHost() + ":" + this.connection.getPort()
 								+ "/" + this.connection.getServiceName()
-								+ (this.connection.isUsingTLS() ? " using TLS" : "")
+								+ (this.connection.isSecureConnection() ? " using secure connection" : "")
 								+ (this.connection.isUsingCompression() ? " using compression" : ""));
 			
 						// kutzi: I've read somewhere that status must be set, before one can do anything other
@@ -234,7 +239,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 	}
 
-	private boolean createConnection() throws XMPPException {
+	private boolean createConnection() throws XMPPException, SaslException, SmackException, IOException {
 		if (this.connection != null) {
 			try {
 				this.connection.disconnect();
@@ -286,22 +291,32 @@ class JabberIMConnection extends AbstractIMConnection {
 		SASLAuthentication.unregisterSASLMechanism("DIGEST-MD5");
 		
 		//SASLAuthentication.unregisterSASLMechanism("GSSAPI");
+        // Not needed any more sasl by default
+        //cfg.setSASLAuthenticationEnabled(this.enableSASL);
 
-        cfg.setSASLAuthenticationEnabled(this.enableSASL);
-        
+
+        StringBuilder hosts = new StringBuilder();
+        for(HostAddress host : cfg.getHostAddresses()) {
+        	if (hosts.length() > 0) {
+        		hosts.append(", ");
+        	}
+            hosts.append(host.getFQDN() + ":"+ host.getPort());
+        }
+
         LOGGER.info("Trying to connect to XMPP on "
-                + cfg.getHost() + ":" + cfg.getPort()
+                + hosts
                 + "/" + cfg.getServiceName()
-                + (cfg.isSASLAuthenticationEnabled() ? " with SASL" : "")
+                // not needed
+                //+ (cfg.isSASLAuthenticationEnabled() ? " with SASL" : "")
                 + (cfg.isCompressionEnabled() ? " using compression" : "")
                 + (pi.getProxyType() != ProxyInfo.ProxyType.NONE ? " via proxy " + pi.getProxyType() + " "
                         + pi.getProxyAddress() + ":" + pi.getProxyPort() : "")
                 );
 
         boolean retryWithLegacySSL = false;
-        Exception originalException = null;
+        XMPPException originalException = null;
 		try {
-			this.connection = new XMPPConnection(cfg);
+			this.connection = new XMPPTCPConnection(cfg);
 			this.connection.connect();
 			if (!this.connection.isConnected()) {
 				retryWithLegacySSL = true;
@@ -309,9 +324,13 @@ class JabberIMConnection extends AbstractIMConnection {
 		} catch (XMPPException e) {
 			retryWithLegacySSL = true;
 			originalException = e;
-		}
-		
-		if (retryWithLegacySSL) {
+		} catch (SmackException e) {
+            LOGGER.warning(ExceptionHelper.dump(e));
+        } catch (IOException e) {
+            LOGGER.warning(ExceptionHelper.dump(e));
+        }
+
+        if (retryWithLegacySSL) {
 			retryConnectionWithLegacySSL(cfg, originalException);
 		}
 
@@ -334,24 +353,29 @@ class JabberIMConnection extends AbstractIMConnection {
 	 * See JENKINS-6863
 	 */
 	private void retryConnectionWithLegacySSL(
-			final ConnectionConfiguration cfg, Exception originalException)
+			final ConnectionConfiguration cfg, XMPPException originalException)
 			throws XMPPException {
 		try {
 			LOGGER.info("Retrying connection with legacy SSL");
 			cfg.setSocketFactory(SSLSocketFactory.getDefault());
-			this.connection = new XMPPConnection(cfg);
+			this.connection = new XMPPTCPConnection(cfg);
 			this.connection.connect();
 		} catch (XMPPException e) {
 			if (originalException != null) {
 				// use the original connection exception as legacy SSL should only
 				// be a fallback
 			    LOGGER.warning("Retrying with legacy SSL failed: " + e.getMessage());
-				throw new XMPPException("Exception of original (without legacy SSL) connection attempt", originalException);
+			    throw originalException; 
+				//throw new XMPPException("Exception of original (without legacy SSL) connection attempt", originalException);
 			} else {
-				throw new XMPPException(e);
+				throw e;
 			}
-		}
-	}
+		} catch (SmackException e) {
+            LOGGER.warning(ExceptionHelper.dump(e));
+        } catch (IOException e) {
+            LOGGER.warning(ExceptionHelper.dump(e));
+        }
+    }
 
 	/**
 	 * Sets the chosen subscription mode on our connection.
@@ -378,8 +402,12 @@ class JabberIMConnection extends AbstractIMConnection {
     	    }
 		} catch (XMPPException e) {
 			LOGGER.warning(ExceptionHelper.dump(e));
-		}
-	}
+		} catch (SmackException.NotConnectedException e) {
+            LOGGER.warning(ExceptionHelper.dump(e));
+        } catch (SmackException.NoResponseException e) {
+            LOGGER.warning(ExceptionHelper.dump(e));
+        }
+    }
 	
 	// Unfortunately the Smack API doesn't specify what concretely happens, if a vCard doesn't exist, yet.
 	// It could be just an empty vCard or an XMPPException thrown.
@@ -394,20 +422,28 @@ class JabberIMConnection extends AbstractIMConnection {
             }
             return false;
         } catch (XMPPException e) {
-            // See http://xmpp.org/extensions/xep-0054.html#sect-id304495
-            if (e.getXMPPError() != null && Condition.item_not_found.toString().equals(e.getXMPPError().getCondition())) {
-                return false;
+            if (e instanceof  XMPPException.XMPPErrorException){
+                XMPPException.XMPPErrorException ex =(XMPPException.XMPPErrorException) e;
+                // See http://xmpp.org/extensions/xep-0054.html#sect-id304495
+                if (ex.getXMPPError() != null && Condition.item_not_found.toString().equals(ex.getXMPPError().getCondition())) {
+                    return false;
+                }
             }
             
             // there was probably a 'real' problem
-            throw new XMPPException(e);
+            throw e;
+        } catch (SmackException.NotConnectedException e) {
+            LOGGER.warning(ExceptionHelper.dump(e));
+        } catch (SmackException.NoResponseException e) {
+            LOGGER.warning(ExceptionHelper.dump(e));
         }
-	}
+        return false;
+    }
 
 	/**
 	 * Constructs a vCard for Mr Jenkins.
 	 */
-	private void createVCard() throws XMPPException {
+	private void createVCard() throws XMPPException, SmackException.NotConnectedException, SmackException.NoResponseException {
 
 		VCard vCard = new VCard();
 		vCard.setFirstName("Mr.");
@@ -438,12 +474,16 @@ class JabberIMConnection extends AbstractIMConnection {
 	 * Listens on the connection for private chat requests.
 	 */
 	private void listenForPrivateChats() {
-		PacketFilter filter = new AndFilter(new MessageTypeFilter(Message.Type.chat), 
-				new ToContainsFilter(this.desc.getUserName()));
+		//PacketFilter filter = new AndFilter(new MessageTypeFilter(Message.Type.chat),
+		//		new ToContainsFilter(this.desc.getUserName()));
 		// Actually, this should be the full user name (including '@server')
 		// but since via this connection only message to me should be delivered (right?)
 		// this doesn't matter anyway.
-		
+
+
+        // TODO: ToContainsFilter which was in Smack 4.0.0!?
+        PacketFilter filter = new MessageTypeFilter(Message.Type.chat);
+
 		PacketListener listener = new PrivateChatListener();
 		this.connection.addPacketListener(listener, filter);
 	}
@@ -462,7 +502,10 @@ class JabberIMConnection extends AbstractIMConnection {
 			} catch (XMPPException e) {
 				LOGGER.warning("Cannot join group chat '" + chat + "'. Exception:\n" + ExceptionHelper.dump(e));
 				throw new IMException(e);
-			}
+			} catch (SmackException e) {
+                LOGGER.warning("Cannot join group chat '" + chat + "'. Exception:\n" + ExceptionHelper.dump(e));
+                throw new IMException(e);
+            }
 
 			// get rid of old messages:
 			while (groupChat.pollMessage() != null) {
@@ -487,7 +530,7 @@ class JabberIMConnection extends AbstractIMConnection {
 			}
 		}
 		
-		final Chat chat = this.connection.getChatManager().createChat(chatPartner, null);
+		final Chat chat = ChatManager.getInstanceFor(this.connection).createChat(chatPartner, null);
 		Bot bot = new Bot(new JabberChat(chat, this), this.groupChatNick,
 					this.desc.getHost(), this.botCommandPrefix, this.authentication);
 		this.bots.add(bot);
@@ -522,6 +565,8 @@ class JabberIMConnection extends AbstractIMConnection {
             	// one.
                 LOGGER.warning(ExceptionHelper.dump(e));
             	// TODO ? tryReconnect();
+            } catch (SmackException.NotConnectedException e) {
+                LOGGER.warning(ExceptionHelper.dump(e));
             } finally {
                 unlock();
             }
@@ -590,6 +635,8 @@ class JabberIMConnection extends AbstractIMConnection {
             	
             	presence.addExtension(new Nick(this.nick));
             	this.connection.sendPacket(presence);
+            } catch (SmackException.NotConnectedException e) {
+                LOGGER.warning(ExceptionHelper.dump(e));
             } finally {
                 unlock();
             }
@@ -632,24 +679,10 @@ class JabberIMConnection extends AbstractIMConnection {
 	public void addConnectionListener(final IMConnectionListener listener) {
 		lock();
 		try {
-			ConnectionListener l = new ConnectionListener() {
+			ConnectionListener l = new AbstractConnectionListener() {
 				@Override
 				public void connectionClosedOnError(Exception e) {
 					listener.connectionBroken(e);
-				}
-				
-				@Override
-				public void connectionClosed() {
-				}
-				
-				@Override
-				public void reconnectingIn(int paramInt) {
-				}
-				@Override
-				public void reconnectionFailed(Exception paramException) {
-				}
-				@Override
-				public void reconnectionSuccessful() {
 				}
 			};
 			listeners.put(listener, l);
