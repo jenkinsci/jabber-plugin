@@ -354,7 +354,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	 */
 	private void retryConnectionWithLegacySSL(
 			final ConnectionConfiguration cfg, XMPPException originalException)
-			throws XMPPException {
+			throws XMPPException, SmackException {
 		try {
 			LOGGER.info("Retrying connection with legacy SSL");
 			cfg.setSocketFactory(SSLSocketFactory.getDefault());
@@ -365,10 +365,9 @@ class JabberIMConnection extends AbstractIMConnection {
 				// use the original connection exception as legacy SSL should only
 				// be a fallback
 			    LOGGER.warning("Retrying with legacy SSL failed: " + e.getMessage());
-			    throw originalException; 
-				//throw new XMPPException("Exception of original (without legacy SSL) connection attempt", originalException);
+				throw new SmackException("Exception of original (without legacy SSL) connection attempt", originalException);
 			} else {
-				throw e;
+				throw new SmackException(e);
 			}
 		} catch (SmackException e) {
             LOGGER.warning(ExceptionHelper.dump(e));
