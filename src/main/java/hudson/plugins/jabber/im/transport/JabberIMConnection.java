@@ -41,7 +41,6 @@ import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.Roster.SubscriptionMode;
 import org.jivesoftware.smack.RosterEntry;
-import org.jivesoftware.smack.SASLAuthentication;
 import org.jivesoftware.smack.SmackConfiguration;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPConnection;
@@ -114,7 +113,6 @@ class JabberIMConnection extends AbstractIMConnection {
 	private IMPresence impresence;
 
     private String imStatusMessage;
-    private boolean enableSASL;
 
     private final JabberPublisherDescriptor desc;
     private final AuthenticationHolder authentication;
@@ -146,7 +144,6 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.nick = desc.getNickname();
 		this.resource = StringUtils.parseResource(desc.getJabberId());
 		this.passwd = desc.getPassword();
-        this.enableSASL = desc.isEnableSASL();
 		this.proxytype = desc.getProxyType();
 		this.proxyhost = desc.getProxyHost();
 		this.proxyport = desc.getProxyPort();
@@ -284,20 +281,6 @@ class JabberIMConnection extends AbstractIMConnection {
 		
 		cfg.setDebuggerEnabled(true);
 
-		// try workaround for SASL error in Smack 3.1.0
-		// See: JENKINS-6032
-		// http://www.igniterealtime.org/community/message/198558
-		// and also http://www.igniterealtime.org/community/message/201908#201908
-		SASLAuthentication.unregisterSASLMechanism("DIGEST-MD5");
-		
-		//SASLAuthentication.unregisterSASLMechanism("GSSAPI");
-        // Not needed any more sasl by default
-        //cfg.setSASLAuthenticationEnabled(this.enableSASL);
-		// FIXME: as long as we're still offering the enableSASL option, we should also respect it?
-		// E.g.
-		// mechs = SmackConfiguration.getSaslMechs();
-		// SmackConfiguration.removeSaslMechs(mechs)
-
         StringBuilder hosts = new StringBuilder();
         for(HostAddress host : cfg.getHostAddresses()) {
         	if (hosts.length() > 0) {
@@ -309,8 +292,6 @@ class JabberIMConnection extends AbstractIMConnection {
         LOGGER.info("Trying to connect to XMPP on "
                 + hosts
                 + "/" + cfg.getServiceName()
-                // not needed
-                //+ (cfg.isSASLAuthenticationEnabled() ? " with SASL" : "")
                 + (cfg.isCompressionEnabled() ? " using compression" : "")
                 + (pi.getProxyType() != ProxyInfo.ProxyType.NONE ? " via proxy " + pi.getProxyType() + " "
                         + pi.getProxyAddress() + ":" + pi.getProxyPort() : "")

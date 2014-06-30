@@ -58,7 +58,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public static final String PARAMETERNAME_PROXYUSER = PREFIX + "proxyUser";
     public static final String PARAMETERNAME_PROXYPASS = PREFIX + "proxyPass";
     public static final String PARAMETERNAME_SSL = PREFIX + "ssl";
-    public static final String PARAMETERNAME_SASL = PREFIX + "enableSASL";
     public static final String PARAMETERNAME_PRESENCE = PREFIX + "exposePresence";
     public static final String PARAMETERNAME_PASSWORD = PREFIX + "password";
     public static final String PARAMETERNAME_JABBERID = PREFIX + "jabberId";
@@ -113,7 +112,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      */
     private String groupChatNickname;
     private boolean exposePresence = true;
-    private boolean enableSASL = true;
 
     /**
      * Marks if passwords are scrambled as they are since 1.23.
@@ -453,10 +451,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         else            return String.valueOf(port);
     }
 
-    public boolean isEnableSASL() {
-        return enableSASL;
-    }
-
     public boolean isExposePresence() {
         return this.exposePresence;
     }
@@ -589,7 +583,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 		String en = req.getParameter(PARAMETERNAME_ENABLED);
 		this.enabled = Boolean.valueOf(en != null);
 		this.exposePresence = req.getParameter(PARAMETERNAME_PRESENCE) != null;
-        this.enableSASL = req.getParameter(PARAMETERNAME_SASL) != null;
 		this.subscriptionMode = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_SUBSCRIPTION_MODE));
 		this.emailAddressAsJabberId = req.getParameter(PARAMETERNAME_EMAIL_ADDRESS_AS_JABBERID) != null;
         applyHostname(req, this.enabled);
