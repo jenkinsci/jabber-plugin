@@ -434,7 +434,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         if (Util.fixEmptyAndTrim(this.groupChatNickname) != null) {
             return this.groupChatNickname;
         } else {
-            return JabberUtil.getUserPart(getJabberId());
+            return org.jivesoftware.smack.util.StringUtils.parseName(getJabberId());
         }
     }
     
@@ -637,9 +637,9 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	    } else if (Util.fixEmptyAndTrim(hostname) != null) {
 	    	// validation has already been done for the hostname field
 	    	return FormValidation.ok();
-	    } else if (JabberUtil.getDomainPart(jabberId) != null) {
+	    } else if (org.jivesoftware.smack.util.StringUtils.parseServer(jabberId) != null) {
 			String pts = Util.fixEmptyAndTrim(proxyType);
-	        String host = JabberUtil.getDomainPart(jabberId);
+	        String host = org.jivesoftware.smack.util.StringUtils.parseServer(jabberId);
 			ProxyType pt = ProxyType.NONE;
 	        try {
 				if (pts != null) {
@@ -770,7 +770,12 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	 */
 	@Override
 	public String getUserName() {
-		return JabberUtil.getUserPart(getJabberId());
+		String jabberId = getJabberId();
+		String res = org.jivesoftware.smack.util.StringUtils.parseName(jabberId);
+		if (res.isEmpty()) {
+			return jabberId;
+		}
+		return res;
 	}
 	
 	/**
@@ -778,7 +783,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      * null if not found.
      */
     String getServiceName() {
-        return JabberUtil.getDomainPart(getJabberId());
+        return org.jivesoftware.smack.util.StringUtils.parseServer(getJabberId());
     }
 
 	@Override

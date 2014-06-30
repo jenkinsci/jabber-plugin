@@ -144,7 +144,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.hostnameOverride = desc.getHostname();
 		this.port = desc.getPort();
 		this.nick = desc.getNickname();
-		this.resource = JabberUtil.getResourcePart(desc.getJabberId());
+		this.resource = StringUtils.parseResource(desc.getJabberId());
 		this.passwd = desc.getPassword();
         this.enableSASL = desc.isEnableSASL();
 		this.proxytype = desc.getProxyType();
