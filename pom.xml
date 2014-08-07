@@ -53,13 +53,13 @@
         <dependency>
             <groupId>org.igniterealtime.smack</groupId>
             <artifactId>smack-extensions</artifactId>
-            <version>4.0.0</version>
+            <version>4.0.2</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.igniterealtime.smack</groupId>
             <artifactId>smack-resolver-javax</artifactId>
-            <version>4.0.0</version>
+            <version>4.0.2</version>
             <scope>compile</scope>
         </dependency>
         <!--  <dependency>
@@ -71,7 +71,7 @@
         <dependency>
             <groupId>org.igniterealtime.smack</groupId>
             <artifactId>smack-tcp</artifactId>
-            <version>4.0.0</version>
+            <version>4.0.2</version>
             <scope>compile</scope>
         </dependency>
 <!--        <dependency>
