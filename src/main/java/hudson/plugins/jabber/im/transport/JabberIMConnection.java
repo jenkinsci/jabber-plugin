@@ -281,16 +281,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		
 		cfg.setDebuggerEnabled(true);
 
-        StringBuilder hosts = new StringBuilder();
-        for(HostAddress host : cfg.getHostAddresses()) {
-        	if (hosts.length() > 0) {
-        		hosts.append(", ");
-        	}
-            hosts.append(host.getFQDN() + ":"+ host.getPort());
-        }
-
         LOGGER.info("Trying to connect to XMPP on "
-                + hosts
                 + "/" + cfg.getServiceName()
                 + (cfg.isCompressionEnabled() ? " using compression" : "")
                 + (pi.getProxyType() != ProxyInfo.ProxyType.NONE ? " via proxy " + pi.getProxyType() + " "
