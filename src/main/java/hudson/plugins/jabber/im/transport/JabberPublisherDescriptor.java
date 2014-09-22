@@ -68,6 +68,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public static final String PARAMETERNAME_DEFAULT_ID_SUFFIX = PREFIX + "defaultIdSuffix";
     public static final String PARAMETERNAME_SUBSCRIPTION_MODE = PREFIX + "subscriptionMode";
     public static final String PARAMETERNAME_EMAIL_ADDRESS_AS_JABBERID = PREFIX + "emailAsJabberId";
+    public static final String PARAMETERNAME_ACCEPT_ALL_CERTS = PREFIX + "acceptAllCerts";
     public static final String[] PARAMETERVALUE_SUBSCRIPTION_MODE;
     public static final String[] PARAMETERVALUE_PROXYTYPES;
     static {
@@ -112,6 +113,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      */
     private String groupChatNickname;
     private boolean exposePresence = true;
+
+    private boolean acceptAllCerts;
 
     /**
      * Marks if passwords are scrambled as they are since 1.23.
@@ -507,6 +510,10 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         return this.proxyType.name();
     }
 
+    public boolean isAcceptAllCerts() {
+        return this.acceptAllCerts;
+    }
+
     /**
      * Creates a new instance of {@link JabberPublisher} from a submitted form.
      */
@@ -585,6 +592,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 		this.exposePresence = req.getParameter(PARAMETERNAME_PRESENCE) != null;
 		this.subscriptionMode = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_SUBSCRIPTION_MODE));
 		this.emailAddressAsJabberId = req.getParameter(PARAMETERNAME_EMAIL_ADDRESS_AS_JABBERID) != null;
+		this.acceptAllCerts = req.getParameter(PARAMETERNAME_ACCEPT_ALL_CERTS) != null;
         applyHostname(req, this.enabled);
         applyPort(req, this.enabled);
         applyNickname(req, this.enabled);

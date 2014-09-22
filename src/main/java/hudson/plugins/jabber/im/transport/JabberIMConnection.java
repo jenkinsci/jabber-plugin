@@ -19,6 +19,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,7 +33,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import javax.security.sasl.SaslException;
 
 import org.apache.commons.io.IOUtils;
@@ -128,6 +136,8 @@ class JabberIMConnection extends AbstractIMConnection {
 	private final String proxypass;
 	private final int proxyport;
 
+	private final boolean acceptAllCerts;
+
 	static {
 		SmackConfiguration.setDefaultPacketReplyTimeout(20000);
 		
@@ -153,6 +163,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.botCommandPrefix = desc.getCommandPrefix();
 		this.groupChats = desc.getDefaultTargets();
 		this.impresence = desc.isExposePresence() ? IMPresence.AVAILABLE : IMPresence.UNAVAILABLE;
+		this.acceptAllCerts = desc.isAcceptAllCerts();
 	}
 
 	@Override
@@ -236,7 +247,9 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 	}
 
-	private boolean createConnection() throws XMPPException, SaslException, SmackException, IOException {
+	private boolean createConnection() throws XMPPException, SaslException,
+			SmackException, IOException, NoSuchAlgorithmException,
+			KeyManagementException {
 		if (this.connection != null) {
 			try {
 				this.connection.disconnect();
@@ -280,6 +293,29 @@ class JabberIMConnection extends AbstractIMConnection {
 		cfg.setReconnectionAllowed(false);
 		
 		cfg.setDebuggerEnabled(true);
+
+		if (acceptAllCerts) {
+			SSLContext context = SSLContext.getInstance("TLS");
+			// Install an "accept all" trust manager
+			X509TrustManager tm = new X509TrustManager() {
+				@Override
+				public void checkClientTrusted(X509Certificate[] arg0,
+						String arg1) throws CertificateException {
+					// Nothing to do here
+				}
+				@Override
+				public void checkServerTrusted(X509Certificate[] arg0,
+						String arg1) throws CertificateException {
+					// Nothing to do here
+				}
+				@Override
+				public X509Certificate[] getAcceptedIssuers() {
+					return new X509Certificate[0];
+				}
+			};
+			context.init(null, new TrustManager[] { tm }, new SecureRandom());
+			cfg.setCustomSSLContext(context);
+		}
 
         LOGGER.info("Trying to connect to XMPP on "
                 + "/" + cfg.getServiceName()
