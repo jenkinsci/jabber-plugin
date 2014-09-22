@@ -21,7 +21,9 @@ import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.security.Principal;
 import java.security.SecureRandom;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
@@ -33,10 +35,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import javax.security.auth.kerberos.KerberosPrincipal;
 import javax.security.sasl.SaslException;
 
 import org.apache.commons.io.IOUtils;
@@ -72,6 +78,7 @@ import org.jivesoftware.smackx.nick.packet.Nick;
 import org.jivesoftware.smackx.vcardtemp.packet.VCard;
 import org.springframework.util.Assert;
 
+import sun.security.util.HostnameChecker;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
@@ -295,6 +302,8 @@ class JabberIMConnection extends AbstractIMConnection {
 		cfg.setDebuggerEnabled(true);
 
 		if (acceptAllCerts) {
+			// TODO Smack 4.1 provides TLSUtil.acceptAllCertificates, replace
+			// the code here with the code provided by Smack
 			SSLContext context = SSLContext.getInstance("TLS");
 			// Install an "accept all" trust manager
 			X509TrustManager tm = new X509TrustManager() {
@@ -315,6 +324,62 @@ class JabberIMConnection extends AbstractIMConnection {
 			};
 			context.init(null, new TrustManager[] { tm }, new SecureRandom());
 			cfg.setCustomSSLContext(context);
+			cfg.setHostnameVerifier(new HostnameVerifier() {
+				@Override
+				public boolean verify(String arg0, SSLSession arg1) {
+					return true;
+				}
+			});
+		} else {
+			// TODO This hostname verifier is the default in Smack 4.1 when
+			// smack-java7 is used, remove the code once Smack 4.1 is used
+			cfg.setHostnameVerifier(new HostnameVerifier() {
+				@Override
+				public boolean verify(String hostname, SSLSession session) {
+					HostnameChecker checker = HostnameChecker
+							.getInstance(HostnameChecker.TYPE_TLS);
+
+					boolean validCertificate = false, validPrincipal = false;
+					try {
+						Certificate[] peerCertificates = session
+								.getPeerCertificates();
+
+						if (peerCertificates.length > 0
+								&& peerCertificates[0] instanceof X509Certificate) {
+							X509Certificate peerCertificate = (X509Certificate) peerCertificates[0];
+
+							try {
+								checker.match(hostname, peerCertificate);
+								// Certificate matches hostname
+								validCertificate = true;
+							} catch (CertificateException ex) {
+								// Certificate does not match hostname
+							}
+						} else {
+							// Peer does not have any certificates or they
+							// aren't X.509
+						}
+					} catch (SSLPeerUnverifiedException ex) {
+						// Not using certificates for peers, try verifying the
+						// principal
+						try {
+							Principal peerPrincipal = session
+									.getPeerPrincipal();
+							if (peerPrincipal instanceof KerberosPrincipal) {
+								validPrincipal = HostnameChecker.match(
+										hostname,
+										(KerberosPrincipal) peerPrincipal);
+							} else {
+								// Can't verify principal, not Kerberos
+							}
+						} catch (SSLPeerUnverifiedException ex2) {
+							// Can't verify principal, no principal
+						}
+					}
+
+					return validCertificate || validPrincipal;
+				}
+			});
 		}
 
         LOGGER.info("Trying to connect to XMPP on "
