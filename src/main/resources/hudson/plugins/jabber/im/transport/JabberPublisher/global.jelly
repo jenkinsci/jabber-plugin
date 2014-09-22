@@ -51,9 +51,9 @@
       <f:entry title="E-mail address as Jabber ID" help="${base}/help-email-address-as-jabberid.html">
         <f:checkbox name="${descriptor.PARAMETERNAME_EMAIL_ADDRESS_AS_JABBERID}" checked="${descriptor.emailAddressAsJabberId}"/>
       </f:entry>
-         <f:entry title="Enable SASL authentication" help="${base}/help-sasl.html">
-			  <f:checkbox name="${descriptor.PARAMETERNAME_SASL}" checked="${descriptor.enableSASL}"/>
-		</f:entry>
+	  <f:entry title="Accept all SSL/TLS certificates" help="${base}/help-accept-all-certs.html">
+        <f:checkbox name="${descriptor.PARAMETERNAME_ACCEPT_ALL_CERTS}" checked="${descriptor.acceptAllCerts}"/>
+      </f:entry>
       <f:entry title="Expose presence" help="${base}/help-presence.html">
         <f:checkbox name="${descriptor.PARAMETERNAME_PRESENCE}" checked="${descriptor.exposePresence}"/>
       </f:entry>

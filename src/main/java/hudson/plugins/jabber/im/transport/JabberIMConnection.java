@@ -19,6 +19,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.Principal;
+import java.security.SecureRandom;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,7 +35,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import javax.security.auth.kerberos.KerberosPrincipal;
 import javax.security.sasl.SaslException;
 
 import org.apache.commons.io.IOUtils;
@@ -41,7 +55,6 @@ import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.Roster.SubscriptionMode;
 import org.jivesoftware.smack.RosterEntry;
-import org.jivesoftware.smack.SASLAuthentication;
 import org.jivesoftware.smack.SmackConfiguration;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPConnection;
@@ -65,6 +78,7 @@ import org.jivesoftware.smackx.nick.packet.Nick;
 import org.jivesoftware.smackx.vcardtemp.packet.VCard;
 import org.springframework.util.Assert;
 
+import sun.security.util.HostnameChecker;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
@@ -114,7 +128,6 @@ class JabberIMConnection extends AbstractIMConnection {
 	private IMPresence impresence;
 
     private String imStatusMessage;
-    private boolean enableSASL;
 
     private final JabberPublisherDescriptor desc;
     private final AuthenticationHolder authentication;
@@ -130,6 +143,8 @@ class JabberIMConnection extends AbstractIMConnection {
 	private final String proxypass;
 	private final int proxyport;
 
+	private final boolean acceptAllCerts;
+
 	static {
 		SmackConfiguration.setDefaultPacketReplyTimeout(20000);
 		
@@ -144,9 +159,8 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.hostnameOverride = desc.getHostname();
 		this.port = desc.getPort();
 		this.nick = desc.getNickname();
-		this.resource = JabberUtil.getResourcePart(desc.getJabberId());
+		this.resource = StringUtils.parseResource(desc.getJabberId());
 		this.passwd = desc.getPassword();
-        this.enableSASL = desc.isEnableSASL();
 		this.proxytype = desc.getProxyType();
 		this.proxyhost = desc.getProxyHost();
 		this.proxyport = desc.getProxyPort();
@@ -156,6 +170,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.botCommandPrefix = desc.getCommandPrefix();
 		this.groupChats = desc.getDefaultTargets();
 		this.impresence = desc.isExposePresence() ? IMPresence.AVAILABLE : IMPresence.UNAVAILABLE;
+		this.acceptAllCerts = desc.isAcceptAllCerts();
 	}
 
 	@Override
@@ -239,7 +254,9 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 	}
 
-	private boolean createConnection() throws XMPPException, SaslException, SmackException, IOException {
+	private boolean createConnection() throws XMPPException, SaslException,
+			SmackException, IOException, NoSuchAlgorithmException,
+			KeyManagementException {
 		if (this.connection != null) {
 			try {
 				this.connection.disconnect();
@@ -284,33 +301,89 @@ class JabberIMConnection extends AbstractIMConnection {
 		
 		cfg.setDebuggerEnabled(true);
 
-		// try workaround for SASL error in Smack 3.1.0
-		// See: JENKINS-6032
-		// http://www.igniterealtime.org/community/message/198558
-		// and also http://www.igniterealtime.org/community/message/201908#201908
-		SASLAuthentication.unregisterSASLMechanism("DIGEST-MD5");
-		
-		//SASLAuthentication.unregisterSASLMechanism("GSSAPI");
-        // Not needed any more sasl by default
-        //cfg.setSASLAuthenticationEnabled(this.enableSASL);
-		// FIXME: as long as we're still offering the enableSASL option, we should also respect it?
-		// E.g.
-		// mechs = SmackConfiguration.getSaslMechs();
-		// SmackConfiguration.removeSaslMechs(mechs)
+		if (acceptAllCerts) {
+			// TODO Smack 4.1 provides TLSUtil.acceptAllCertificates, replace
+			// the code here with the code provided by Smack
+			SSLContext context = SSLContext.getInstance("TLS");
+			// Install an "accept all" trust manager
+			X509TrustManager tm = new X509TrustManager() {
+				@Override
+				public void checkClientTrusted(X509Certificate[] arg0,
+						String arg1) throws CertificateException {
+					// Nothing to do here
+				}
+				@Override
+				public void checkServerTrusted(X509Certificate[] arg0,
+						String arg1) throws CertificateException {
+					// Nothing to do here
+				}
+				@Override
+				public X509Certificate[] getAcceptedIssuers() {
+					return new X509Certificate[0];
+				}
+			};
+			context.init(null, new TrustManager[] { tm }, new SecureRandom());
+			cfg.setCustomSSLContext(context);
+			cfg.setHostnameVerifier(new HostnameVerifier() {
+				@Override
+				public boolean verify(String arg0, SSLSession arg1) {
+					return true;
+				}
+			});
+		} else {
+			// TODO This hostname verifier is the default in Smack 4.1 when
+			// smack-java7 is used, remove the code once Smack 4.1 is used
+			cfg.setHostnameVerifier(new HostnameVerifier() {
+				@Override
+				public boolean verify(String hostname, SSLSession session) {
+					HostnameChecker checker = HostnameChecker
+							.getInstance(HostnameChecker.TYPE_TLS);
 
-        StringBuilder hosts = new StringBuilder();
-        for(HostAddress host : cfg.getHostAddresses()) {
-        	if (hosts.length() > 0) {
-        		hosts.append(", ");
-        	}
-            hosts.append(host.getFQDN() + ":"+ host.getPort());
-        }
+					boolean validCertificate = false, validPrincipal = false;
+					try {
+						Certificate[] peerCertificates = session
+								.getPeerCertificates();
+
+						if (peerCertificates.length > 0
+								&& peerCertificates[0] instanceof X509Certificate) {
+							X509Certificate peerCertificate = (X509Certificate) peerCertificates[0];
+
+							try {
+								checker.match(hostname, peerCertificate);
+								// Certificate matches hostname
+								validCertificate = true;
+							} catch (CertificateException ex) {
+								// Certificate does not match hostname
+							}
+						} else {
+							// Peer does not have any certificates or they
+							// aren't X.509
+						}
+					} catch (SSLPeerUnverifiedException ex) {
+						// Not using certificates for peers, try verifying the
+						// principal
+						try {
+							Principal peerPrincipal = session
+									.getPeerPrincipal();
+							if (peerPrincipal instanceof KerberosPrincipal) {
+								validPrincipal = HostnameChecker.match(
+										hostname,
+										(KerberosPrincipal) peerPrincipal);
+							} else {
+								// Can't verify principal, not Kerberos
+							}
+						} catch (SSLPeerUnverifiedException ex2) {
+							// Can't verify principal, no principal
+						}
+					}
+
+					return validCertificate || validPrincipal;
+				}
+			});
+		}
 
         LOGGER.info("Trying to connect to XMPP on "
-                + hosts
                 + "/" + cfg.getServiceName()
-                // not needed
-                //+ (cfg.isSASLAuthenticationEnabled() ? " with SASL" : "")
                 + (cfg.isCompressionEnabled() ? " using compression" : "")
                 + (pi.getProxyType() != ProxyInfo.ProxyType.NONE ? " via proxy " + pi.getProxyType() + " "
                         + pi.getProxyAddress() + ":" + pi.getProxyPort() : "")

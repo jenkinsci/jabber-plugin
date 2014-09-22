@@ -58,7 +58,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public static final String PARAMETERNAME_PROXYUSER = PREFIX + "proxyUser";
     public static final String PARAMETERNAME_PROXYPASS = PREFIX + "proxyPass";
     public static final String PARAMETERNAME_SSL = PREFIX + "ssl";
-    public static final String PARAMETERNAME_SASL = PREFIX + "enableSASL";
     public static final String PARAMETERNAME_PRESENCE = PREFIX + "exposePresence";
     public static final String PARAMETERNAME_PASSWORD = PREFIX + "password";
     public static final String PARAMETERNAME_JABBERID = PREFIX + "jabberId";
@@ -69,6 +68,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public static final String PARAMETERNAME_DEFAULT_ID_SUFFIX = PREFIX + "defaultIdSuffix";
     public static final String PARAMETERNAME_SUBSCRIPTION_MODE = PREFIX + "subscriptionMode";
     public static final String PARAMETERNAME_EMAIL_ADDRESS_AS_JABBERID = PREFIX + "emailAsJabberId";
+    public static final String PARAMETERNAME_ACCEPT_ALL_CERTS = PREFIX + "acceptAllCerts";
     public static final String[] PARAMETERVALUE_SUBSCRIPTION_MODE;
     public static final String[] PARAMETERVALUE_PROXYTYPES;
     static {
@@ -113,7 +113,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      */
     private String groupChatNickname;
     private boolean exposePresence = true;
-    private boolean enableSASL = true;
+
+    private boolean acceptAllCerts;
 
     /**
      * Marks if passwords are scrambled as they are since 1.23.
@@ -434,7 +435,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         if (Util.fixEmptyAndTrim(this.groupChatNickname) != null) {
             return this.groupChatNickname;
         } else {
-            return JabberUtil.getUserPart(getJabberId());
+            return org.jivesoftware.smack.util.StringUtils.parseName(getJabberId());
         }
     }
     
@@ -451,10 +452,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public String getPortString() {
         if(port==5222)  return null;
         else            return String.valueOf(port);
-    }
-
-    public boolean isEnableSASL() {
-        return enableSASL;
     }
 
     public boolean isExposePresence() {
@@ -511,6 +508,10 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      */
     public String getProxyTypeString() {
         return this.proxyType.name();
+    }
+
+    public boolean isAcceptAllCerts() {
+        return this.acceptAllCerts;
     }
 
     /**
@@ -589,9 +590,9 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 		String en = req.getParameter(PARAMETERNAME_ENABLED);
 		this.enabled = Boolean.valueOf(en != null);
 		this.exposePresence = req.getParameter(PARAMETERNAME_PRESENCE) != null;
-        this.enableSASL = req.getParameter(PARAMETERNAME_SASL) != null;
 		this.subscriptionMode = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_SUBSCRIPTION_MODE));
 		this.emailAddressAsJabberId = req.getParameter(PARAMETERNAME_EMAIL_ADDRESS_AS_JABBERID) != null;
+		this.acceptAllCerts = req.getParameter(PARAMETERNAME_ACCEPT_ALL_CERTS) != null;
         applyHostname(req, this.enabled);
         applyPort(req, this.enabled);
         applyNickname(req, this.enabled);
@@ -637,9 +638,9 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	    } else if (Util.fixEmptyAndTrim(hostname) != null) {
 	    	// validation has already been done for the hostname field
 	    	return FormValidation.ok();
-	    } else if (JabberUtil.getDomainPart(jabberId) != null) {
+	    } else if (org.jivesoftware.smack.util.StringUtils.parseServer(jabberId) != null) {
 			String pts = Util.fixEmptyAndTrim(proxyType);
-	        String host = JabberUtil.getDomainPart(jabberId);
+	        String host = org.jivesoftware.smack.util.StringUtils.parseServer(jabberId);
 			ProxyType pt = ProxyType.NONE;
 	        try {
 				if (pts != null) {
@@ -770,7 +771,12 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	 */
 	@Override
 	public String getUserName() {
-		return JabberUtil.getUserPart(getJabberId());
+		String jabberId = getJabberId();
+		String res = org.jivesoftware.smack.util.StringUtils.parseName(jabberId);
+		if (res.isEmpty()) {
+			return jabberId;
+		}
+		return res;
 	}
 	
 	/**
@@ -778,7 +784,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      * null if not found.
      */
     String getServiceName() {
-        return JabberUtil.getDomainPart(getJabberId());
+        return org.jivesoftware.smack.util.StringUtils.parseServer(getJabberId());
     }
 
 	@Override
