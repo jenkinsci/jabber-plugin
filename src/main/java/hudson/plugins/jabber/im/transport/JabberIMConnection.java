@@ -71,7 +71,6 @@ import org.jivesoftware.smack.proxy.ProxyInfo;
 import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.util.StringUtils;
-import org.jivesoftware.smack.util.dns.HostAddress;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.delay.packet.DelayInformation;
 import org.jivesoftware.smackx.nick.packet.Nick;
