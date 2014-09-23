@@ -30,22 +30,21 @@ class JabberMUCMessageListenerAdapter implements PacketListener {
     
     @Override
     public void processPacket(Packet p) {
-        if (p instanceof Message) {
-            // don't react to old messages
-            for (PacketExtension pe : p.getExtensions()) {
-                if (pe instanceof DelayInformation) {
-                    return; // simply bail out here, it's an old message
-                }
+        // don't react to old messages
+        for (PacketExtension pe : p.getExtensions()) {
+            if (pe instanceof DelayInformation) {
+                return; // simply bail out here, it's an old message
             }
-
-            final Message msg = (Message) p;
-
-            // Messages from users in the same MUC are automatically authorized.
-            // Getting the JID for a other user in a chatroom doesn't seem to that easy ...
-            IMMessage imMessage = new IMMessage(msg.getFrom(), msg.getTo(), msg.getBody(),
-            		true);
-            
-            listener.onMessage(imMessage);
         }
+
+        final Message msg = (Message) p;
+
+        // Messages from users in the same MUC are automatically authorized.
+        // Getting the JID for a other user in a chatroom doesn't seem to that
+        // easy ...
+        IMMessage imMessage = new IMMessage(msg.getFrom(), msg.getTo(),
+                msg.getBody(), true);
+
+        listener.onMessage(imMessage);
     }
 }
