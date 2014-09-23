@@ -6,9 +6,7 @@ import hudson.plugins.im.IMMessageListener;
 import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
-import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smackx.muc.MultiUserChat;
-import org.jivesoftware.smackx.delay.packet.DelayInformation;
 
 /**
  * Wraps an {@link IMMessageListener} in a Smack {@link PacketListener}.
@@ -30,14 +28,12 @@ class JabberMUCMessageListenerAdapter implements PacketListener {
     
     @Override
     public void processPacket(Packet p) {
-        // don't react to old messages
-        for (PacketExtension pe : p.getExtensions()) {
-            if (pe instanceof DelayInformation) {
-                return; // simply bail out here, it's an old message
-            }
-        }
-
         final Message msg = (Message) p;
+
+        // don't react to old messages
+        if (msg.getExtension("x", "jabber:x:delay") != null) {
+            return; // simply bail out here, it's an old message
+        }
 
         // Messages from users in the same MUC are automatically authorized.
         // Getting the JID for a other user in a chatroom doesn't seem to that
