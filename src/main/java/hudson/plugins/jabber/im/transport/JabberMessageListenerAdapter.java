@@ -1,6 +1,5 @@
 package hudson.plugins.jabber.im.transport;
 
-import hudson.plugins.im.IMMessage;
 import hudson.plugins.im.IMMessageListener;
 
 import org.jivesoftware.smack.Chat;
@@ -13,28 +12,15 @@ import org.jivesoftware.smack.packet.Message;
  * 
  * @author kutzi
  */
-class JabberMessageListenerAdapter implements MessageListener {
-
-    private final IMMessageListener listener;
-	private final JabberIMConnection connection;
+class JabberMessageListenerAdapter extends AbstractJabberMessageListenerAdapter implements MessageListener {
 
     public JabberMessageListenerAdapter(IMMessageListener listener,
     		JabberIMConnection connection, Chat chat) {
-        this.listener = listener;
-        this.connection = connection;
+        super(listener, connection);
     }
-    
-	@Override
-	public void processMessage(Chat chat, Message msg) {
-        // don't react to old messages
-        if (msg.getExtension("x", "jabber:x:delay") != null) {
-            return; // simply bail out here, it's an old message
-        }
 
-        IMMessage imMessage = new IMMessage(msg.getFrom(),
-        		msg.getTo(), msg.getBody(),
-        		this.connection.isAuthorized(msg.getFrom()));
-        
-        listener.onMessage(imMessage);
-	}
+    @Override
+    public void processMessage(Chat chat, Message msg) {
+        processMessage(msg);
+    }
 }
