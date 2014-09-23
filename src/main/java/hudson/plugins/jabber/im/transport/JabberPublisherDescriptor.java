@@ -5,7 +5,6 @@ package hudson.plugins.jabber.im.transport;
 
 import hudson.Util;
 import hudson.model.AbstractProject;
-import hudson.model.Hudson;
 import hudson.plugins.im.GroupChatIMMessageTarget;
 import hudson.plugins.im.IMException;
 import hudson.plugins.im.IMMessageTarget;
@@ -32,6 +31,7 @@ import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.StringUtils;
@@ -629,7 +629,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	
 	public FormValidation doJabberIdCheck(@QueryParameter String jabberId,
 			@QueryParameter final String hostname, @QueryParameter final String port, @QueryParameter final String proxyType) {
-	    if(!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) {
+	    if(!Jenkins.getInstance().hasPermission(Jenkins.ADMINISTER)) {
             return FormValidation.ok();
         }
 	    
@@ -666,7 +666,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	
 	public FormValidation doProxyCheck(@QueryParameter final String proxyType,
 			@QueryParameter final String proxyHost, @QueryParameter final String proxyPort) {
-		if(!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) {
+		if(!Jenkins.getInstance().hasPermission(Jenkins.ADMINISTER)) {
 			return FormValidation.ok();
 		}
 		String host = Util.fixEmptyAndTrim(proxyHost);
@@ -703,7 +703,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      */
     public FormValidation doServerCheck(@QueryParameter final String hostname,
 			@QueryParameter final String port, @QueryParameter final String proxyType) {
-        if(!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) {
+        if(!Jenkins.getInstance().hasPermission(Jenkins.ADMINISTER)) {
             return FormValidation.ok();
         }
         String host = Util.fixEmptyAndTrim(hostname);

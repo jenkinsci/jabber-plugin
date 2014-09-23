@@ -46,9 +46,9 @@ class JabberIMMessageTargetConverter implements IMMessageTargetConverter {
         		if (! f.contains("@")) {
         			f += "@conference." + JabberPublisher.DESCRIPTOR.getHost();
         		}
-        		target = new GroupChatIMMessageTarget(f);
+        		target = new GroupChatIMMessageTarget(f, null, false);
         	} else if (f.contains("@conference.")) {
-        		target = new GroupChatIMMessageTarget(f);
+        		target = new GroupChatIMMessageTarget(f, null, false);
         	} else {
                 if (!f.contains("@")) {
                     f += "@" + JabberPublisher.DESCRIPTOR.getHost();
