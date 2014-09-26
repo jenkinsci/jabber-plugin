@@ -60,10 +60,8 @@ import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.filter.MessageTypeFilter;
-import org.jivesoftware.smack.filter.PacketFilter;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
-import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.RosterPacket.ItemType;
 import org.jivesoftware.smack.packet.XMPPError.Condition;
@@ -72,7 +70,6 @@ import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.muc.MultiUserChat;
-import org.jivesoftware.smackx.delay.packet.DelayInformation;
 import org.jivesoftware.smackx.nick.packet.Nick;
 import org.jivesoftware.smackx.vcardtemp.packet.VCard;
 import org.springframework.util.Assert;
@@ -545,22 +542,32 @@ class JabberIMConnection extends AbstractIMConnection {
     }
 
     /**
-	 * Listens on the connection for private chat requests.
-	 */
-	private void listenForPrivateChats() {
-		//PacketFilter filter = new AndFilter(new MessageTypeFilter(Message.Type.chat),
-		//		new ToContainsFilter(this.desc.getUserName()));
-		// Actually, this should be the full user name (including '@server')
-		// but since via this connection only message to me should be delivered (right?)
-		// this doesn't matter anyway.
+     * Listens on the connection for private chat requests.
+     */
+    private void listenForPrivateChats() {
+        connection.addPacketListener(new PacketListener() {
 
+            @Override
+            public void processPacket(Packet packet) {
+                final Message m = (Message) packet;
 
-        // TODO: ToContainsFilter which was in Smack 4.0.0!?
-        PacketFilter filter = new MessageTypeFilter(Message.Type.chat);
+                // TODO Use MessageWithBodiesFilter and NOT_DELAYED_STANZA
+                // filter when switching to Smack 4.1
+                if (m.getExtension("x", "jabber:x:delay") != null) {
+                    // ignore delayed messages
+                    return;
+                }
+                if (m.getBody() == null) {
+                    return;
+                }
+                LOGGER.fine("Message from " + m.getFrom() + " : " + m.getBody());
 
-		PacketListener listener = new PrivateChatListener();
-		this.connection.addPacketListener(listener, filter);
-	}
+                final String chatPartner = m.getFrom();
+                getOrCreatePrivateChat(chatPartner, m);
+            }
+
+        }, new MessageTypeFilter(Message.Type.chat));
+    }
 
 	private MultiUserChat getOrCreateGroupChat(GroupChatIMMessageTarget chat) throws IMException {
 		WeakReference<MultiUserChat> ref = groupChatCache.get(chat.getName());
@@ -780,30 +787,4 @@ class JabberIMConnection extends AbstractIMConnection {
 			unlock();
 		}
 	}
-
-	/**
-	 * Listens for private chats.
-	 */
-	private final class PrivateChatListener implements PacketListener {
-
-		public void processPacket(Packet packet) {
-			if (packet instanceof Message) {
-				Message m = (Message)packet;
-
-				for (PacketExtension ext : m.getExtensions()) {
-					if (ext instanceof DelayInformation) {
-						// ignore delayed messages
-						return;
-					}
-				}
-                
-				if (m.getBody() != null) {
-					LOGGER.fine("Message from " + m.getFrom() + " : " + m.getBody());
-					
-					final String chatPartner = m.getFrom();
-					getOrCreatePrivateChat(chatPartner, m);
-				}
-			}
-		}
-	};
 }
