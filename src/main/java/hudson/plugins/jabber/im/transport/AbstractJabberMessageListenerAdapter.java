@@ -4,6 +4,8 @@ import hudson.plugins.im.IMMessage;
 import hudson.plugins.im.IMMessageListener;
 
 import org.jivesoftware.smack.packet.Message;
+import org.jivesoftware.smack.packet.PacketExtension;
+import org.jivesoftware.smackx.delay.packet.DelayInformation;
 
 class AbstractJabberMessageListenerAdapter {
 
@@ -17,10 +19,13 @@ class AbstractJabberMessageListenerAdapter {
     }
 
     protected void processMessage(Message msg) {
-        // don't react to old messages
-        if (msg.getExtension("x", "jabber:x:delay") != null) {
-            return; // simply bail out here, it's an old message
-        }
+        // Don't react to old messages.
+    	// Especially useful for chat rooms where all old messages are replayed, when you connect to them
+    	for (PacketExtension pe : msg.getExtensions()) {
+            if (pe instanceof DelayInformation) {
+                return; // simply bail out here, it's an old message
+            }
+    	}
 
         IMMessage imMessage = new IMMessage(msg.getFrom(), msg.getTo(),
                 msg.getBody(), this.connection.isAuthorized(msg.getFrom()));
