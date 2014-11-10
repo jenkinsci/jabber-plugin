@@ -566,12 +566,16 @@ class JabberIMConnection extends AbstractIMConnection {
             
             // there was probably a 'real' problem
             throw e;
-        } catch (SmackException.NotConnectedException e) {
+        } catch (SmackException.NotConnectedException | SmackException.NoResponseException e) {
             LOGGER.warning(ExceptionHelper.dump(e));
-        } catch (SmackException.NoResponseException e) {
-            LOGGER.warning(ExceptionHelper.dump(e));
+            return false;
+        } catch (ClassCastException e) {
+        	// This seems to be a VCard parsing exception in Smack 4.0.x
+        	// See e.g. http://stackoverflow.com/questions/26752285/android-asmack-vcard-classcastexception-while-calling-vcard-loadconn
+        	LOGGER.warning(ExceptionHelper.dump(e));
+        	// Assume vcard exists, just couldn't be parsed by smack
+        	return true;
         }
-        return false;
     }
 
 	/**
