@@ -428,7 +428,9 @@ class JabberIMConnection extends AbstractIMConnection {
 				this.resource != null ? this.resource : "Jenkins");
 			
 			setupSubscriptionMode();
-			createVCardIfNeeded();
+			
+			// disabled. vCard stuff seems to be broken in Smack 4.0.5. See JENKINS-25676
+			// createVCardIfNeeded();
 			
 			installServerTypeHacks();
 			
