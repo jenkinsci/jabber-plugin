@@ -32,8 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -59,7 +57,6 @@ import org.jivesoftware.smack.Roster.SubscriptionMode;
 import org.jivesoftware.smack.RosterEntry;
 import org.jivesoftware.smack.SmackConfiguration;
 import org.jivesoftware.smack.SmackException;
-import org.jivesoftware.smack.SmackException.NotConnectedException;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.filter.MessageTypeFilter;
@@ -74,10 +71,10 @@ import org.jivesoftware.smack.proxy.ProxyInfo;
 import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.util.StringUtils;
-import org.jivesoftware.smackx.delay.packet.DelayInformation;
 import org.jivesoftware.smackx.muc.MultiUserChat;
+import org.jivesoftware.smackx.delay.packet.DelayInformation;
 import org.jivesoftware.smackx.nick.packet.Nick;
-import org.jivesoftware.smackx.ping.packet.Ping;
+import org.jivesoftware.smackx.ping.PingManager;
 import org.jivesoftware.smackx.vcardtemp.packet.VCard;
 import org.springframework.util.Assert;
 
@@ -148,9 +145,10 @@ class JabberIMConnection extends AbstractIMConnection {
 
 	private final boolean acceptAllCerts;
 
-	private Runnable keepAliveCommand;
-	
-	private ScheduledExecutorService scheduler;
+	/**
+	 * The default ping interval for server pings in seconds. Currently set to 5 minutes
+	 */
+	private static final int DEFAULT_PING_INTERVAL = 5 * 60;
 
 	static {
 		SmackConfiguration.setDefaultPacketReplyTimeout(20000);
@@ -247,12 +245,6 @@ class JabberIMConnection extends AbstractIMConnection {
 				
 				this.groupChatCache.clear();
 				this.chatCache.clear();
-				
-				if (this.scheduler != null) {
-					this.scheduler.shutdownNow();
-					this.scheduler = null;
-				}
-				
 				if (this.connection.isConnected()) {
 					this.connection.disconnect();
 				}
@@ -427,60 +419,13 @@ class JabberIMConnection extends AbstractIMConnection {
 			this.connection.login(this.desc.getUserName(), this.passwd,
 				this.resource != null ? this.resource : "Jenkins");
 			
+			PingManager.getInstanceFor(connection).setPingInterval(DEFAULT_PING_INTERVAL);
 			setupSubscriptionMode();
-			
-			// disabled. vCard stuff seems to be broken in Smack 4.0.5. See JENKINS-25676
-			// createVCardIfNeeded();
-			
-			installServerTypeHacks();
-			
+			createVCardIfNeeded();
 			listenForPrivateChats();
 		}
 		
 		return this.connection.isAuthenticated();
-	}
-
-	private void installServerTypeHacks() {
-		if (this.connection.getServiceName().contains("hipchat")) {
-			// JENKINS-25222: HipChat connections time out after 150 seconds (http://help.hipchat.com/knowledgebase/articles/64377-xmpp-jabber-support-details)
-			addConnectionKeepAlivePings();
-		}
-	}
-
-	private void addConnectionKeepAlivePings() {
-		if (this.scheduler == null)  {
-			this.scheduler = Executors.newScheduledThreadPool(1);
-		}
-		
-		if (keepAliveCommand != null) {
-			return;
-		}
-		
-		keepAliveCommand = new Runnable() {
-			
-			@Override
-			public void run() {
-				// prevent long waits for lock
-		        try {
-					if (!tryLock(5, TimeUnit.SECONDS)) {
-					    return;
-					}
-					
-					try {
-						connection.sendPacket(new Ping());
-					} catch (NotConnectedException e) {
-						// connection died, so lets scheduled task die, too
-						throw new RuntimeException(e);
-					} finally {
-						unlock();
-					}
-					
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
-			}
-		};
-		scheduler.scheduleAtFixedRate(keepAliveCommand, 60, 60, TimeUnit.SECONDS);
 	}
 
 	/**
