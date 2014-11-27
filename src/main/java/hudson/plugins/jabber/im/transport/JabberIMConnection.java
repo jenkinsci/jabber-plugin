@@ -74,6 +74,7 @@ import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.delay.packet.DelayInformation;
 import org.jivesoftware.smackx.nick.packet.Nick;
+import org.jivesoftware.smackx.ping.PingManager;
 import org.jivesoftware.smackx.vcardtemp.packet.VCard;
 import org.springframework.util.Assert;
 
@@ -143,6 +144,11 @@ class JabberIMConnection extends AbstractIMConnection {
 	private final int proxyport;
 
 	private final boolean acceptAllCerts;
+
+	/**
+	 * The default ping interval for server pings in seconds. Currently set to 5 minutes
+	 */
+	private static final int DEFAULT_PING_INTERVAL = 5 * 60;
 
 	static {
 		SmackConfiguration.setDefaultPacketReplyTimeout(20000);
@@ -413,6 +419,7 @@ class JabberIMConnection extends AbstractIMConnection {
 			this.connection.login(this.desc.getUserName(), this.passwd,
 				this.resource != null ? this.resource : "Jenkins");
 			
+			PingManager.getInstanceFor(connection).setPingInterval(DEFAULT_PING_INTERVAL);
 			setupSubscriptionMode();
 			createVCardIfNeeded();
 			listenForPrivateChats();
