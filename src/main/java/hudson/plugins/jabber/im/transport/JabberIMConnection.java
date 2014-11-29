@@ -441,11 +441,14 @@ class JabberIMConnection extends AbstractIMConnection {
 	private void installServerTypeHacks() {
 		if (this.connection.getServiceName().contains("hipchat")) {
 			// JENKINS-25222: HipChat connections time out after 150 seconds (http://help.hipchat.com/knowledgebase/articles/64377-xmpp-jabber-support-details)
-			addConnectionKeepAlivePings();
+			addConnectionKeepAlivePings(60);
+		} else {
+			// JENKINS-25676: other servers also seem to require pings, but 5 minute intervals should be enough in this case
+			addConnectionKeepAlivePings(5 * 60);
 		}
 	}
 
-	private void addConnectionKeepAlivePings() {
+	private void addConnectionKeepAlivePings(int keepAlivePeriodInSeconds) {
 		if (this.scheduler == null)  {
 			this.scheduler = Executors.newScheduledThreadPool(1);
 		}
@@ -478,7 +481,7 @@ class JabberIMConnection extends AbstractIMConnection {
 				}
 			}
 		};
-		scheduler.scheduleAtFixedRate(keepAliveCommand, 60, 60, TimeUnit.SECONDS);
+		scheduler.scheduleAtFixedRate(keepAliveCommand, keepAlivePeriodInSeconds, keepAlivePeriodInSeconds, TimeUnit.SECONDS);
 	}
 
 	/**
