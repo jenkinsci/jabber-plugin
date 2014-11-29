@@ -30,6 +30,7 @@
     
     <properties>
   	  <version.instant-messaging.plugin>1.30</version.instant-messaging.plugin>
+  	  <version.smack>4.0.6</version.smack>
   	</properties>
   	
   	<build>
@@ -60,19 +61,19 @@
         <dependency>
             <groupId>org.igniterealtime.smack</groupId>
             <artifactId>smack-extensions</artifactId>
-            <version>4.0.5</version>
+            <version>${version.smack}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.igniterealtime.smack</groupId>
             <artifactId>smack-resolver-javax</artifactId>
-            <version>4.0.5</version>
+            <version>${version.smack}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.igniterealtime.smack</groupId>
             <artifactId>smack-tcp</artifactId>
-            <version>4.0.5</version>
+            <version>${version.smack}</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
