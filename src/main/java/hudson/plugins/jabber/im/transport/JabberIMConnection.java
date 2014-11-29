@@ -37,6 +37,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import javax.annotation.Nullable;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLPeerUnverifiedException;
@@ -82,7 +83,6 @@ import org.jivesoftware.smackx.vcardtemp.packet.VCard;
 import org.springframework.util.Assert;
 
 import sun.security.util.HostnameChecker;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Smack-specific implementation of {@link IMConnection}.
@@ -491,7 +491,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	 * See JENKINS-6863
 	 */
 	private void retryConnectionWithLegacySSL(
-			final ConnectionConfiguration cfg, XMPPException originalException)
+			final ConnectionConfiguration cfg, @Nullable XMPPException originalException)
 			throws XMPPException, SmackException {
 		try {
 			LOGGER.info("Retrying connection with legacy SSL");
