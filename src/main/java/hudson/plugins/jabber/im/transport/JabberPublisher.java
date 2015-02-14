@@ -96,11 +96,6 @@ public class JabberPublisher extends IMPublisher
         return sb.toString().trim();
 	}
     
-	@Override
-	public BuildStepMonitor getRequiredMonitorService() {
-		return BuildStepMonitor.BUILD;
-	}
-	
     @Override
     protected Object readResolve() {
         // make sure we don't forget to call readResolve on the super class
