@@ -10,7 +10,7 @@
     <artifactId>jabber</artifactId>
     <packaging>hpi</packaging>
     <name>Jenkins Jabber notifier plugin</name>
-    <version>1.32-SNAPSHOT</version>
+    <version>1.32</version>
     <url>http://wiki.jenkins-ci.org/display/JENKINS/Jabber+Plugin</url>
     <developers>
         <developer>
@@ -89,7 +89,7 @@
     <connection>scm:git:github.com:jenkinsci/jabber-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/jabber-plugin.git</developerConnection>
     <url>http://fisheye.jenkins-ci.org/browse/Jenkins/trunk/hudson/plugins/jabber</url>
-    <tag>HEAD</tag>
+    <tag>jabber-1.32</tag>
   </scm>
 
     <pluginRepositories>
