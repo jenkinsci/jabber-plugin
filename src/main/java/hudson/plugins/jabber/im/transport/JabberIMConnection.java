@@ -403,7 +403,7 @@ class JabberIMConnection extends AbstractIMConnection {
                 );
 
         boolean retryWithLegacySSL = false;
-        XMPPException originalException = null;
+        Exception originalException = null;
 		try {
 			this.connection = new XMPPTCPConnection(cfg);
 			this.connection.connect();
@@ -411,6 +411,9 @@ class JabberIMConnection extends AbstractIMConnection {
 				retryWithLegacySSL = true;
 			}
 		} catch (XMPPException e) {
+			retryWithLegacySSL = true;
+			originalException = e;
+		} catch (SmackException.NoResponseException e) {
 			retryWithLegacySSL = true;
 			originalException = e;
 		} catch (SmackException e) {
@@ -491,7 +494,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	 * See JENKINS-6863
 	 */
 	private void retryConnectionWithLegacySSL(
-			final ConnectionConfiguration cfg, @Nullable XMPPException originalException)
+			final ConnectionConfiguration cfg, @Nullable Exception originalException)
 			throws XMPPException, SmackException {
 		try {
 			LOGGER.info("Retrying connection with legacy SSL");
