@@ -48,6 +48,8 @@ import javax.net.ssl.X509TrustManager;
 import javax.security.auth.kerberos.KerberosPrincipal;
 import javax.security.sasl.SaslException;
 
+import hudson.util.DaemonThreadFactory;
+import hudson.util.NamingThreadFactory;
 import org.apache.commons.io.IOUtils;
 import org.jivesoftware.smack.AbstractConnectionListener;
 import org.jivesoftware.smack.Chat;
@@ -453,7 +455,7 @@ class JabberIMConnection extends AbstractIMConnection {
 
 	private void addConnectionKeepAlivePings(int keepAlivePeriodInSeconds) {
 		if (this.scheduler == null)  {
-			this.scheduler = Executors.newScheduledThreadPool(1);
+			this.scheduler = Executors.newSingleThreadScheduledExecutor(new NamingThreadFactory(new DaemonThreadFactory(), JabberIMConnection.class.getSimpleName()));
 		}
 		
 		if (keepAliveCommand != null) {
