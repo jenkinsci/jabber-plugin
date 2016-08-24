@@ -532,6 +532,8 @@ class JabberIMConnection extends AbstractIMConnection {
 				break;
 			case manual : LOGGER.info("Subscription requests must be handled manually");
 				break;
+			default:
+				break;
 		}
 		this.roster.setSubscriptionMode(mode);
 	}
@@ -564,14 +566,12 @@ class JabberIMConnection extends AbstractIMConnection {
             }
             return false;
         } catch (XMPPException e) {
-            if (e instanceof  XMPPException.XMPPErrorException){
-                XMPPException.XMPPErrorException ex =(XMPPException.XMPPErrorException) e;
-                // See http://xmpp.org/extensions/xep-0054.html#sect-id304495
-                if (ex.getXMPPError() != null && Condition.item_not_found.toString().equals(ex.getXMPPError().getCondition())) {
-                    return false;
-                }
-            }
-            
+			XMPPException.XMPPErrorException ex =(XMPPException.XMPPErrorException) e;
+			// See http://xmpp.org/extensions/xep-0054.html#sect-id304495
+			if (ex.getXMPPError() != null && Condition.item_not_found.toString().equals(ex.getXMPPError().getCondition())) {
+				return false;
+			}
+
             // there was probably a 'real' problem
             throw e;
         } catch (SmackException.NotConnectedException | SmackException.NoResponseException e) {

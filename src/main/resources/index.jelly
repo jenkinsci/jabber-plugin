@@ -1,3 +1,4 @@
+<?jelly escape-by-default='true'?>
 <div>
   <p>Sends build notifications to jabber contacts and/or chatrooms.
   Also allows control of builds via a jabber 'bot'.</p>

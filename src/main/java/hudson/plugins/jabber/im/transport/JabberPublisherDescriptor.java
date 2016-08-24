@@ -69,8 +69,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     public static final String PARAMETERNAME_SUBSCRIPTION_MODE = PREFIX + "subscriptionMode";
     public static final String PARAMETERNAME_EMAIL_ADDRESS_AS_JABBERID = PREFIX + "emailAsJabberId";
     public static final String PARAMETERNAME_ACCEPT_ALL_CERTS = PREFIX + "acceptAllCerts";
-    public static final String[] PARAMETERVALUE_SUBSCRIPTION_MODE;
-    public static final String[] PARAMETERVALUE_PROXYTYPES;
+    static final String[] PARAMETERVALUE_SUBSCRIPTION_MODE;
+    static final String[] PARAMETERVALUE_PROXYTYPES;
     static {
     	SubscriptionMode[] modes = SubscriptionMode.values();
     	PARAMETERVALUE_SUBSCRIPTION_MODE = new String[modes.length];
@@ -84,7 +84,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
     }
     }
     
-    public static final String[] PARAMETERVALUE_STRATEGY_VALUES = NotificationStrategy.getDisplayNames();
+    static final String[] PARAMETERVALUE_STRATEGY_VALUES = NotificationStrategy.getDisplayNames();
     public static final String PARAMETERVALUE_STRATEGY_DEFAULT = NotificationStrategy.STATECHANGE_ONLY.getDisplayName();
     public static final String DEFAULT_COMMAND_PREFIX = "!";
     
@@ -585,6 +585,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	/**
 	 * {@inheritDoc}
 	 */
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT")
 	@Override
 	public boolean configure(StaplerRequest req, JSONObject json) throws hudson.model.Descriptor.FormException {
 		String en = req.getParameter(PARAMETERNAME_ENABLED);
@@ -629,7 +630,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	
 	public FormValidation doJabberIdCheck(@QueryParameter String jabberId,
 			@QueryParameter final String hostname, @QueryParameter final String port, @QueryParameter final String proxyType) {
-	    if(!Jenkins.getInstance().hasPermission(Jenkins.ADMINISTER)) {
+	    if(!getJenkins().hasPermission(Jenkins.ADMINISTER)) {
             return FormValidation.ok();
         }
 	    
@@ -666,7 +667,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	
 	public FormValidation doProxyCheck(@QueryParameter final String proxyType,
 			@QueryParameter final String proxyHost, @QueryParameter final String proxyPort) {
-		if(!Jenkins.getInstance().hasPermission(Jenkins.ADMINISTER)) {
+		if(!getJenkins().hasPermission(Jenkins.ADMINISTER)) {
 			return FormValidation.ok();
 		}
 		String host = Util.fixEmptyAndTrim(proxyHost);
@@ -703,7 +704,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      */
     public FormValidation doServerCheck(@QueryParameter final String hostname,
 			@QueryParameter final String port, @QueryParameter final String proxyType) {
-        if(!Jenkins.getInstance().hasPermission(Jenkins.ADMINISTER)) {
+        if(!getJenkins().hasPermission(Jenkins.ADMINISTER)) {
             return FormValidation.ok();
         }
         String host = Util.fixEmptyAndTrim(hostname);
@@ -840,5 +841,13 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         
         return this;
     }
-	
+
+
+    static Jenkins getJenkins() {
+        Jenkins jenkins = Jenkins.getInstance();
+        if (jenkins == null) {
+            throw new IllegalStateException("Jenkins not running");
+        }
+        return jenkins;
+    }
 }

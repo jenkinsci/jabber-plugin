@@ -1,3 +1,4 @@
+<?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
    xmlns:super="/hudson/plugins/im/IMPublisher">
     <f:entry title="Targets" description="Whitespace separated list of accounts to send notifications to (like 'peter@myjabberserver.org') -- for group chats, prepend a '*' (e.g. '*commitroom@conference.myjabberserver.org') -- note that JIDs that contain '@conference.' are automatically recognized as group chats (no need to prepend '*')">
