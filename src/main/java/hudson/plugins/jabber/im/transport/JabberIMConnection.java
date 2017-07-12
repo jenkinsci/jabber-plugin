@@ -298,10 +298,10 @@ class JabberIMConnection extends AbstractIMConnection {
 		
 		String serviceName = desc.getServiceName();
 		final ConnectionConfiguration cfg;
-		if (serviceName == null) {
+		if (serviceName == null || serviceName.trim().length() == 0) {
 			cfg = new ConnectionConfiguration(
 					this.hostnameOverride, this.port, pi);
-		} else if (this.hostnameOverride == null) {
+		} else if (this.hostnameOverride == null || hostnameOverride.trim().length() == 0) {
 		    // uses DNS lookup, to get the actual hostname for this service: 
 			cfg = new ConnectionConfiguration(serviceName, pi);
 		} else {
@@ -430,7 +430,7 @@ class JabberIMConnection extends AbstractIMConnection {
 
 		if (this.connection.isConnected()) {
 			this.connection.login(this.desc.getUserName(), this.passwd,
-				this.resource != null ? this.resource : "Jenkins");
+				(this.resource != null && resource.trim().length() > 0) ? this.resource : "Jenkins");
 			
 			setupSubscriptionMode();
 			createVCardIfNeeded();
@@ -689,8 +689,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		return chat;
 	}
 
-	public void send(final IMMessageTarget target, final String text)
-			throws IMException {
+	public void send(final IMMessageTarget target, final String text) {
 		Assert.notNull(target, "Parameter 'target' must not be null.");
 		Assert.notNull(text, "Parameter 'text' must not be null.");
 		try {
@@ -706,7 +705,7 @@ class JabberIMConnection extends AbstractIMConnection {
             			final Chat chat = getOrCreatePrivateChat(target.toString(), null);
             			chat.sendMessage(text);
             		}
-            } catch (final XMPPException e) {
+            } catch (final XMPPException | IMException e) {
             	// server unavailable ? Target-host unknown ? Well. Just skip this
             	// one.
                 LOGGER.warning(ExceptionHelper.dump(e));
