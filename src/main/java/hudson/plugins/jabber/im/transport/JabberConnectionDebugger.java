@@ -9,11 +9,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.jivesoftware.smack.ConnectionListener;
-import org.jivesoftware.smack.PacketListener;
+import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.debugger.SmackDebugger;
-import org.jivesoftware.smack.packet.Packet;
-import org.jivesoftware.smack.util.StringUtils;
+import org.jivesoftware.smack.packet.Stanza;
+import org.jxmpp.util.XmppStringUtils;
 
 /**
  * Logs detailed info to the log in level FINE or FINEST.
@@ -29,7 +29,7 @@ public class JabberConnectionDebugger implements SmackDebugger {
     private Writer writer;
     private Reader reader;
 
-    private PacketListener listener;
+    private StanzaListener listener;
 
     private ConnectionListener connListener;
 
@@ -50,8 +50,8 @@ public class JabberConnectionDebugger implements SmackDebugger {
                 LOGGER, MIN_LOG_LEVEL);
         this.writer = debugWriter;
 
-        this.listener = new PacketListener() {
-            public void processPacket(Packet packet) {
+        this.listener = new StanzaListener() {
+            public void processPacket(Stanza packet) {
                 if (LOGGER.isLoggable(Level.FINEST)) {
                     LOGGER.finest("RCV PKT: " + packet.toXML());
                 }
@@ -65,7 +65,8 @@ public class JabberConnectionDebugger implements SmackDebugger {
                 }
             }
 
-            public void authenticated(XMPPConnection connection) {
+            @Override
+            public void authenticated(XMPPConnection connection, boolean resumed) {
             	if (LOGGER.isLoggable(MIN_LOG_LEVEL)) {
                     LOGGER.fine("Connection " + connection + " authenticated");
                 }
@@ -112,7 +113,7 @@ public class JabberConnectionDebugger implements SmackDebugger {
     }
 
     @Override
-    public PacketListener getReaderListener() {
+    public StanzaListener getReaderListener() {
         return this.listener;
     }
 
@@ -122,7 +123,7 @@ public class JabberConnectionDebugger implements SmackDebugger {
     }
 
     @Override
-    public PacketListener getWriterListener() {
+    public StanzaListener getWriterListener() {
         return null;
     }
 
@@ -145,13 +146,13 @@ public class JabberConnectionDebugger implements SmackDebugger {
     @Override
     public void userHasLogged(String user) {
         if (LOGGER.isLoggable(MIN_LOG_LEVEL)) {
-            boolean isAnonymous = "".equals(StringUtils.parseName(user));
+            boolean isAnonymous = "".equals(XmppStringUtils.parseLocalpart(user));
             String title = "User logged in (" + this.connection.hashCode() + "): "
-                    + ((isAnonymous) ? "" : StringUtils.parseBareAddress(user))
+                    + ((isAnonymous) ? "" : XmppStringUtils.parseBareJid(user))
                     + "@" + this.connection.getServiceName() + ":"
                     + this.connection.getPort();
     
-            title = title + "/" + StringUtils.parseResource(user);
+            title = title + "/" + XmppStringUtils.parseResource(user);
             LOGGER.fine(title);
         }
 
