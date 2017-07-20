@@ -21,11 +21,6 @@ import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
-import java.security.Principal;
-import java.security.SecureRandom;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -38,53 +33,51 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
+import javax.net.SocketFactory;
 import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import javax.security.auth.kerberos.KerberosPrincipal;
 import javax.security.sasl.SaslException;
 
 import hudson.util.DaemonThreadFactory;
 import hudson.util.NamingThreadFactory;
 import org.apache.commons.io.IOUtils;
 import org.jivesoftware.smack.AbstractConnectionListener;
-import org.jivesoftware.smack.Chat;
-import org.jivesoftware.smack.ChatManager;
-import org.jivesoftware.smack.ConnectionConfiguration;
+import org.jivesoftware.smack.chat.Chat;
+import org.jivesoftware.smack.chat.ChatManager;
 import org.jivesoftware.smack.ConnectionListener;
-import org.jivesoftware.smack.PacketListener;
-import org.jivesoftware.smack.Roster;
-import org.jivesoftware.smack.Roster.SubscriptionMode;
-import org.jivesoftware.smack.RosterEntry;
+import org.jivesoftware.smack.ReconnectionManager;
+import org.jivesoftware.smack.StanzaListener;
+import org.jivesoftware.smack.roster.Roster;
+import org.jivesoftware.smack.roster.Roster.SubscriptionMode;
+import org.jivesoftware.smack.roster.RosterEntry;
 import org.jivesoftware.smack.SmackConfiguration;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.SmackException.NotConnectedException;
-import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.filter.MessageTypeFilter;
-import org.jivesoftware.smack.filter.PacketFilter;
+import org.jivesoftware.smack.filter.StanzaFilter;
 import org.jivesoftware.smack.packet.Message;
-import org.jivesoftware.smack.packet.Packet;
-import org.jivesoftware.smack.packet.PacketExtension;
+import org.jivesoftware.smack.packet.Stanza;
+import org.jivesoftware.smack.packet.ExtensionElement;
 import org.jivesoftware.smack.packet.Presence;
-import org.jivesoftware.smack.packet.RosterPacket.ItemType;
+import org.jivesoftware.smack.roster.packet.RosterPacket.ItemType;
 import org.jivesoftware.smack.packet.XMPPError.Condition;
 import org.jivesoftware.smack.proxy.ProxyInfo;
 import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
-import org.jivesoftware.smack.util.StringUtils;
+import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration;
+import org.jivesoftware.smack.util.TLSUtils;
 import org.jivesoftware.smackx.delay.packet.DelayInformation;
+import org.jivesoftware.smackx.muc.MUCNotJoinedException;
 import org.jivesoftware.smackx.muc.MultiUserChat;
+import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.nick.packet.Nick;
 import org.jivesoftware.smackx.ping.packet.Ping;
+import org.jivesoftware.smackx.vcardtemp.VCardManager;
 import org.jivesoftware.smackx.vcardtemp.packet.VCard;
+import org.jxmpp.util.XmppStringUtils;
 import org.springframework.util.Assert;
-
-import sun.security.util.HostnameChecker;
 
 /**
  * Smack-specific implementation of {@link IMConnection}.
@@ -97,7 +90,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	
 	private static final Logger LOGGER = Logger.getLogger(JabberIMConnection.class.getName());
 	
-	private volatile XMPPConnection connection;
+	private volatile XMPPTCPConnection connection;
 
 	private final Map<String, WeakReference<MultiUserChat>> groupChatCache = new HashMap<String, WeakReference<MultiUserChat>>();
 	private final Map<String, WeakReference<Chat>> chatCache = new HashMap<String, WeakReference<Chat>>();
@@ -158,6 +151,9 @@ class JabberIMConnection extends AbstractIMConnection {
 		SmackConfiguration.setDefaultPacketReplyTimeout(20000);
 		
 		System.setProperty("smack.debuggerClass", JabberConnectionDebugger.class.getName());
+
+		// Currently, we handle reconnects ourself.
+		ReconnectionManager.setEnabledPerDefault(false);
 	}
 	
 	JabberIMConnection(JabberPublisherDescriptor desc, AuthenticationHolder authentication) throws IMException {
@@ -168,7 +164,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.hostnameOverride = desc.getHostname();
 		this.port = desc.getPort();
 		this.nick = desc.getNickname();
-		this.resource = StringUtils.parseResource(desc.getJabberId());
+		this.resource = XmppStringUtils.parseResource(desc.getJabberId());
 		this.passwd = desc.getPassword();
 		this.proxytype = desc.getProxyType();
 		this.proxyhost = desc.getProxyHost();
@@ -185,52 +181,62 @@ class JabberIMConnection extends AbstractIMConnection {
 	@Override
 	public boolean connect() {
 	    lock();
-	    try {
-			try {
-				if (!isConnected()) {
-					if (createConnection()) {
-						LOGGER.info("Connected to XMPP on "
-								+ this.connection.getHost() + ":" + this.connection.getPort()
-								+ "/" + this.connection.getServiceName()
-								+ (this.connection.isSecureConnection() ? " using secure connection" : "")
-								+ (this.connection.isUsingCompression() ? " using compression" : ""));
-			
-						// kutzi: I've read somewhere that status must be set, before one can do anything other
-						// Don't know if it's true, but can't hurt, either.
-						sendPresence();
-						
-						groupChatCache.clear();
-						for (IMMessageTarget chat : this.groupChats) {
-						    GroupChatIMMessageTarget groupChat = (GroupChatIMMessageTarget) chat;
-							try {
-								getOrCreateGroupChat(groupChat);
-								LOGGER.info("Joined groupchat " + groupChat.getName());
-							} catch (IMException e) {
-								// if we got here, the XMPP connection could be established, but probably the groupchat name
-								// is invalid
-								LOGGER.warning("Unable to connect to groupchat '" + groupChat.getName() + "'. Did you append @conference or so to the name?\n"
-										+ "Exception: " + ExceptionHelper.dump(e));
-							}
-						}
-					} else {
-						// clean-up if needed
-						if (this.connection != null) {
-							try {
-								this.connection.disconnect();
-							} catch (Exception e) {
-								// ignore
-							}
-						}
-						return false;
-					}
-				}
+		try {
+			LOGGER.info("Trying to connect XMPP connection");
+			if (this.connection != null && this.connection.isConnected()) {
+				LOGGER.fine("XMPP connection already established");
 				return true;
-			} catch (final Exception e) {
-				LOGGER.warning(ExceptionHelper.dump(e));
-				return false;
 			}
+			LOGGER.fine("creating new XMPP connection");
+			boolean connectingSucceeded = createConnection();
+			if (connectingSucceeded) {
+				initNewConnection();
+			} else {
+				disconnect();
+			}
+			return connectingSucceeded;
+		} catch (final Exception e) {
+			LOGGER.warning(ExceptionHelper.dump(e));
+			return false;
 		} finally {
 		    unlock();
+		}
+	}
+
+	private void disconnect() {
+		// clean-up if needed
+		if (this.connection != null && this.connection.isConnected()) {
+			try {
+				this.connection.disconnect();
+			} catch (Exception e) {
+				LOGGER.info("Exception while disconnecting: " + e.getMessage());
+			}
+		}
+	}
+
+	private void initNewConnection() {
+		LOGGER.info("Connected to XMPP on "
+				+ this.connection.getHost() + ":" + this.connection.getPort()
+				+ "/" + this.connection.getServiceName()
+				+ (this.connection.isSecureConnection() ? " using secure connection" : "")
+				+ (this.connection.isUsingCompression() ? " using compression" : ""));
+
+		// kutzi: I've read somewhere that status must be set, before one can do anything other
+		// Don't know if it's true, but can't hurt, either.
+		sendPresence();
+
+		groupChatCache.clear();
+		for (IMMessageTarget chat : this.groupChats) {
+		    GroupChatIMMessageTarget groupChat = (GroupChatIMMessageTarget) chat;
+			try {
+				getOrCreateGroupChat(groupChat);
+				LOGGER.info("Joined groupchat " + groupChat.getName());
+			} catch (IMException e) {
+				// if we got here, the XMPP connection could be established, but probably the groupchat name
+				// is invalid
+				LOGGER.warning("Unable to connect to groupchat '" + groupChat.getName() + "'. Did you append @conference or so to the name?\n"
+						+ "Exception: " + ExceptionHelper.dump(e));
+			}
 		}
 	}
 
@@ -246,7 +252,7 @@ class JabberIMConnection extends AbstractIMConnection {
 					}
 				}
 				// there seems to be no way to leave a 1-on-1 chat with Smack
-				
+
 				this.groupChatCache.clear();
 				this.chatCache.clear();
 				
@@ -276,6 +282,7 @@ class JabberIMConnection extends AbstractIMConnection {
 			try {
 				this.connection.disconnect();
 			} catch (Exception ignore) {
+				LOGGER.info("Caught an exception while disconnecting before reconnect: " + ignore.getMessage());
 				// ignore
 			}
 		}
@@ -297,109 +304,39 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 		
 		String serviceName = desc.getServiceName();
-		final ConnectionConfiguration cfg;
-		if (serviceName == null) {
-			cfg = new ConnectionConfiguration(
-					this.hostnameOverride, this.port, pi);
-		} else if (this.hostnameOverride == null) {
-		    // uses DNS lookup, to get the actual hostname for this service: 
-			cfg = new ConnectionConfiguration(serviceName, pi);
-		} else {
-			cfg = new ConnectionConfiguration(
-					this.hostnameOverride, this.port,
-					serviceName, pi);
+		final XMPPTCPConnectionConfiguration.Builder cfg = XMPPTCPConnectionConfiguration.builder();
+
+		if (pi.getProxyType() != ProxyType.NONE) {
+			cfg.setProxyInfo(pi);
 		}
-		// Currently, we handle reconnects ourself.
-		// Maybe we should change it in the future, but currently I'm
-		// not sure what Smack's reconnect feature really does.
-		cfg.setReconnectionAllowed(false);
+
+		if (serviceName == null) {
+			cfg.setHost(hostnameOverride).setPort(port);
+		} else if (this.hostnameOverride == null) {
+		    // uses DNS lookup, to get the actual hostname for this service:
+			cfg.setServiceName(serviceName);
+		} else {
+			cfg.setHost(hostnameOverride).setPort(port).setServiceName(serviceName);
+		}
+
 		
 		cfg.setDebuggerEnabled(true);
 
 		if (acceptAllCerts) {
-			// TODO Smack 4.1 provides TLSUtil.acceptAllCertificates, replace
-			// the code here with the code provided by Smack
-			SSLContext context = SSLContext.getInstance("TLS");
-			// Install an "accept all" trust manager
-			X509TrustManager tm = new X509TrustManager() {
-				@Override
-				public void checkClientTrusted(X509Certificate[] arg0,
-						String arg1) throws CertificateException {
-					// Nothing to do here
-				}
-				@Override
-				public void checkServerTrusted(X509Certificate[] arg0,
-						String arg1) throws CertificateException {
-					// Nothing to do here
-				}
-				@Override
-				public X509Certificate[] getAcceptedIssuers() {
-					return new X509Certificate[0];
-				}
-			};
-			context.init(null, new TrustManager[] { tm }, new SecureRandom());
-			cfg.setCustomSSLContext(context);
+			TLSUtils.acceptAllCertificates(cfg);
 			cfg.setHostnameVerifier(new HostnameVerifier() {
 				@Override
 				public boolean verify(String arg0, SSLSession arg1) {
 					return true;
 				}
 			});
-		} else {
-			// TODO This hostname verifier is the default in Smack 4.1 when
-			// smack-java7 is used, remove the code once Smack 4.1 is used
-			cfg.setHostnameVerifier(new HostnameVerifier() {
-				@Override
-				public boolean verify(String hostname, SSLSession session) {
-					HostnameChecker checker = HostnameChecker
-							.getInstance(HostnameChecker.TYPE_TLS);
-
-					boolean validCertificate = false, validPrincipal = false;
-					try {
-						Certificate[] peerCertificates = session
-								.getPeerCertificates();
-
-						if (peerCertificates.length > 0
-								&& peerCertificates[0] instanceof X509Certificate) {
-							X509Certificate peerCertificate = (X509Certificate) peerCertificates[0];
-
-							try {
-								checker.match(hostname, peerCertificate);
-								// Certificate matches hostname
-								validCertificate = true;
-							} catch (CertificateException ex) {
-								// Certificate does not match hostname
-							}
-						} else {
-							// Peer does not have any certificates or they
-							// aren't X.509
-						}
-					} catch (SSLPeerUnverifiedException ex) {
-						// Not using certificates for peers, try verifying the
-						// principal
-						try {
-							Principal peerPrincipal = session
-									.getPeerPrincipal();
-							if (peerPrincipal instanceof KerberosPrincipal) {
-								validPrincipal = HostnameChecker.match(
-										hostname,
-										(KerberosPrincipal) peerPrincipal);
-							} else {
-								// Can't verify principal, not Kerberos
-							}
-						} catch (SSLPeerUnverifiedException ex2) {
-							// Can't verify principal, no principal
-						}
-					}
-
-					return validCertificate || validPrincipal;
-				}
-			});
 		}
 
+		XMPPTCPConnectionConfiguration conf = cfg.build();
+		this.connection = new XMPPTCPConnection(conf);
         LOGGER.info("Trying to connect to XMPP on "
-                + "/" + cfg.getServiceName()
-                + (cfg.isCompressionEnabled() ? " using compression" : "")
+                + "/" + connection.getServiceName()
+                + (conf.isCompressionEnabled() ? " using compression" : "")
                 + (pi.getProxyType() != ProxyInfo.ProxyType.NONE ? " via proxy " + pi.getProxyType() + " "
                         + pi.getProxyAddress() + ":" + pi.getProxyPort() : "")
                 );
@@ -407,7 +344,6 @@ class JabberIMConnection extends AbstractIMConnection {
         boolean retryWithLegacySSL = false;
         Exception originalException = null;
 		try {
-			this.connection = new XMPPTCPConnection(cfg);
 			this.connection.connect();
 			if (!this.connection.isConnected()) {
 				retryWithLegacySSL = true;
@@ -473,7 +409,7 @@ class JabberIMConnection extends AbstractIMConnection {
 					}
 					
 					try {
-						connection.sendPacket(new Ping());
+						connection.sendStanza(new Ping());
 					} catch (NotConnectedException e) {
 						// connection died, so lets scheduled task die, too
 						throw new RuntimeException(e);
@@ -496,12 +432,12 @@ class JabberIMConnection extends AbstractIMConnection {
 	 * See JENKINS-6863
 	 */
 	private void retryConnectionWithLegacySSL(
-			final ConnectionConfiguration cfg, @Nullable Exception originalException)
+			final XMPPTCPConnectionConfiguration.Builder cfg, @Nullable Exception originalException)
 			throws XMPPException, SmackException {
 		try {
 			LOGGER.info("Retrying connection with legacy SSL");
 			cfg.setSocketFactory(SSLSocketFactory.getDefault());
-			this.connection = new XMPPTCPConnection(cfg);
+			this.connection = new XMPPTCPConnection(cfg.build());
 			this.connection.connect();
 		} catch (XMPPException e) {
 			if (originalException != null) {
@@ -523,7 +459,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	 * Sets the chosen subscription mode on our connection.
 	 */
 	private void setupSubscriptionMode() {
-		this.roster = this.connection.getRoster();
+		this.roster = Roster.getInstanceFor(connection);
 		SubscriptionMode mode = SubscriptionMode.valueOf(this.desc.getSubscriptionMode());
 		switch (mode) {
 			case accept_all : LOGGER.info("Accepting all subscription requests");
@@ -555,8 +491,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	// It could be just an empty vCard or an XMPPException thrown.
 	private boolean vCardExists() throws XMPPException {
 	    try {
-            VCard vcard = new VCard();
-            vcard.load(this.connection);
+            VCard vcard = VCardManager.getInstanceFor(connection).loadVCard();
             
             // Best effort check to see if the vcard already exists.
             if (Util.fixEmpty(vcard.getNickName()) != null) {
@@ -596,7 +531,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		vCard.setLastName("Jenkins");
 		vCard.setNickName(this.nick);
 		setAvatarImage(vCard);
-		vCard.save(this.connection);
+		VCardManager.getInstanceFor(connection).saveVCard(vCard);
 	}
 	
 	private void setAvatarImage(VCard vCard) {
@@ -628,10 +563,10 @@ class JabberIMConnection extends AbstractIMConnection {
 
 
         // TODO: ToContainsFilter which was in Smack 4.0.0!?
-        PacketFilter filter = new MessageTypeFilter(Message.Type.chat);
+        StanzaFilter filter = MessageTypeFilter.CHAT;
 
-		PacketListener listener = new PrivateChatListener();
-		this.connection.addPacketListener(listener, filter);
+		StanzaListener listener = new PrivateChatListener();
+		this.connection.addSyncStanzaListener(listener, filter);
 	}
 
 	private MultiUserChat getOrCreateGroupChat(GroupChatIMMessageTarget chat) throws IMException {
@@ -642,7 +577,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 		
 		if (groupChat == null) {
-			groupChat = new MultiUserChat(this.connection, chat.getName());
+			groupChat = MultiUserChatManager.getInstanceFor(connection).getMultiUserChat(chat.getName());
 			try {
 				groupChat.join(this.groupChatNick, chat.getPassword());
 			} catch (XMPPException e) {
@@ -653,8 +588,13 @@ class JabberIMConnection extends AbstractIMConnection {
                 throw new IMException(e);
             }
 
+			// TODO This could be avoided by simply requesting *no* history from the MUC on join.
 			// get rid of old messages:
-			while (groupChat.pollMessage() != null) {
+			try {
+				while (groupChat.pollMessage() != null) {
+				}
+			} catch (MUCNotJoinedException e) {
+				throw new IMException(e);
 			}
 
 			this.bots.add(new Bot(new JabberMultiUserChat(groupChat, this, !chat.isNotificationOnly()),
@@ -689,6 +629,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		return chat;
 	}
 
+	@Override
 	public void send(final IMMessageTarget target, final String text)
 			throws IMException {
 		Assert.notNull(target, "Parameter 'target' must not be null.");
@@ -706,11 +647,6 @@ class JabberIMConnection extends AbstractIMConnection {
             			final Chat chat = getOrCreatePrivateChat(target.toString(), null);
             			chat.sendMessage(text);
             		}
-            } catch (final XMPPException e) {
-            	// server unavailable ? Target-host unknown ? Well. Just skip this
-            	// one.
-                LOGGER.warning(ExceptionHelper.dump(e));
-            	// TODO ? tryReconnect();
             } catch (SmackException.NotConnectedException e) {
                 LOGGER.warning(ExceptionHelper.dump(e));
             } finally {
@@ -780,7 +716,7 @@ class JabberIMConnection extends AbstractIMConnection {
             	}
             	
             	presence.addExtension(new Nick(this.nick));
-            	this.connection.sendPacket(presence);
+            	this.connection.sendStanza(presence);
             } catch (SmackException.NotConnectedException e) {
                 LOGGER.warning(ExceptionHelper.dump(e));
             } finally {
@@ -803,7 +739,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	}
 	
 	public boolean isAuthorized(String xmppAddress) {
-		String bareAddress = StringUtils.parseBareAddress(xmppAddress);
+		String bareAddress = XmppStringUtils.parseBareJid(xmppAddress);
 		
 		// is this a (private) message send from a user in a chat I'm part of?
 		boolean authorized = this.groupChatCache.containsKey(bareAddress);
@@ -856,13 +792,14 @@ class JabberIMConnection extends AbstractIMConnection {
 	/**
 	 * Listens for private chats.
 	 */
-	private final class PrivateChatListener implements PacketListener {
+	private final class PrivateChatListener implements StanzaListener {
 
-		public void processPacket(Packet packet) {
+		@Override
+		public void processPacket(Stanza packet) {
 			if (packet instanceof Message) {
 				Message m = (Message)packet;
 
-				for (PacketExtension ext : m.getExtensions()) {
+				for (ExtensionElement ext : m.getExtensions()) {
 					if (ext instanceof DelayInformation) {
 						// ignore delayed messages
 						return;

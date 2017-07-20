@@ -35,8 +35,9 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.StringUtils;
-import org.jivesoftware.smack.Roster.SubscriptionMode;
+import org.jivesoftware.smack.roster.Roster.SubscriptionMode;
 import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
+import org.jxmpp.util.XmppStringUtils;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.springframework.util.Assert;
@@ -435,7 +436,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
         if (Util.fixEmptyAndTrim(this.groupChatNickname) != null) {
             return this.groupChatNickname;
         } else {
-            return org.jivesoftware.smack.util.StringUtils.parseName(getJabberId());
+            return XmppStringUtils.parseLocalpart(getJabberId());
         }
     }
     
@@ -638,9 +639,9 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	    } else if (Util.fixEmptyAndTrim(hostname) != null) {
 	    	// validation has already been done for the hostname field
 	    	return FormValidation.ok();
-	    } else if (org.jivesoftware.smack.util.StringUtils.parseServer(jabberId) != null) {
+	    } else if (XmppStringUtils.parseDomain(jabberId) != null) {
 			String pts = Util.fixEmptyAndTrim(proxyType);
-	        String host = org.jivesoftware.smack.util.StringUtils.parseServer(jabberId);
+	        String host = XmppStringUtils.parseDomain(jabberId);
 			ProxyType pt = ProxyType.NONE;
 	        try {
 				if (pts != null) {
@@ -772,7 +773,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	@Override
 	public String getUserName() {
 		String jabberId = getJabberId();
-		String res = org.jivesoftware.smack.util.StringUtils.parseName(jabberId);
+		String res = XmppStringUtils.parseLocalpart(jabberId);
 		if (res.isEmpty()) {
 			return jabberId;
 		}
@@ -784,7 +785,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
      * null if not found.
      */
     String getServiceName() {
-        return org.jivesoftware.smack.util.StringUtils.parseServer(getJabberId());
+        return XmppStringUtils.parseDomain(getJabberId());
     }
 
 	@Override

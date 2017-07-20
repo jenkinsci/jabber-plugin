@@ -30,7 +30,7 @@
     
     <properties>
   	  <version.instant-messaging.plugin>1.35</version.instant-messaging.plugin>
-  	  <version.smack>4.0.6</version.smack>
+  	  <version.smack>4.1.9</version.smack>
   	</properties>
   	
   	<build>
@@ -73,7 +73,7 @@
         </dependency>
         <dependency>
             <groupId>org.igniterealtime.smack</groupId>
-            <artifactId>smack-resolver-javax</artifactId>
+            <artifactId>smack-java7</artifactId>
             <version>${version.smack}</version>
             <scope>compile</scope>
         </dependency>

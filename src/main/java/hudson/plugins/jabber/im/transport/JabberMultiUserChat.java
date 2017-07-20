@@ -5,10 +5,9 @@ import hudson.plugins.im.IMException;
 import hudson.plugins.im.IMMessageListener;
 
 import org.jivesoftware.smack.SmackException;
-import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.Occupant;
+import org.jxmpp.util.XmppStringUtils;
 
 /**
  * Handle for a multi-user chat (aka. conference room) in XMPP/Jabber.
@@ -30,8 +29,6 @@ public class JabberMultiUserChat implements IMChat {
     public void sendMessage(String msg) throws IMException {
         try {
             this.chat.sendMessage(msg);
-        } catch (XMPPException e) {
-            throw new IMException(e);
         } catch (SmackException.NotConnectedException e ){
             throw new IMException(e);
         }
@@ -44,7 +41,7 @@ public class JabberMultiUserChat implements IMChat {
     @Override
     public String getNickName(String sender) {
     	// Jabber has the chosen MUC nickname in the resource part of the sender id
-    	String resource = StringUtils.parseResource(sender);
+    	String resource = XmppStringUtils.parseResource(sender);
         if (resource != null) {
             return resource;
         }
