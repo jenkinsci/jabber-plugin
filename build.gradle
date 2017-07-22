@@ -1,0 +1,57 @@
+plugins {
+  id "org.jenkins-ci.jpi" version "0.22.0"
+}
+
+apply from: 'versions.gradle'
+
+if (isSnapshot) {
+   jabberPluginVersion += '-SNAPSHOT'
+}
+
+group 'org.jvnet.hudson.plugins'
+version jabberPluginVersion
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	jenkinsPlugins "org.jvnet.hudson.plugins:instant-messaging:${instantMessagingPluginVersion}@jar"
+
+	jenkinsPlugins "org.jenkins-ci.plugins:mailer:1.7@jar"
+
+	compile "org.igniterealtime.smack:smack-java7:$smackVersion"
+	compile "org.igniterealtime.smack:smack-extensions:$smackVersion"
+	compile "org.igniterealtime.smack:smack-tcp:$smackVersion"
+
+	testCompile group: 'junit', name: 'junit', version: '4.11'
+}
+
+jenkinsPlugin {
+	coreVersion = "1.541"
+	displayName = "Jenkins Jabber (XMPP) notifier and control plugin"
+	url = "http://wiki.jenkins-ci.org/display/JENKINS/Jabber+Plugin"
+	gitHubUrl = "https://github.com/jenkinsci/jabber-plugin"
+	shortName = "jabber"
+
+	developers {
+		developer {
+			id "flow"
+			name "Florian Schmaus"
+			email "flo@geekplace.eu"
+		}
+		developer {
+			id "kutzi"
+			name "Christoph Kutzinski"
+			email "kutzi@gmx.de"
+		}
+	}
+
+	licenses {
+		license {
+			name 'MIT'
+			url 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+			distribution 'repo'
+		}
+	}
+}
