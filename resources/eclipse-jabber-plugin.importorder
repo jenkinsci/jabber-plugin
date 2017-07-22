@@ -1,0 +1,7 @@
+#Organize Import Order
+#Sat Jul 22 15:34:42 CEST 2017
+4=
+3=hudson.plugins.jabber.im
+2=javax
+1=java
+0=\#

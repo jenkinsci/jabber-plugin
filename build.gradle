@@ -3,6 +3,7 @@ plugins {
 }
 
 apply plugin: 'eclipse'
+apply plugin: 'checkstyle'
 
 apply from: 'versions.gradle'
 
@@ -56,4 +57,9 @@ jenkinsPlugin {
 			distribution 'repo'
 		}
 	}
+}
+
+checkstyle {
+	configFile = new File(rootDir, 'checkstyle/checkstyle.xml')
+	toolVersion = '7.7'
 }
