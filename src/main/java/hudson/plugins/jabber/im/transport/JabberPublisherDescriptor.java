@@ -410,7 +410,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	/**
 	 * Returns the jabber ID.
 	 * 
-	 * The jabber ID may have the syntax <user>[@<domain>[/<resource]]
+	 * The jabber ID may have the syntax user@domain[/resource]
 	 */
 	public String getJabberId() {
 		return this.hudsonNickname;
