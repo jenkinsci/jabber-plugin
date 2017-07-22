@@ -1,6 +1,6 @@
 ext {
 	jabberPluginVersion = "1.36"
-	isSnapshot = true
+	isSnapshot = false
 	instantMessagingPluginVersion = "1.35"
 	smackVersion = "4.1.9"
 }
