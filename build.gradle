@@ -18,6 +18,9 @@ repositories {
 	mavenCentral()
 }
 
+sourceCompatibility = 1.7
+targetCompatibility = sourceCompatibility
+
 dependencies {
 	jenkinsPlugins "org.jvnet.hudson.plugins:instant-messaging:${instantMessagingPluginVersion}@jar"
 
