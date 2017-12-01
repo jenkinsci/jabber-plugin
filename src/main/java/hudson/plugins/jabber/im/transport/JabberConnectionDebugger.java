@@ -37,7 +37,6 @@ import org.jivesoftware.smack.debugger.SmackDebugger;
 import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.packet.TopLevelStreamElement;
 import org.jxmpp.jid.EntityFullJid;
-import org.jxmpp.util.XmppStringUtils;
 
 /**
  * Logs detailed info to the log in level FINE or FINEST.
@@ -155,12 +154,10 @@ public class JabberConnectionDebugger extends SmackDebugger {
 	@Override
 	public void onIncomingStreamElement(TopLevelStreamElement streamElement) {
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void onOutgoingStreamElement(TopLevelStreamElement streamElement) {
 		// TODO Auto-generated method stub
-		
 	}
 }

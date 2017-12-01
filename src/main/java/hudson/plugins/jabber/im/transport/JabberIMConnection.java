@@ -626,7 +626,7 @@ class JabberIMConnection extends AbstractIMConnection {
 
 	private MultiUserChat getOrCreateGroupChat(GroupChatIMMessageTarget chat) throws IMException {
 		EntityBareJid mucJid = JidCreate.entityBareFromUnescapedOrThrowUnchecked(chat.getName());
-		
+
 		WeakReference<MultiUserChat> ref = groupChatCache.get(chat.getName());
 		MultiUserChat groupChat = null;
 		if (ref != null) {

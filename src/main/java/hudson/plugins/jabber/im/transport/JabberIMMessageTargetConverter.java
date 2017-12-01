@@ -22,6 +22,10 @@
  */
 package hudson.plugins.jabber.im.transport;
 
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+
 import hudson.plugins.im.DefaultIMMessageTarget;
 import hudson.plugins.im.GroupChatIMMessageTarget;
 import hudson.plugins.im.IMMessageTarget;
@@ -29,12 +33,14 @@ import hudson.plugins.im.IMMessageTargetConversionException;
 import hudson.plugins.im.IMMessageTargetConverter;
 import org.springframework.util.Assert;
 
+
+
 /**
  * Converts Jabber IDs from/to strings.
  * 
  * @author kutzi
  */
-class JabberIMMessageTargetConverter implements IMMessageTargetConverter {
+public class JabberIMMessageTargetConverter implements IMMessageTargetConverter {
 
 	private void checkValidity(final String target) throws IMMessageTargetConversionException {
 		// See: http://xmpp.org/rfcs/rfc3920.html#addressing
@@ -79,6 +85,14 @@ class JabberIMMessageTargetConverter implements IMMessageTargetConverter {
 		} else {
 			return null;
 		}
+	}
+
+	public List<IMMessageTarget> allFromString(final Collection<String> targetsAsString) throws IMMessageTargetConversionException {
+		List<IMMessageTarget> finalTargets = new LinkedList();
+		for (String target : targetsAsString) {
+			finalTargets.add(fromString(target));
+		}
+		return finalTargets;
 	}
 
 	/**

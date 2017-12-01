@@ -1,6 +1,8 @@
 ext {
 	jabberPluginVersion = "1.38"
 	isSnapshot = true
-	instantMessagingPluginVersion = "1.35"
+	instantMessagingPluginVersion = "1.37"
+	workflowStepApiPluginVersion = "2.9"
+	matrixPluginVersion = "1.4"
 	smackVersion = "4.3.4"
 }

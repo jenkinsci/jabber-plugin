@@ -15,6 +15,7 @@ group 'org.jvnet.hudson.plugins'
 version jabberPluginVersion
 
 repositories {
+	mavenLocal()
 	mavenCentral()
 }
 
@@ -23,8 +24,10 @@ targetCompatibility = sourceCompatibility
 
 dependencies {
 	jenkinsPlugins "org.jvnet.hudson.plugins:instant-messaging:${instantMessagingPluginVersion}@jar"
-
+	jenkinsPlugins "org.jenkins-ci.plugins.workflow:workflow-step-api:${workflowStepApiPluginVersion}@jar"
 	jenkinsPlugins "org.jenkins-ci.plugins:mailer:1.7@jar"
+	//can't seem to compile without this (an older version gets picked up otherwise)
+	optionalJenkinsPlugins "org.jenkins-ci.plugins:matrix-project:${matrixPluginVersion}@jar"
 
 	compile "org.igniterealtime.smack:smack-java7:$smackVersion"
 	compile "org.igniterealtime.smack:smack-extensions:$smackVersion"
@@ -34,7 +37,7 @@ dependencies {
 }
 
 jenkinsPlugin {
-	coreVersion = "1.541"
+	coreVersion = "1.596"
 	displayName = "Jenkins Jabber (XMPP) notifier and control plugin"
 	url = "http://wiki.jenkins-ci.org/display/JENKINS/Jabber+Plugin"
 	gitHubUrl = "https://github.com/jenkinsci/jabber-plugin"
