@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2007-2017 the original author or authors
+ * Copyright (c) 2007-2018 the original author or authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -154,7 +154,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	private boolean emailAddressAsJabberId;
 
 	// Proxy parameters
-	private ProxyType proxyType = ProxyType.NONE;
+	private ProxyType proxyType = null;
 	private int proxyPort = DEFAULT_PROXYPORT;
 	private String proxyHost = null;
 	private String proxyUser = null;
@@ -311,11 +311,11 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 		boolean enabled = "on".equals(req.getParameter(PARAMETERNAME_USEPROXY));
 
 		if (!enabled) {
-			this.proxyType = ProxyType.NONE;
+			this.proxyType = null;
 			return;
 		}
 
-		this.proxyType = ProxyType.NONE;
+		this.proxyType = null;
 		String s = req.getParameter(PARAMETERNAME_PROXYTYPE);
 		if (s != null) {
 			try {
@@ -325,7 +325,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 			}
 		}
 
-		if (ProxyType.NONE == this.proxyType)
+		if (null == this.proxyType)
 			return;
 
 		s = req.getParameter(PARAMETERNAME_PROXYHOST);
@@ -334,12 +334,12 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 				InetAddress.getByName(s); // try to resolve
 				this.proxyHost = s;
 			} catch (final UnknownHostException e) {
-				this.proxyType = ProxyType.NONE;
+				this.proxyType = null;
 				throw new FormException("Cannot find Proxy host '" + s + "'.", PARAMETERNAME_PROXYHOST);
 			}
 		} else
-			this.proxyType = ProxyType.NONE;
-		if (ProxyType.NONE == this.proxyType)
+			this.proxyType = null;
+		if (null == this.proxyType)
 			return;
 
 		s = Util.fixEmptyAndTrim(req.getParameter(PARAMETERNAME_PROXYPORT));
@@ -351,7 +351,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 				}
 				this.proxyPort = i;
 			} catch (final NumberFormatException e) {
-				this.proxyType = ProxyType.NONE;
+				this.proxyType = null;
 				throw new FormException("Proxy port cannot be parsed.", PARAMETERNAME_PROXYPORT);
 			}
 		} else
@@ -628,7 +628,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 		} else if (XmppStringUtils.parseDomain(jabberId) != null) {
 			String pts = Util.fixEmptyAndTrim(proxyType);
 			String host = XmppStringUtils.parseDomain(jabberId);
-			ProxyType pt = ProxyType.NONE;
+			ProxyType pt = null;
 			try {
 				if (pts != null) {
 					pt = ProxyType.valueOf(pts);
@@ -662,7 +662,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 		if (host == null) {
 			return FormValidation.ok();
 		} else {
-			ProxyType pt = ProxyType.NONE;
+			ProxyType pt = null;
 			try {
 				if (pts != null) {
 					pt = ProxyType.valueOf(pts);
@@ -670,9 +670,9 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 			} catch (IllegalArgumentException e) {
 				return FormValidation.error("Invalid proxy type " + proxyType);
 			}
-			if (pt != ProxyType.NONE) {
+			if (pt != null) {
 				try {
-					checkHostAccessibility(host, p, ProxyType.NONE);
+					checkHostAccessibility(host, p, null);
 				} catch (UnknownHostException e) {
 					return FormValidation.error("Unknown proxy host " + proxyHost);
 				} catch (NumberFormatException e) {
@@ -699,7 +699,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 		if (host == null) {
 			return FormValidation.ok();
 		} else {
-			ProxyType pt = ProxyType.NONE;
+			ProxyType pt = null;
 			try {
 				if (pts != null) {
 					pt = ProxyType.valueOf(pts);
@@ -730,7 +730,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 		if (port != null) {
 			iPort = Integer.parseInt(port);
 		}
-		if (pt == ProxyType.NONE) {
+		if (pt == null) {
 			// Only try connect if not using a proxy
 			Socket s = new Socket(address, iPort);
 			s.close();

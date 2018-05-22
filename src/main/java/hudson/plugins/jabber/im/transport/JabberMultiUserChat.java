@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2007-2017 the original author or authors
+ * Copyright (c) 2007-2018 the original author or authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -28,6 +28,8 @@ import hudson.plugins.im.IMMessageListener;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.Occupant;
+import org.jxmpp.jid.EntityFullJid;
+import org.jxmpp.jid.impl.JidCreate;
 import org.jxmpp.util.XmppStringUtils;
 
 /**
@@ -50,7 +52,7 @@ public class JabberMultiUserChat implements IMChat {
 	public void sendMessage(String msg) throws IMException {
 		try {
 			this.chat.sendMessage(msg);
-		} catch (SmackException.NotConnectedException e) {
+		} catch (SmackException.NotConnectedException | InterruptedException e) {
 			throw new IMException(e);
 		}
 	}
@@ -70,9 +72,10 @@ public class JabberMultiUserChat implements IMChat {
 
 	@Override
 	public String getIMId(String senderId) {
-		Occupant occ = this.chat.getOccupant(senderId);
+		EntityFullJid senderJid = JidCreate.entityFullFromOrThrowUnchecked(senderId);
+		Occupant occ = this.chat.getOccupant(senderJid);
 		if (occ != null) {
-			return occ.getJid();
+			return occ.getJid().toString();
 		}
 		return null;
 	}

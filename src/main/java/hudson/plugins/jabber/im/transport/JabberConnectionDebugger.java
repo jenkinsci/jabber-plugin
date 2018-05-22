@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2007-2017 the original author or authors
+ * Copyright (c) 2007-2018 the original author or authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -35,6 +35,8 @@ import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.debugger.SmackDebugger;
 import org.jivesoftware.smack.packet.Stanza;
+import org.jivesoftware.smack.packet.TopLevelStreamElement;
+import org.jxmpp.jid.EntityFullJid;
 import org.jxmpp.util.XmppStringUtils;
 
 /**
@@ -42,43 +44,42 @@ import org.jxmpp.util.XmppStringUtils;
  *
  * @author kutzi
  */
-public class JabberConnectionDebugger implements SmackDebugger {
+public class JabberConnectionDebugger extends SmackDebugger {
 
 	private static final Logger LOGGER = Logger.getLogger(JabberConnectionDebugger.class.getName());
 	private static final Level MIN_LOG_LEVEL = Level.FINE;
-
-	private final XMPPConnection connection;
-	private Writer writer;
-	private Reader reader;
 
 	private StanzaListener listener;
 
 	private ConnectionListener connListener;
 
-	public JabberConnectionDebugger(XMPPConnection connection, Writer writer, Reader reader) {
-		this.connection = connection;
-		this.writer = writer;
-		this.reader = reader;
+	public JabberConnectionDebugger(XMPPConnection connection) {
+		super(connection);
 		init();
 	}
 
 	private void init() {
 
+		// TODO
+		/*
 		LoggingFilterReader debugReader = new LoggingFilterReader(this.reader, LOGGER, MIN_LOG_LEVEL);
 		this.reader = debugReader;
 
 		LoggingFilterWriter debugWriter = new LoggingFilterWriter(this.writer, LOGGER, MIN_LOG_LEVEL);
 		this.writer = debugWriter;
+		*/
 
 		this.listener = new StanzaListener() {
-			public void processPacket(Stanza packet) {
+			@Override
+			public void processStanza(Stanza packet) {
 				if (LOGGER.isLoggable(Level.FINEST)) {
-					LOGGER.finest("RCV PKT: " + packet.toXML());
+					LOGGER.finest("RCV PKT: " + packet.toXML(null));
 				}
 			}
 		};
 
 		this.connListener = new ConnectionListener() {
+			@Override
 			public void connected(XMPPConnection connection) {
 				if (LOGGER.isLoggable(MIN_LOG_LEVEL)) {
 					LOGGER.fine("Connection " + connection + " established");
@@ -125,51 +126,41 @@ public class JabberConnectionDebugger implements SmackDebugger {
 	}
 
 	@Override
-	public Reader getReader() {
-		return this.reader;
-	}
-
-	@Override
-	public StanzaListener getReaderListener() {
-		return this.listener;
-	}
-
-	@Override
-	public Writer getWriter() {
-		return this.writer;
-	}
-
-	@Override
-	public StanzaListener getWriterListener() {
-		return null;
-	}
-
-	@Override
 	public Reader newConnectionReader(Reader newReader) {
 		LoggingFilterReader debugReader = new LoggingFilterReader(newReader, LOGGER, MIN_LOG_LEVEL);
-		this.reader = debugReader;
-		return this.reader;
+		return debugReader;
 	}
 
 	@Override
 	public Writer newConnectionWriter(Writer newWriter) {
 		LoggingFilterWriter debugWriter = new LoggingFilterWriter(newWriter, LOGGER, MIN_LOG_LEVEL);
-		this.writer = debugWriter;
-		return this.writer;
+		return debugWriter;
 	}
 
 	@Override
-	public void userHasLogged(String user) {
+	public void userHasLogged(EntityFullJid user) {
 		if (LOGGER.isLoggable(MIN_LOG_LEVEL)) {
-			boolean isAnonymous = "".equals(XmppStringUtils.parseLocalpart(user));
+			boolean isAnonymous = "".equals(user.getLocalpart());
 			String title = "User logged in (" + this.connection.hashCode() + "): "
-					+ ((isAnonymous) ? "" : XmppStringUtils.parseBareJid(user)) + "@" + this.connection.getServiceName()
+					+ ((isAnonymous) ? "" : user.asBareJid()) + "@" + this.connection.getXMPPServiceDomain()
 					+ ":" + this.connection.getPort();
 
-			title = title + "/" + XmppStringUtils.parseResource(user);
+			title = title + "/" + user.getResourcepart();
 			LOGGER.fine(title);
 		}
 
 		this.connection.addConnectionListener(this.connListener);
+	}
+
+	@Override
+	public void onIncomingStreamElement(TopLevelStreamElement streamElement) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onOutgoingStreamElement(TopLevelStreamElement streamElement) {
+		// TODO Auto-generated method stub
+		
 	}
 }

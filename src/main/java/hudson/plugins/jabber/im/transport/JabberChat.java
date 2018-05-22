@@ -46,7 +46,7 @@ public class JabberChat implements IMChat {
 	public void sendMessage(String msg) throws IMException {
 		try {
 			this.chat.sendMessage(msg);
-		} catch (SmackException.NotConnectedException e) {
+		} catch (SmackException.NotConnectedException | InterruptedException e) {
 			throw new IMException(e);
 		}
 	}

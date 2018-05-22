@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2007-2017 the original author or authors
+ * Copyright (c) 2007-2018 the original author or authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -28,6 +28,6 @@ import org.jivesoftware.smack.packet.Message;
 public class JabberMessage extends IMMessage {
 
 	public JabberMessage(Message msg, boolean authorized) {
-		super(msg.getFrom(), msg.getTo(), msg.getBody(), authorized);
+		super(msg.getFrom().toString(), msg.getTo().toString(), msg.getBody(), authorized);
 	}
 }

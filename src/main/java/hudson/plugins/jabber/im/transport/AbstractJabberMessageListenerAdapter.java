@@ -47,8 +47,8 @@ class AbstractJabberMessageListenerAdapter {
 			}
 		}
 
-		IMMessage imMessage = new IMMessage(msg.getFrom(), msg.getTo(), msg.getBody(),
-				this.connection.isAuthorized(msg.getFrom()));
+		IMMessage imMessage = new IMMessage(msg.getFrom().toString(), msg.getTo().toString(), msg.getBody(),
+				this.connection.isAuthorized(msg.getFrom().asBareJid()));
 
 		listener.onMessage(imMessage);
 	}
