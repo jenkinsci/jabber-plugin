@@ -75,6 +75,7 @@ import org.jivesoftware.smack.packet.ExtensionElement;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.Stanza;
+import org.jivesoftware.smack.parsing.ExceptionLoggingCallback;
 import org.jivesoftware.smack.proxy.ProxyInfo;
 import org.jivesoftware.smack.proxy.ProxyInfo.ProxyType;
 import org.jivesoftware.smack.roster.Roster;
@@ -176,6 +177,8 @@ class JabberIMConnection extends AbstractIMConnection {
 
 	static {
 		SmackConfiguration.setDefaultReplyTimeout(20000);
+
+		SmackConfiguration.setDefaultParsingExceptionCallback(new ExceptionLoggingCallback());
 
 		System.setProperty("smack.debuggerClass", JabberConnectionDebugger.class.getName());
 
