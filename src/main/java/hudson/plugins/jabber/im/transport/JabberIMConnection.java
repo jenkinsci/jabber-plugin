@@ -171,7 +171,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	private ScheduledExecutorService scheduler;
 
 	static {
-		SmackConfiguration.setDefaultPacketReplyTimeout(20000);
+		SmackConfiguration.setDefaultReplyTimeout(20000);
 
 		System.setProperty("smack.debuggerClass", JabberConnectionDebugger.class.getName());
 
