@@ -121,21 +121,25 @@ class JabberIMConnection extends AbstractIMConnection {
 	private final Set<Bot> bots = new HashSet<Bot>();
 	private final String passwd;
 	private final String botCommandPrefix;
+
 	/**
 	 * Jabber 'nick'. This is just the username-part of the Jabber-ID. I.e. for 'john.doe@gmail.com' it is 'john.doe'.
 	 */
 	private final String nick;
+
 	/**
 	 * The 'resource' part of the Jabber ID. I.e. for 'john.doe@gmail.com/Jenkins' it is 'Jenkins' or for
 	 * 'john.doe@gmail.com' it is null.
 	 */
 	@Nullable
-	private final String resource;
+	private final Resourcepart resource;
+
 	/**
 	 * The nick name of the Jenkins bot to use in group chats. May be null in which case the nick is used.
 	 */
 	@Nullable
 	private final Resourcepart groupChatNick;
+
 	/**
 	 * Server name of the Jabber server.
 	 */
@@ -182,12 +186,19 @@ class JabberIMConnection extends AbstractIMConnection {
 	JabberIMConnection(JabberPublisherDescriptor desc, AuthenticationHolder authentication) throws IMException {
 		super(desc);
 		Assert.notNull(desc, "Parameter 'desc' must not be null.");
+
+		EntityJid myJid;
+		try {
+			myJid = JidCreate.entityFromUnescaped(desc.getJabberId());
+		} catch (XmppStringprepException e) {
+			throw new IMException(e);
+		}
 		this.desc = desc;
 		this.authentication = authentication;
 		this.hostnameOverride = desc.getHostname();
 		this.port = desc.getPort();
 		this.nick = desc.getNickname();
-		this.resource = XmppStringUtils.parseResource(desc.getJabberId());
+		this.resource = myJid.getResourceOrNull();
 		this.passwd = desc.getPassword();
 		this.proxytype = desc.getProxyType();
 		this.proxyhost = desc.getProxyHost();
@@ -394,14 +405,8 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 
 		if (this.connection.isConnected()) {
-		    Resourcepart resource;
-		    if (StringUtils.isNotEmpty(this.resource)) {
-		        resource = Resourcepart.from(this.resource);
-		    } else {
-		        resource = null;
-		    }
 			this.connection.login(this.desc.getUserName(), this.passwd,
-					resource);
+					this.resource);
 
 			setupSubscriptionMode();
 			createVCardIfNeeded();
@@ -579,7 +584,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		VCard vCard = new VCard();
 		vCard.setFirstName("Mr.");
 		vCard.setLastName("Jenkins");
-		vCard.setNickName(this.nick);
+		vCard.setNickName(this.nick.toString());
 		setAvatarImage(vCard);
 		VCardManager.getInstanceFor(connection).saveVCard(vCard);
 	}
