@@ -560,11 +560,15 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 			matrixJobMultiplier = MatrixJobMultiplier.valueOf(o);
 		}
 
+		String extraMessage = req.getParameter(getParamNames().getExtraMessage());
+
 		try {
-			return new JabberPublisher(targets, n, notifyStart, notifySuspects, notifyCulprits, notifyFixers,
+			JabberPublisher publisher = new JabberPublisher(targets, n, notifyStart, notifySuspects, notifyCulprits, notifyFixers,
 					notifyUpstream,
 					req.bindJSON(BuildToChatNotifier.class, formData.getJSONObject("buildToChatNotifier")),
 					matrixJobMultiplier);
+			publisher.setExtraMessage(extraMessage);
+			return publisher;
 		} catch (final IMMessageTargetConversionException e) {
 			throw new FormException(e, PARAMETERNAME_TARGETS);
 		}

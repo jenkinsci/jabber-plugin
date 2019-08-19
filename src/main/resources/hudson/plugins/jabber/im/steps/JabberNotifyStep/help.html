@@ -1,0 +1,44 @@
+<div>
+    When used in Pipelines, this plugin will act somewhat differently than in AbstractBuild subclasses.
+    Specifically, notification strategy relies on a build result being set, but in pipelines it is not (yet) set.
+    Here are some ways to use it:
+
+    <ul>
+        <li>
+            <b>Set result yourself</b> (and use a single jabberNotify step)
+            <pre>
+                <code>
+try {
+    //main build here.
+
+    currentBuild.result = Result.SUCCESS.toString() //otherwise message will say "NOT_BUILT"
+} catch(e) {
+    currentBuild.result = Result.FAILURE.toString()
+    throw e
+} finally {
+    jabberNotify notificationStrategy: 'failure and fixed', notifyCulprits: true, notifySuspects: true, targets: '...'
+}
+                </code>
+            </pre>
+        </li>
+
+        <li>
+            <b>Decide when to notify</b> (and author your own messages)
+            <pre>
+                <code>
+jabberNotify buildToChatNotifier: [$class: 'ExtraMessageOnlyBuildToChatNotifier'], extraMessage: 'Build Started', targets: '...'
+try {
+    //main build here
+
+    jabberNotify buildToChatNotifier: [$class: 'ExtraMessageOnlyBuildToChatNotifier'], extraMessage: 'Build Succeeded', targets: '...'
+} catch (e) {
+    jabberNotify buildToChatNotifier: [$class: 'ExtraMessageOnlyBuildToChatNotifier'], extraMessage: 'Build Failed', targets: '...'
+    throw e
+}
+
+                </code>
+            </pre>
+        </li>
+    </ul>
+
+</div>
