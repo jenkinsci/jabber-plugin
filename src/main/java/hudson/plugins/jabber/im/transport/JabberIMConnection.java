@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2007-2018 the original author or authors
+ * Copyright (c) 2007-2019 the original author or authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -66,9 +66,12 @@ import org.jivesoftware.smack.SmackConfiguration;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.SmackException.NotConnectedException;
 import org.jivesoftware.smack.StanzaListener;
+import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.chat.Chat;
 import org.jivesoftware.smack.chat.ChatManager;
+import org.jivesoftware.smack.debugger.SmackDebugger;
+import org.jivesoftware.smack.debugger.SmackDebuggerFactory;
 import org.jivesoftware.smack.filter.MessageTypeFilter;
 import org.jivesoftware.smack.filter.StanzaFilter;
 import org.jivesoftware.smack.packet.ExtensionElement;
@@ -175,8 +178,6 @@ class JabberIMConnection extends AbstractIMConnection {
 		SmackConfiguration.setDefaultReplyTimeout(20000);
 
 		SmackConfiguration.setDefaultParsingExceptionCallback(new ExceptionLoggingCallback());
-
-		System.setProperty("smack.debuggerClass", JabberConnectionDebugger.class.getName());
 
 		// Currently, we handle reconnects ourself.
 		ReconnectionManager.setEnabledPerDefault(false);
@@ -356,7 +357,12 @@ class JabberIMConnection extends AbstractIMConnection {
 			cfg.setHost(hostnameOverride).setPort(port).setXmppDomain(serviceName);
 		}
 
-		cfg.enableDefaultDebugger();
+		cfg.setDebuggerFactory(new SmackDebuggerFactory() {
+			@Override
+			public SmackDebugger create(XMPPConnection connection) {
+				return new JabberConnectionDebugger(connection);
+			}
+		});
 
 		if (acceptAllCerts) {
 			TLSUtils.acceptAllCertificates(cfg);

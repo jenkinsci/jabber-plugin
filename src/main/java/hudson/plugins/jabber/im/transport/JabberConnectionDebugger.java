@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2007-2018 the original author or authors
+ * Copyright (c) 2007-2019 the original author or authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -27,14 +27,9 @@ import java.io.Writer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import hudson.plugins.jabber.im.LoggingFilterReader;
-import hudson.plugins.jabber.im.LoggingFilterWriter;
-
 import org.jivesoftware.smack.ConnectionListener;
-import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.debugger.SmackDebugger;
-import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.packet.TopLevelStreamElement;
 import org.jxmpp.jid.EntityFullJid;
 
@@ -48,35 +43,10 @@ public class JabberConnectionDebugger extends SmackDebugger {
 	private static final Logger LOGGER = Logger.getLogger(JabberConnectionDebugger.class.getName());
 	private static final Level MIN_LOG_LEVEL = Level.FINE;
 
-	private StanzaListener listener;
-
 	private ConnectionListener connListener;
 
 	public JabberConnectionDebugger(XMPPConnection connection) {
 		super(connection);
-		init();
-	}
-
-	private void init() {
-
-		// TODO
-		/*
-		LoggingFilterReader debugReader = new LoggingFilterReader(this.reader, LOGGER, MIN_LOG_LEVEL);
-		this.reader = debugReader;
-
-		LoggingFilterWriter debugWriter = new LoggingFilterWriter(this.writer, LOGGER, MIN_LOG_LEVEL);
-		this.writer = debugWriter;
-		*/
-
-		this.listener = new StanzaListener() {
-			@Override
-			public void processStanza(Stanza packet) {
-				if (LOGGER.isLoggable(Level.FINEST)) {
-					LOGGER.finest("RCV PKT: " + packet.toXML(null));
-				}
-			}
-		};
-
 		this.connListener = new ConnectionListener() {
 			@Override
 			public void connected(XMPPConnection connection) {
@@ -92,48 +62,35 @@ public class JabberConnectionDebugger extends SmackDebugger {
 				}
 			}
 
+			@Override
 			public void connectionClosed() {
 				if (LOGGER.isLoggable(MIN_LOG_LEVEL)) {
 					LOGGER.fine("Connection closed");
 				}
 			}
 
+			@Override
 			public void connectionClosedOnError(Exception e) {
 				if (LOGGER.isLoggable(MIN_LOG_LEVEL)) {
 					LOGGER.log(MIN_LOG_LEVEL, "Connection closed due to an exception", e);
 				}
 			}
-
-			public void reconnectionFailed(Exception e) {
-				if (LOGGER.isLoggable(MIN_LOG_LEVEL)) {
-					LOGGER.log(MIN_LOG_LEVEL, "Reconnection failed due to an exception", e);
-				}
-			}
-
-			public void reconnectionSuccessful() {
-				if (LOGGER.isLoggable(MIN_LOG_LEVEL)) {
-					LOGGER.log(MIN_LOG_LEVEL, "Reconnection successful");
-				}
-			}
-
-			public void reconnectingIn(int seconds) {
-				if (LOGGER.isLoggable(MIN_LOG_LEVEL)) {
-					LOGGER.log(MIN_LOG_LEVEL, "Reconnecting in " + seconds + " seconds");
-				}
-			}
 		};
+		connection.addConnectionListener(this.connListener);
+	}
+
+	// N.B. we do not use the newConnection(Reader|Writer) hooks, since they are pretty low level. That is, they are
+	// invoked for every chunk that is send or received, which usually creates a lot of noise, since an XMPP stream
+	// element may consists of multiple chunks. Instead we use the high level on(Incoming|Outgoing)StreamElement hooks.
+
+	@Override
+	public Reader newConnectionReader(Reader reader) {
+		return reader;
 	}
 
 	@Override
-	public Reader newConnectionReader(Reader newReader) {
-		LoggingFilterReader debugReader = new LoggingFilterReader(newReader, LOGGER, MIN_LOG_LEVEL);
-		return debugReader;
-	}
-
-	@Override
-	public Writer newConnectionWriter(Writer newWriter) {
-		LoggingFilterWriter debugWriter = new LoggingFilterWriter(newWriter, LOGGER, MIN_LOG_LEVEL);
-		return debugWriter;
+	public Writer newConnectionWriter(Writer writer) {
+		return writer;
 	}
 
 	@Override
@@ -147,17 +104,19 @@ public class JabberConnectionDebugger extends SmackDebugger {
 			title = title + "/" + user.getResourcepart();
 			LOGGER.fine(title);
 		}
-
-		this.connection.addConnectionListener(this.connListener);
 	}
 
 	@Override
 	public void onIncomingStreamElement(TopLevelStreamElement streamElement) {
-		// TODO Auto-generated method stub
+		if (LOGGER.isLoggable(MIN_LOG_LEVEL)) {
+			LOGGER.log(MIN_LOG_LEVEL, "RECV: " + streamElement.toXML(null));
+		}
 	}
 
 	@Override
 	public void onOutgoingStreamElement(TopLevelStreamElement streamElement) {
-		// TODO Auto-generated method stub
+		if (LOGGER.isLoggable(MIN_LOG_LEVEL)) {
+			LOGGER.log(MIN_LOG_LEVEL, "SENT: " + streamElement.toXML(null));
+		}
 	}
 }
