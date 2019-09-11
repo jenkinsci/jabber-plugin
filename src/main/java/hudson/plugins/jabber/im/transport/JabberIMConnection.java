@@ -156,8 +156,6 @@ class JabberIMConnection extends AbstractIMConnection {
 
 	private Roster roster;
 
-	private MultiUserChatManager mucManager;
-
 	/**
 	 * Proxy parameters
 	 */
@@ -373,7 +371,6 @@ class JabberIMConnection extends AbstractIMConnection {
 		XMPPTCPConnectionConfiguration conf = cfg.build();
 
 		final XMPPTCPConnection connection = new XMPPTCPConnection(conf);
-		this.mucManager = MultiUserChatManager.getInstanceFor(connection);
 
 		this.connection = connection;
 		LOGGER.info("Trying to connect to XMPP on " + "/" + connection.getXMPPServiceDomain()
