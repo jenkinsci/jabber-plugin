@@ -37,7 +37,7 @@ dependencies {
 }
 
 jenkinsPlugin {
-	coreVersion = "1.596"
+	coreVersion = "2.164"
 	displayName = "Jenkins Jabber (XMPP) notifier and control plugin"
 	url = "http://wiki.jenkins-ci.org/display/JENKINS/Jabber+Plugin"
 	gitHubUrl = "https://github.com/jenkinsci/jabber-plugin"
