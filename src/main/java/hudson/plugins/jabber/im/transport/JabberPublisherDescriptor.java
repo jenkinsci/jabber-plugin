@@ -497,7 +497,11 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	 * Returns the text to be put into the form field.
 	 */
 	public String getProxyTypeString() {
-		return this.proxyType.name();
+		ProxyType proxyType = getProxyType();
+		if (proxyType == null) {
+			return "NONE";
+		}
+		return proxyType.name();
 	}
 
 	public boolean isAcceptAllCerts() {
