@@ -29,11 +29,11 @@ dependencies {
 	//can't seem to compile without this (an older version gets picked up otherwise)
 	optionalJenkinsPlugins "org.jenkins-ci.plugins:matrix-project:${matrixPluginVersion}@jar"
 
-	compile "org.igniterealtime.smack:smack-java7:$smackVersion"
-	compile "org.igniterealtime.smack:smack-extensions:$smackVersion"
-	compile "org.igniterealtime.smack:smack-tcp:$smackVersion"
+	implementation "org.igniterealtime.smack:smack-java7:$smackVersion"
+	implementation "org.igniterealtime.smack:smack-extensions:$smackVersion"
+	implementation "org.igniterealtime.smack:smack-tcp:$smackVersion"
 
-	testCompile group: 'junit', name: 'junit', version: '4.11'
+	testImplementation group: 'junit', name: 'junit', version: '4.11'
 }
 
 jenkinsPlugin {
