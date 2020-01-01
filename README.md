@@ -14,11 +14,6 @@ This plugin needs the [instant-messaging
 plugin](http://wiki.jenkins-ci.org/display/JENKINS/Instant+Messaging+Plugin).
 Please ensure that the latest version of this plug-in is also installed.
 
-### Java 7 Needed
-
-Note that since version 1.26 Java 7 is needed as a requirement to run
-the plugin.
-
 ### Features
 
 See [instant-messaging
