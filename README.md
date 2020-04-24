@@ -46,6 +46,16 @@ If you experience any problems using the plugin please increase the log
 level of the logger *hudson.plugins.jabber* to FINEST (see ), try to
 reproduce the problem and attach the collected logs to the JIRA issue.
 
+## Contact
+
+You can reach the developers in the
+
+[smack@conference.igniterealtime.org](xmpp:smack@smack@conference.igniterealtime.org?join)
+
+XMPP Multi-User Conference (MUC) room. If you do not have an XMPP
+client at hand, then you may want to try this
+[link](https://inverse.chat/#converse/room?jid=smack@conference.igniterealtime.org).
+
 ## Changelog
 
 ### Version 1.38 (2019-10-17)
