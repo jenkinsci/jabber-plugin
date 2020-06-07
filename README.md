@@ -58,6 +58,10 @@ client at hand, then you may want to try this
 
 ## Changelog
 
+### Version 1.39 (2020-06-07)
+- Fix NPE in JabberPublisherDescriptor
+- Bundle classes as JAR file into HPI file [JENKINS-54064](https://issues.jenkins-ci.org/browse/JENKINS-54064)
+
 ### Version 1.38 (2019-10-17)
 -   Support Jenkins Pipeline for Jabber/XMPP notifications ([JENKINS-36826](https://issues.jenkins-ci.org/browse/JENKINS-36826))
 -   Improved debug log messages
