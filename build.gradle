@@ -5,14 +5,15 @@ plugins {
 apply plugin: 'eclipse'
 apply plugin: 'checkstyle'
 
-apply from: 'versions.gradle'
-
-if (isSnapshot) {
-   jabberPluginVersion += '-SNAPSHOT'
+ext {
+	instantMessagingPluginVersion = "1.37"
+	workflowStepApiPluginVersion = "2.9"
+	matrixPluginVersion = "1.4"
+	smackVersion = "4.3.4"
 }
 
 group 'org.jvnet.hudson.plugins'
-version jabberPluginVersion
+version readVersionFile()
 
 repositories {
 	mavenLocal()
@@ -74,4 +75,15 @@ jenkinsPlugin {
 checkstyle {
 	configFile = new File(rootDir, 'checkstyle/checkstyle.xml')
 	toolVersion = '7.7'
+}
+
+def readVersionFile() {
+	def versionFile = new File(rootDir, 'version')
+	if (!versionFile.isFile()) {
+		throw new Exception("Could not find version file")
+	}
+	if (versionFile.text.isEmpty()) {
+		throw new Exception("Version file does not contain a version")
+	}
+	versionFile.text.trim()
 }
