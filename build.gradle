@@ -73,8 +73,7 @@ jenkinsPlugin {
 }
 
 checkstyle {
-	configFile = new File(rootDir, 'checkstyle/checkstyle.xml')
-	toolVersion = '7.7'
+	toolVersion = '8.10'
 }
 
 def readVersionFile() {

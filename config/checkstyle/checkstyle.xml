@@ -4,11 +4,10 @@
      "http://www.puppycrawl.com/dtds/configuration_1_3.dtd">
 <module name="Checker">
 	<module name="SuppressionFilter">
-		<property name="file" value="checkstyle/suppressions.xml"/>
+		<property name="file" value="${config_loc}/suppressions.xml"/>
 	</module>
-	<module name="SuppressionCommentFilter"/>
 	<module name="Header">
-		<property name="headerFile" value="checkstyle/header.txt"/>
+		<property name="headerFile" value="${config_loc}/header.txt"/>
 		<property name="ignoreLines" value="2"/>
 		<property name="fileExtensions" value="java"/>
 	</module>
@@ -69,7 +68,6 @@
 		 -->
 	<module name="TreeWalker">
 		<module name="FinalClass"/>
-		<module name="FileContentsHolder"/>
 		<module name="UnusedImports">
 			<property name="processJavadoc" value="true"/>
 		</module>
@@ -200,5 +198,6 @@
 			<property name="sortImportsInGroupAlphabetically" value="true"/>
 			<property name="separateLineBetweenGroups" value="true"/>
 		</module>
+		<module name="SuppressionCommentFilter"/>
 	</module>
 </module>
