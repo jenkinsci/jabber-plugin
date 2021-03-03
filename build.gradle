@@ -9,7 +9,7 @@ ext {
 	instantMessagingPluginVersion = "1.37"
 	workflowStepApiPluginVersion = "2.9"
 	matrixPluginVersion = "1.4"
-	smackVersion = "4.3.4"
+	smackVersion = "4.4.1"
 }
 
 group 'org.jvnet.hudson.plugins'
@@ -36,7 +36,7 @@ dependencies {
 	//can't seem to compile without this (an older version gets picked up otherwise)
 	matrixImplementation "org.jenkins-ci.plugins:matrix-project:${matrixPluginVersion}@jar"
 
-	implementation "org.igniterealtime.smack:smack-java7:$smackVersion"
+	implementation "org.igniterealtime.smack:smack-java8:$smackVersion"
 	implementation "org.igniterealtime.smack:smack-extensions:$smackVersion"
 	implementation "org.igniterealtime.smack:smack-tcp:$smackVersion"
 

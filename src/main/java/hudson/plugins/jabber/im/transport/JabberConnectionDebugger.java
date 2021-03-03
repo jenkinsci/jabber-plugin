@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2007-2019 the original author or authors
+ * Copyright (c) 2007-2021 the original author or authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -22,8 +22,6 @@
  */
 package hudson.plugins.jabber.im.transport;
 
-import java.io.Reader;
-import java.io.Writer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -79,20 +77,6 @@ public class JabberConnectionDebugger extends SmackDebugger {
 		connection.addConnectionListener(this.connListener);
 	}
 
-	// N.B. we do not use the newConnection(Reader|Writer) hooks, since they are pretty low level. That is, they are
-	// invoked for every chunk that is send or received, which usually creates a lot of noise, since an XMPP stream
-	// element may consists of multiple chunks. Instead we use the high level on(Incoming|Outgoing)StreamElement hooks.
-
-	@Override
-	public Reader newConnectionReader(Reader reader) {
-		return reader;
-	}
-
-	@Override
-	public Writer newConnectionWriter(Writer writer) {
-		return writer;
-	}
-
 	@Override
 	public void userHasLogged(EntityFullJid user) {
 		if (LOGGER.isLoggable(MIN_LOG_LEVEL)) {
@@ -109,14 +93,22 @@ public class JabberConnectionDebugger extends SmackDebugger {
 	@Override
 	public void onIncomingStreamElement(TopLevelStreamElement streamElement) {
 		if (LOGGER.isLoggable(MIN_LOG_LEVEL)) {
-			LOGGER.log(MIN_LOG_LEVEL, "RECV: " + streamElement.toXML(null));
+			LOGGER.log(MIN_LOG_LEVEL, "RECV: " + streamElement.toXML());
 		}
 	}
 
 	@Override
 	public void onOutgoingStreamElement(TopLevelStreamElement streamElement) {
 		if (LOGGER.isLoggable(MIN_LOG_LEVEL)) {
-			LOGGER.log(MIN_LOG_LEVEL, "SENT: " + streamElement.toXML(null));
+			LOGGER.log(MIN_LOG_LEVEL, "SENT: " + streamElement.toXML());
 		}
+	}
+
+	@Override
+	public void outgoingStreamSink(CharSequence outgoingCharSequence) {
+	}
+
+	@Override
+	public void incomingStreamSink(CharSequence incomingCharSequence) {
 	}
 }

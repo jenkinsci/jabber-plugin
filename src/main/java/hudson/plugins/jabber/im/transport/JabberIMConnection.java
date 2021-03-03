@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2007-2019 the original author or authors
+ * Copyright (c) 2007-2021 the original author or authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -59,7 +59,6 @@ import hudson.plugins.im.tools.ExceptionHelper;
 import hudson.util.DaemonThreadFactory;
 import hudson.util.NamingThreadFactory;
 import org.apache.commons.io.IOUtils;
-import org.jivesoftware.smack.AbstractConnectionListener;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.ReconnectionManager;
 import org.jivesoftware.smack.SmackConfiguration;
@@ -493,10 +492,10 @@ class JabberIMConnection extends AbstractIMConnection {
 				// use the original connection exception as legacy SSL should only
 				// be a fallback
 				LOGGER.warning("Retrying with legacy SSL failed: " + e.getMessage());
-				throw new SmackException("Exception of original (without legacy SSL) connection attempt",
+				throw new SmackException.SmackWrappedException("Exception of original (without legacy SSL) connection attempt",
 						originalException);
 			} else {
-				throw new SmackException(e);
+				throw new SmackException.SmackWrappedException(e);
 			}
 		} catch (SmackException e) {
 			LOGGER.warning(ExceptionHelper.dump(e));
@@ -555,7 +554,7 @@ class JabberIMConnection extends AbstractIMConnection {
 			if (e instanceof XMPPException.XMPPErrorException) {
 				XMPPException.XMPPErrorException ex = (XMPPException.XMPPErrorException) e;
 				// See http://xmpp.org/extensions/xep-0054.html#sect-id304495
-				if (ex.getXMPPError().getCondition().equals(org.jivesoftware.smack.packet.StanzaError.Condition.item_not_found)) {
+				if (ex.getStanzaError().getCondition().equals(org.jivesoftware.smack.packet.StanzaError.Condition.item_not_found)) {
 					return false;
 				}
 			}
@@ -806,7 +805,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	public void addConnectionListener(final IMConnectionListener listener) {
 		lock();
 		try {
-			ConnectionListener l = new AbstractConnectionListener() {
+			ConnectionListener l = new ConnectionListener() {
 				@Override
 				public void connectionClosedOnError(Exception e) {
 					listener.connectionBroken(e);
