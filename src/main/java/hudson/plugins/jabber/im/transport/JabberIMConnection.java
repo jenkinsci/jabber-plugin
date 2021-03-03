@@ -118,7 +118,7 @@ class JabberIMConnection extends AbstractIMConnection {
 
 	private volatile XMPPTCPConnection connection;
 
-	private final Map<String, WeakReference<MultiUserChat>> groupChatCache = new HashMap<String, WeakReference<MultiUserChat>>();
+	private final Map<BareJid, WeakReference<MultiUserChat>> groupChatCache = new HashMap<>();
 	private final Map<EntityJid, WeakReference<Chat>> chatCache = new HashMap<>();
 	private final Set<Bot> bots = new HashSet<Bot>();
 	private final String passwd;
@@ -630,7 +630,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	private MultiUserChat getOrCreateGroupChat(GroupChatIMMessageTarget chat) throws IMException {
 		EntityBareJid mucJid = JidCreate.entityBareFromUnescapedOrThrowUnchecked(chat.getName());
 
-		WeakReference<MultiUserChat> ref = groupChatCache.get(chat.getName());
+		WeakReference<MultiUserChat> ref = groupChatCache.get(mucJid);
 		MultiUserChat groupChat = null;
 		if (ref != null) {
 			groupChat = ref.get();
@@ -657,7 +657,7 @@ class JabberIMConnection extends AbstractIMConnection {
 			this.bots.add(new Bot(new JabberMultiUserChat(groupChat, this, !chat.isNotificationOnly()),
 					this.groupChatNick.toString(), this.desc.getHost(), this.botCommandPrefix, this.authentication));
 
-			groupChatCache.put(chat.getName(), new WeakReference<MultiUserChat>(groupChat));
+			groupChatCache.put(mucJid, new WeakReference<MultiUserChat>(groupChat));
 		}
 		return groupChat;
 	}
