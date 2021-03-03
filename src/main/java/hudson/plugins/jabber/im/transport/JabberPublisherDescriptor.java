@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2007-2018 the original author or authors
+ * Copyright (c) 2007-2021 the original author or authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -624,7 +624,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 
 	public FormValidation doJabberIdCheck(@QueryParameter String jabberId, @QueryParameter final String hostname,
 			@QueryParameter final String port, @QueryParameter final String proxyType) {
-		if (!Jenkins.getInstance().hasPermission(Jenkins.ADMINISTER)) {
+		if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
 			return FormValidation.ok();
 		}
 
@@ -661,7 +661,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 
 	public FormValidation doProxyCheck(@QueryParameter final String proxyType, @QueryParameter final String proxyHost,
 			@QueryParameter final String proxyPort) {
-		if (!Jenkins.getInstance().hasPermission(Jenkins.ADMINISTER)) {
+		if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
 			return FormValidation.ok();
 		}
 		String host = Util.fixEmptyAndTrim(proxyHost);
@@ -698,7 +698,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	 */
 	public FormValidation doServerCheck(@QueryParameter final String hostname, @QueryParameter final String port,
 			@QueryParameter final String proxyType) {
-		if (!Jenkins.getInstance().hasPermission(Jenkins.ADMINISTER)) {
+		if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
 			return FormValidation.ok();
 		}
 		String host = Util.fixEmptyAndTrim(hostname);

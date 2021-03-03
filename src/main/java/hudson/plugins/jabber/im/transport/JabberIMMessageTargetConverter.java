@@ -88,7 +88,7 @@ public class JabberIMMessageTargetConverter implements IMMessageTargetConverter 
 	}
 
 	public List<IMMessageTarget> allFromString(final Collection<String> targetsAsString) throws IMMessageTargetConversionException {
-		List<IMMessageTarget> finalTargets = new LinkedList();
+		List<IMMessageTarget> finalTargets = new LinkedList<>();
 		for (String target : targetsAsString) {
 			finalTargets.add(fromString(target));
 		}

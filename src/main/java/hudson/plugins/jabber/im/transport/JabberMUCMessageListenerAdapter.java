@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2007-2017 the original author or authors
+ * Copyright (c) 2007-2021 the original author or authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -24,12 +24,11 @@ package hudson.plugins.jabber.im.transport;
 
 import hudson.plugins.im.IMMessageListener;
 import org.jivesoftware.smack.MessageListener;
-import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 
 /**
- * Wraps an {@link IMMessageListener} in a Smack {@link PacketListener}.
+ * Wraps an {@link IMMessageListener} in a Smack {@link MessageListener}.
  * 
  * @author kutzi
  */
