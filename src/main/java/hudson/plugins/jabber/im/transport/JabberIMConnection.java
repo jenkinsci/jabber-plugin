@@ -76,6 +76,7 @@ import org.jivesoftware.smack.filter.StanzaFilter;
 import org.jivesoftware.smack.packet.ExtensionElement;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Presence;
+import org.jivesoftware.smack.packet.PresenceBuilder;
 import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.parsing.ExceptionLoggingCallback;
 import org.jivesoftware.smack.proxy.ProxyInfo;
@@ -742,29 +743,31 @@ class JabberIMConnection extends AbstractIMConnection {
 				if (!isConnected()) {
 					return;
 				}
-				Presence presence;
+				PresenceBuilder presenceBuilder = connection.getStanzaFactory()
+						.buildPresenceStanza();
 				switch (this.impresence) {
 				case AVAILABLE:
-					presence = new Presence(Presence.Type.available, this.imStatusMessage, 1, Presence.Mode.available);
+					presenceBuilder.setStatus(imStatusMessage).setPriority(1).setMode(Presence.Mode.available);
 					break;
 
 				case OCCUPIED:
-					presence = new Presence(Presence.Type.available, this.imStatusMessage, 1, Presence.Mode.away);
+					presenceBuilder.setStatus(imStatusMessage).setPriority(1).setMode(Presence.Mode.away);
 					break;
 
 				case DND:
-					presence = new Presence(Presence.Type.available, this.imStatusMessage, 1, Presence.Mode.dnd);
+					presenceBuilder.setStatus(imStatusMessage).setPriority(1).setMode(Presence.Mode.dnd);
 					break;
 
 				case UNAVAILABLE:
-					presence = new Presence(Presence.Type.unavailable);
+					presenceBuilder.ofType(Presence.Type.unavailable);
 					break;
 
 				default:
 					throw new IllegalStateException("Don't know how to handle " + impresence);
 				}
 
-				presence.addExtension(new Nick(this.nick));
+				presenceBuilder.addExtension(new Nick(this.nick));
+				Presence presence = presenceBuilder.build();
 				this.connection.sendStanza(presence);
 			} catch (SmackException.NotConnectedException e) {
 				LOGGER.warning(ExceptionHelper.dump(e));
