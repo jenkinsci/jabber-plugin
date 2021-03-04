@@ -19,13 +19,13 @@
 		  <f:repeatable name="jabberPlugin.initialChats" var="ch" items="${descriptor.defaultTargets}">
 		    <div width="100%">
               <f:entry title="Name">
-                    <input type="text" width="100%" style="text-align:left" name="jabberPlugin.chat.name" value="${ch.name}" /></td>
+                    <input type="text" width="100%" style="text-align:left" name="jabberPlugin.chat.name" value="${ch.name}" />
               </f:entry>
               <f:entry title="Password">
-                    <input type="password" width="100%" style="text-align:left" name="jabberPlugin.chat.password" value="${ch.password}" /></td>
+                    <input type="password" width="100%" style="text-align:left" name="jabberPlugin.chat.password" value="${ch.password}" />
               </f:entry>
               <f:entry title="Notification only">
-                    <f:checkbox name="jabberPlugin.chat.notificationOnly" checked="${ch.notificationOnly}"/></td>
+                    <f:checkbox name="jabberPlugin.chat.notificationOnly" checked="${ch.notificationOnly}"/>
               </f:entry>
               <f:entry>
                     <div align="right"><f:repeatableDeleteButton /></div>
