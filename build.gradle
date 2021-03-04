@@ -6,7 +6,7 @@ apply plugin: 'eclipse'
 apply plugin: 'checkstyle'
 
 ext {
-	instantMessagingPluginVersion = "1.37"
+	instantMessagingPluginVersion = "1.42"
 	workflowStepApiPluginVersion = "2.9"
 	matrixPluginVersion = "1.4"
 	smackVersion = "4.4.2"

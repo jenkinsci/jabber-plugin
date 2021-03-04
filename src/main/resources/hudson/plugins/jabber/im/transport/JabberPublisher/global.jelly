@@ -22,7 +22,10 @@
                     <input type="text" width="100%" style="text-align:left" name="jabberPlugin.chat.name" value="${ch.name}" />
               </f:entry>
               <f:entry title="Password">
-                    <input type="password" width="100%" style="text-align:left" name="jabberPlugin.chat.password" value="${ch.password}" />
+                    <f:password
+                      name="jabberPlugin.chat.password"
+                      value="${ch.password}"
+                      />
               </f:entry>
               <f:entry title="Notification only">
                     <f:checkbox name="jabberPlugin.chat.notificationOnly" checked="${ch.notificationOnly}"/>
@@ -94,8 +97,10 @@
             <f:textbox name="${descriptor.PARAMETERNAME_PROXYUSER}" value="${descriptor.proxyUser}" />
           </f:entry>
           <f:entry title="${%JabberProxyPass}">
-            <input type="password" name="${descriptor.PARAMETERNAME_PROXYPASS}" class="setting-input"
-                                    value="${descriptor.proxyPass}"/>
+            <f:password
+              name="${descriptor.PARAMETERNAME_PROXYPASS}"
+              value="${descriptor.proxyPass}"
+              />
           </f:entry>
       </f:optionalBlock>
       

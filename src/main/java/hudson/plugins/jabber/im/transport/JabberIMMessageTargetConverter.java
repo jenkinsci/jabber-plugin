@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2007-2017 the original author or authors
+ * Copyright (c) 2007-2021 the original author or authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -31,6 +31,8 @@ import hudson.plugins.im.GroupChatIMMessageTarget;
 import hudson.plugins.im.IMMessageTarget;
 import hudson.plugins.im.IMMessageTargetConversionException;
 import hudson.plugins.im.IMMessageTargetConverter;
+import hudson.util.Secret;
+
 import org.springframework.util.Assert;
 
 
@@ -71,9 +73,9 @@ public class JabberIMMessageTargetConverter implements IMMessageTargetConverter 
 				if (!f.contains("@")) {
 					f += "@conference." + JabberPublisher.DESCRIPTOR.getHost();
 				}
-				target = new GroupChatIMMessageTarget(f, null, false);
+				target = new GroupChatIMMessageTarget(f, (Secret) null, false);
 			} else if (f.contains("@conference.")) {
-				target = new GroupChatIMMessageTarget(f, null, false);
+				target = new GroupChatIMMessageTarget(f, (Secret) null, false);
 			} else {
 				if (!f.contains("@")) {
 					f += "@" + JabberPublisher.DESCRIPTOR.getHost();

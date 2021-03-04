@@ -49,6 +49,7 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
 import hudson.util.Scrambler;
+import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -124,7 +125,15 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 
 	// the following 2 are actually the Jabber nick and password. For backward compatibility I cannot rename them
 	private String hudsonNickname;
+
+	/**
+	 * Deprecated do not use.
+	 * @deprecated use {@link #xmppPassword} instead.
+	 */
 	private String hudsonPassword;
+
+	private Secret xmppPassword;
+
 	/**
 	 * Nickname to be used in private chats and chat rooms.
 	 * <p>
@@ -134,11 +143,6 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	private boolean exposePresence = true;
 
 	private boolean acceptAllCerts;
-
-	/**
-	 * Marks if passwords are scrambled as they are since 1.23. Needed to migrate old, unscrambled passwords.
-	 */
-	private boolean scrambledPasswords = false;
 
 	/**
 	 * @deprecated replaced by {@link #defaultTargets} Still needed to deserialize old descriptors
@@ -158,7 +162,7 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	private int proxyPort = DEFAULT_PROXYPORT;
 	private String proxyHost = null;
 	private String proxyUser = null;
-	private String proxyPass = null;
+	private Secret proxyPass;
 
 	public JabberPublisherDescriptor() {
 		super(JabberPublisher.class);
@@ -224,14 +228,13 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 	}
 
 	private void applyPassword(final HttpServletRequest req, boolean check) throws FormException {
-		this.scrambledPasswords = true;
 		String password = req.getParameter(PARAMETERNAME_PASSWORD);
 		if (check) {
 			if ((this.hostname != null) && ((password == null) || (password.trim().length() == 0))) {
 				throw new FormException("Password cannot be empty.", PARAMETERNAME_PASSWORD);
 			}
 		}
-		this.hudsonPassword = Scrambler.scramble(password);
+		xmppPassword = Secret.fromString(password);
 	}
 
 	private void applyGroupChatNickname(final HttpServletRequest req) throws FormException {
@@ -358,9 +361,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 			this.proxyPort = DEFAULT_PROXYPORT;
 
 		this.proxyUser = req.getParameter(PARAMETERNAME_PROXYUSER);
-		this.proxyPass = req.getParameter(PARAMETERNAME_PROXYPASS);
-		if ((null != this.proxyUser) && (this.proxyUser.length() > 0) && (null == this.proxyPass))
-			this.proxyPass = "";
+		String proxyPassword = req.getParameter(PARAMETERNAME_PROXYPASS);
+		this.proxyPass = Secret.fromString(proxyPassword);
 	}
 
 	/**
@@ -418,7 +420,12 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 
 	@Override
 	public String getPassword() {
-		return Scrambler.descramble(this.hudsonPassword);
+		return Secret.toString(getSecretPassword());
+	}
+
+	@Override
+	public Secret getSecretPassword() {
+		return xmppPassword;
 	}
 
 	public String getNickname() {
@@ -474,8 +481,8 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 		return this.proxyUser;
 	}
 
-	public String getProxyPass() {
-		return this.proxyPass;
+	public Secret getProxyPass() {
+		return proxyPass;
 	}
 
 	public ProxyType getProxyType() {
@@ -817,18 +824,17 @@ public class JabberPublisherDescriptor extends BuildStepDescriptor<Publisher> im
 		if (this.initialGroupChats != null) {
 			String[] split = this.initialGroupChats.trim().split("\\s");
 			for (String chatName : split) {
-				this.defaultTargets.add(new GroupChatIMMessageTarget(chatName, null, false));
+				this.defaultTargets.add(new GroupChatIMMessageTarget(chatName, (Secret) null, false));
 			}
 			this.initialGroupChats = null;
 		}
 
-		if (!this.scrambledPasswords) {
-			this.hudsonPassword = Scrambler.scramble(this.hudsonPassword);
-			this.scrambledPasswords = true;
-			// JENKINS-15469: seems to be a bad idea to save in readResolve
-			// as the file to be saved/replaced is currently open for reading and thus
-			// save() will fail on Windows
-			// save();
+		if (hudsonPassword != null) {
+			// Convert from scrambled (base64) passwords to Secret based ones.
+			String password = Scrambler.descramble(hudsonPassword);
+			xmppPassword = Secret.fromString(password);
+
+			hudsonPassword = null;
 		}
 
 		return this;

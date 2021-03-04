@@ -58,6 +58,8 @@ import hudson.plugins.im.bot.Bot;
 import hudson.plugins.im.tools.ExceptionHelper;
 import hudson.util.DaemonThreadFactory;
 import hudson.util.NamingThreadFactory;
+import hudson.util.Secret;
+
 import org.apache.commons.io.IOUtils;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.ReconnectionManager;
@@ -121,7 +123,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	private final Map<BareJid, WeakReference<MultiUserChat>> groupChatCache = new HashMap<>();
 	private final Map<EntityJid, WeakReference<Chat>> chatCache = new HashMap<>();
 	private final Set<Bot> bots = new HashSet<Bot>();
-	private final String passwd;
+	private final Secret passwd;
 	private final String botCommandPrefix;
 
 	/**
@@ -165,7 +167,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	private final ProxyType proxytype;
 	private final String proxyhost;
 	private final String proxyuser;
-	private final String proxypass;
+	private final Secret proxypass;
 	private final int proxyport;
 
 	private final boolean acceptAllCerts;
@@ -199,7 +201,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		this.port = desc.getPort();
 		this.nick = desc.getNickname();
 		this.resource = myJid.getResourceOrNull();
-		this.passwd = desc.getPassword();
+		this.passwd = desc.getSecretPassword();
 		this.proxytype = desc.getProxyType();
 		this.proxyhost = desc.getProxyHost();
 		this.proxyport = desc.getProxyPort();
@@ -326,15 +328,16 @@ class JabberIMConnection extends AbstractIMConnection {
 
 		ProxyInfo pi = null;
 		if (this.proxytype != null) {
+			String proxypass = Secret.toString(this.proxypass);
 			switch (this.proxytype) {
 			case HTTP:
-				pi = ProxyInfo.forHttpProxy(this.proxyhost, this.proxyport, this.proxyuser, this.proxypass);
+				pi = ProxyInfo.forHttpProxy(this.proxyhost, this.proxyport, this.proxyuser, proxypass);
 				break;
 			case SOCKS4:
-				pi = ProxyInfo.forSocks4Proxy(this.proxyhost, this.proxyport, this.proxyuser, this.proxypass);
+				pi = ProxyInfo.forSocks4Proxy(this.proxyhost, this.proxyport, this.proxyuser, proxypass);
 				break;
 			case SOCKS5:
-				pi = ProxyInfo.forSocks5Proxy(this.proxyhost, this.proxyport, this.proxyuser, this.proxypass);
+				pi = ProxyInfo.forSocks5Proxy(this.proxyhost, this.proxyport, this.proxyuser, proxypass);
 				break;
 			default:
 				throw new AssertionError();
@@ -409,7 +412,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 
 		if (this.connection.isConnected()) {
-			this.connection.login(this.desc.getUserName(), this.passwd,
+			this.connection.login(this.desc.getUserName(), Secret.toString(this.passwd),
 					this.resource);
 
 			setupSubscriptionMode();
