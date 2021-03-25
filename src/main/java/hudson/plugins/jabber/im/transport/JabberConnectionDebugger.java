@@ -104,11 +104,19 @@ public class JabberConnectionDebugger extends SmackDebugger {
 		}
 	}
 
+	private static final Level SINK_MIN_LOG_LEVEL = Level.FINER;
+
 	@Override
 	public void outgoingStreamSink(CharSequence outgoingCharSequence) {
+		if (LOGGER.isLoggable(SINK_MIN_LOG_LEVEL)) {
+			LOGGER.log(SINK_MIN_LOG_LEVEL, "OUT: " + outgoingCharSequence);
+		}
 	}
 
 	@Override
 	public void incomingStreamSink(CharSequence incomingCharSequence) {
+		if (LOGGER.isLoggable(SINK_MIN_LOG_LEVEL)) {
+			LOGGER.log(SINK_MIN_LOG_LEVEL, "IN : " + incomingCharSequence);
+		}
 	}
 }
