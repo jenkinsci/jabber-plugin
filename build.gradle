@@ -9,7 +9,7 @@ ext {
 	instantMessagingPluginVersion = "1.37"
 	workflowStepApiPluginVersion = "2.9"
 	matrixPluginVersion = "1.4"
-	smackVersion = "4.4.1"
+	smackVersion = "4.4.2"
 }
 
 group 'org.jvnet.hudson.plugins'
@@ -36,14 +36,9 @@ dependencies {
 	//can't seem to compile without this (an older version gets picked up otherwise)
 	matrixImplementation "org.jenkins-ci.plugins:matrix-project:${matrixPluginVersion}@jar"
 
-	implementation("org.igniterealtime.smack:smack-java8:$smackVersion") {
-		// Exclude the StAX parser since it is broken in Smack
-		// 4.4.1. See https://igniterealtime.atlassian.net/browse/SMACK-903
-		exclude group: 'org.igniterealtime.smack', module: 'smack-xmlparser-stax'
-	}
+	implementation "org.igniterealtime.smack:smack-java8:$smackVersion"
 	implementation "org.igniterealtime.smack:smack-extensions:$smackVersion"
 	implementation "org.igniterealtime.smack:smack-tcp:$smackVersion"
-	implementation "org.igniterealtime.smack:smack-xmlparser-xpp3:$smackVersion"
 
 	testImplementation group: 'junit', name: 'junit', version: '4.11'
 }
