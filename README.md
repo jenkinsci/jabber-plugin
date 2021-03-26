@@ -59,6 +59,8 @@ client at hand, then you may want to try this
 ## Changelog
 
 ### Next
+
+### Version 1.41 (2021-03-26)
 - Update Smack to 4.4.2
 - Use Secret in JabberPublisherDescriptor. Fixes [SECURITY-2162](https://issues.jenkins.io/browse/SECURITY-2162)
 
