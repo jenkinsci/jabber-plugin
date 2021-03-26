@@ -58,6 +58,9 @@ client at hand, then you may want to try this
 
 ## Changelog
 
+### Next
+- Update Smack to 4.4.2
+
 ### Version 1.41 (2021-03-04)
 - Fix [JENKINS-64247](https://issues.jenkins.io/browse/JENKINS-64247): jabber plugin save problem on Jenkins >= 2.264
 
