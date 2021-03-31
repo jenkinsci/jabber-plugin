@@ -34,8 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -95,7 +93,7 @@ import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.MultiUserChatException.MucNotJoinedException;
 import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.nick.packet.Nick;
-import org.jivesoftware.smackx.ping.packet.Ping;
+import org.jivesoftware.smackx.ping.PingManager;
 import org.jivesoftware.smackx.vcardtemp.VCardManager;
 import org.jivesoftware.smackx.vcardtemp.packet.VCard;
 import org.jxmpp.jid.BareJid;
@@ -171,10 +169,6 @@ class JabberIMConnection extends AbstractIMConnection {
 	private final int proxyport;
 
 	private final boolean acceptAllCerts;
-
-	private Runnable keepAliveCommand;
-
-	private ScheduledExecutorService scheduler;
 
 	static {
 		SmackConfiguration.setDefaultReplyTimeout(20000);
@@ -297,11 +291,6 @@ class JabberIMConnection extends AbstractIMConnection {
 				this.groupChatCache.clear();
 				this.chatCache.clear();
 
-				if (this.scheduler != null) {
-					this.scheduler.shutdownNow();
-					this.scheduler = null;
-				}
-
 				if (this.connection.isConnected()) {
 					this.connection.disconnect();
 				}
@@ -414,42 +403,8 @@ class JabberIMConnection extends AbstractIMConnection {
 	}
 
 	private void addConnectionKeepAlivePings(int keepAlivePeriodInSeconds) {
-		if (this.scheduler == null) {
-			this.scheduler = Executors.newSingleThreadScheduledExecutor(
-					new NamingThreadFactory(new DaemonThreadFactory(), JabberIMConnection.class.getSimpleName()));
-		}
-
-		if (keepAliveCommand != null) {
-			return;
-		}
-
-		keepAliveCommand = new Runnable() {
-
-			@Override
-			public void run() {
-				// prevent long waits for lock
-				try {
-					if (!tryLock(5, TimeUnit.SECONDS)) {
-						return;
-					}
-
-					try {
-						connection.sendStanza(new Ping());
-					} catch (NotConnectedException e) {
-						// connection died, so lets scheduled task die, too
-						throw new RuntimeException(e);
-					} finally {
-						unlock();
-					}
-
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
-			}
-		};
-		scheduler.scheduleAtFixedRate(keepAliveCommand, keepAlivePeriodInSeconds, keepAlivePeriodInSeconds,
-				TimeUnit.SECONDS);
-
+		PingManager pingManager = PingManager.getInstanceFor(connection);
+		pingManager.setPingInterval(keepAlivePeriodInSeconds);
 	}
 
 	/**
