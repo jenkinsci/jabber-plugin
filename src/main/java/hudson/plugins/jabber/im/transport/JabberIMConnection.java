@@ -41,7 +41,6 @@ import java.util.logging.Logger;
 import javax.annotation.Nullable;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
-import javax.security.sasl.SaslException;
 
 import hudson.Util;
 import hudson.plugins.im.AbstractIMConnection;
@@ -54,8 +53,6 @@ import hudson.plugins.im.IMMessageTarget;
 import hudson.plugins.im.IMPresence;
 import hudson.plugins.im.bot.Bot;
 import hudson.plugins.im.tools.ExceptionHelper;
-import hudson.util.DaemonThreadFactory;
-import hudson.util.NamingThreadFactory;
 import hudson.util.Secret;
 
 import org.apache.commons.io.IOUtils;
@@ -63,7 +60,6 @@ import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.ReconnectionManager;
 import org.jivesoftware.smack.SmackConfiguration;
 import org.jivesoftware.smack.SmackException;
-import org.jivesoftware.smack.SmackException.NotConnectedException;
 import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
@@ -217,35 +213,21 @@ class JabberIMConnection extends AbstractIMConnection {
 		lock();
 		try {
 			LOGGER.info("Trying to connect XMPP connection");
-			if (this.connection != null && this.connection.isConnected()) {
+			if (this.connection != null && this.connection.isAuthenticated()) {
 				LOGGER.fine("XMPP connection already established");
 				return true;
 			}
+
 			LOGGER.fine("creating new XMPP connection");
-			boolean connectingSucceeded = createConnection();
-			if (connectingSucceeded) {
-				initNewConnection();
-			} else {
-				disconnect();
-			}
-			return connectingSucceeded;
-		} catch (final Exception e) {
-			LOGGER.warning("Could not establish XMPP connection: " + e, e);
+			createConnection();
+			initNewConnection();
+			return true;
+		} catch (XMPPException | SmackException | IOException |
+				NoSuchAlgorithmException | KeyManagementException | InterruptedException e) {
 			LOGGER.log(Level.WARNING, "Could not establish XMPP connection: " + e, e);
 			return false;
 		} finally {
 			unlock();
-		}
-	}
-
-	private void disconnect() {
-		// clean-up if needed
-		if (this.connection != null && this.connection.isConnected()) {
-			try {
-				this.connection.disconnect();
-			} catch (Exception e) {
-				LOGGER.info("Exception while disconnecting: " + e.getMessage());
-			}
 		}
 	}
 
@@ -305,7 +287,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 	}
 
-	private boolean createConnection() throws XMPPException, SaslException, SmackException, IOException,
+	private void createConnection() throws XMPPException, SmackException, IOException,
 			NoSuchAlgorithmException, KeyManagementException, InterruptedException {
 		if (this.connection != null) {
 			this.connection.disconnect();
@@ -367,6 +349,9 @@ class JabberIMConnection extends AbstractIMConnection {
 		final XMPPTCPConnection connection = new XMPPTCPConnection(conf);
 
 		this.connection = connection;
+
+		setupSubscriptionMode();
+
 		LOGGER.info("Trying to connect to XMPP on " + "/" + connection.getXMPPServiceDomain()
 				+ (conf.isCompressionEnabled() ? " using compression" : "")
 				+ (pi != null
@@ -375,19 +360,14 @@ class JabberIMConnection extends AbstractIMConnection {
 
 		this.connection.connect();
 
-		if (this.connection.isConnected()) {
-			this.connection.login(this.desc.getUserName(), Secret.toString(this.passwd),
+		this.connection.login(this.desc.getUserName(), Secret.toString(this.passwd),
 					this.resource);
 
-			setupSubscriptionMode();
-			createVCardIfNeeded();
+		createVCardIfNeeded();
 
-			installServerTypeHacks();
+		installServerTypeHacks();
 
-			listenForPrivateChats();
-		}
-
-		return this.connection.isAuthenticated();
+		listenForPrivateChats();
 	}
 
 	private void installServerTypeHacks() {
