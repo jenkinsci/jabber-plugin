@@ -34,16 +34,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocketFactory;
-import javax.security.sasl.SaslException;
 
 import hudson.Util;
 import hudson.plugins.im.AbstractIMConnection;
@@ -56,8 +53,6 @@ import hudson.plugins.im.IMMessageTarget;
 import hudson.plugins.im.IMPresence;
 import hudson.plugins.im.bot.Bot;
 import hudson.plugins.im.tools.ExceptionHelper;
-import hudson.util.DaemonThreadFactory;
-import hudson.util.NamingThreadFactory;
 import hudson.util.Secret;
 
 import org.apache.commons.io.IOUtils;
@@ -65,7 +60,6 @@ import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.ReconnectionManager;
 import org.jivesoftware.smack.SmackConfiguration;
 import org.jivesoftware.smack.SmackException;
-import org.jivesoftware.smack.SmackException.NotConnectedException;
 import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
@@ -95,7 +89,7 @@ import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.MultiUserChatException.MucNotJoinedException;
 import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.nick.packet.Nick;
-import org.jivesoftware.smackx.ping.packet.Ping;
+import org.jivesoftware.smackx.ping.PingManager;
 import org.jivesoftware.smackx.vcardtemp.VCardManager;
 import org.jivesoftware.smackx.vcardtemp.packet.VCard;
 import org.jxmpp.jid.BareJid;
@@ -172,10 +166,6 @@ class JabberIMConnection extends AbstractIMConnection {
 
 	private final boolean acceptAllCerts;
 
-	private Runnable keepAliveCommand;
-
-	private ScheduledExecutorService scheduler;
-
 	static {
 		SmackConfiguration.setDefaultReplyTimeout(20000);
 
@@ -223,34 +213,21 @@ class JabberIMConnection extends AbstractIMConnection {
 		lock();
 		try {
 			LOGGER.info("Trying to connect XMPP connection");
-			if (this.connection != null && this.connection.isConnected()) {
+			if (this.connection != null && this.connection.isAuthenticated()) {
 				LOGGER.fine("XMPP connection already established");
 				return true;
 			}
+
 			LOGGER.fine("creating new XMPP connection");
-			boolean connectingSucceeded = createConnection();
-			if (connectingSucceeded) {
-				initNewConnection();
-			} else {
-				disconnect();
-			}
-			return connectingSucceeded;
-		} catch (final Exception e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
+			createConnection();
+			initNewConnection();
+			return true;
+		} catch (XMPPException | SmackException | IOException |
+				NoSuchAlgorithmException | KeyManagementException | InterruptedException e) {
+			LOGGER.log(Level.WARNING, "Could not establish XMPP connection: " + e, e);
 			return false;
 		} finally {
 			unlock();
-		}
-	}
-
-	private void disconnect() {
-		// clean-up if needed
-		if (this.connection != null && this.connection.isConnected()) {
-			try {
-				this.connection.disconnect();
-			} catch (Exception e) {
-				LOGGER.info("Exception while disconnecting: " + e.getMessage());
-			}
 		}
 	}
 
@@ -296,11 +273,6 @@ class JabberIMConnection extends AbstractIMConnection {
 				this.groupChatCache.clear();
 				this.chatCache.clear();
 
-				if (this.scheduler != null) {
-					this.scheduler.shutdownNow();
-					this.scheduler = null;
-				}
-
 				if (this.connection.isConnected()) {
 					this.connection.disconnect();
 				}
@@ -315,15 +287,10 @@ class JabberIMConnection extends AbstractIMConnection {
 		}
 	}
 
-	private boolean createConnection() throws XMPPException, SaslException, SmackException, IOException,
+	private void createConnection() throws XMPPException, SmackException, IOException,
 			NoSuchAlgorithmException, KeyManagementException, InterruptedException {
 		if (this.connection != null) {
-			try {
-				this.connection.disconnect();
-			} catch (Exception ignore) {
-				LOGGER.info("Caught an exception while disconnecting before reconnect: " + ignore.getMessage());
-				// ignore
-			}
+			this.connection.disconnect();
 		}
 
 		ProxyInfo pi = null;
@@ -382,48 +349,25 @@ class JabberIMConnection extends AbstractIMConnection {
 		final XMPPTCPConnection connection = new XMPPTCPConnection(conf);
 
 		this.connection = connection;
+
+		setupSubscriptionMode();
+
 		LOGGER.info("Trying to connect to XMPP on " + "/" + connection.getXMPPServiceDomain()
 				+ (conf.isCompressionEnabled() ? " using compression" : "")
 				+ (pi != null
 						? " via proxy " + pi.getProxyType() + " " + pi.getProxyAddress() + ":" + pi.getProxyPort()
 						: ""));
 
-		boolean retryWithLegacySSL = false;
-		Exception originalException = null;
-		try {
-			this.connection.connect();
-			if (!this.connection.isConnected()) {
-				retryWithLegacySSL = true;
-			}
-		} catch (XMPPException e) {
-			retryWithLegacySSL = true;
-			originalException = e;
-		} catch (SmackException.NoResponseException e) {
-			retryWithLegacySSL = true;
-			originalException = e;
-		} catch (SmackException e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
-		} catch (IOException e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
-		}
+		this.connection.connect();
 
-		if (retryWithLegacySSL) {
-			retryConnectionWithLegacySSL(cfg, originalException);
-		}
-
-		if (this.connection.isConnected()) {
-			this.connection.login(this.desc.getUserName(), Secret.toString(this.passwd),
+		this.connection.login(this.desc.getUserName(), Secret.toString(this.passwd),
 					this.resource);
 
-			setupSubscriptionMode();
-			createVCardIfNeeded();
+		createVCardIfNeeded();
 
-			installServerTypeHacks();
+		installServerTypeHacks();
 
-			listenForPrivateChats();
-		}
-
-		return this.connection.isAuthenticated();
+		listenForPrivateChats();
 	}
 
 	private void installServerTypeHacks() {
@@ -439,73 +383,8 @@ class JabberIMConnection extends AbstractIMConnection {
 	}
 
 	private void addConnectionKeepAlivePings(int keepAlivePeriodInSeconds) {
-		if (this.scheduler == null) {
-			this.scheduler = Executors.newSingleThreadScheduledExecutor(
-					new NamingThreadFactory(new DaemonThreadFactory(), JabberIMConnection.class.getSimpleName()));
-		}
-
-		if (keepAliveCommand != null) {
-			return;
-		}
-
-		keepAliveCommand = new Runnable() {
-
-			@Override
-			public void run() {
-				// prevent long waits for lock
-				try {
-					if (!tryLock(5, TimeUnit.SECONDS)) {
-						return;
-					}
-
-					try {
-						connection.sendStanza(new Ping());
-					} catch (NotConnectedException e) {
-						// connection died, so lets scheduled task die, too
-						throw new RuntimeException(e);
-					} finally {
-						unlock();
-					}
-
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
-			}
-		};
-		scheduler.scheduleAtFixedRate(keepAliveCommand, keepAlivePeriodInSeconds, keepAlivePeriodInSeconds,
-				TimeUnit.SECONDS);
-	}
-
-	/**
-	 * Transparently retries the connection attempt with legacy SSL if original attempt fails.
-	 * 
-	 * @param originalException the exception of the original attempt (may be null)
-	 * 
-	 *            See JENKINS-6863
-	 * @throws InterruptedException 
-	 */
-	private void retryConnectionWithLegacySSL(final XMPPTCPConnectionConfiguration.Builder cfg,
-			@Nullable Exception originalException) throws XMPPException, SmackException, InterruptedException {
-		try {
-			LOGGER.info("Retrying connection with legacy SSL");
-			cfg.setSocketFactory(SSLSocketFactory.getDefault());
-			this.connection = new XMPPTCPConnection(cfg.build());
-			this.connection.connect();
-		} catch (XMPPException e) {
-			if (originalException != null) {
-				// use the original connection exception as legacy SSL should only
-				// be a fallback
-				LOGGER.warning("Retrying with legacy SSL failed: " + e.getMessage());
-				throw new SmackException.SmackWrappedException("Exception of original (without legacy SSL) connection attempt",
-						originalException);
-			} else {
-				throw new SmackException.SmackWrappedException(e);
-			}
-		} catch (SmackException e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
-		} catch (IOException e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
-		}
+		PingManager pingManager = PingManager.getInstanceFor(connection);
+		pingManager.setPingInterval(keepAlivePeriodInSeconds);
 	}
 
 	/**
@@ -534,12 +413,9 @@ class JabberIMConnection extends AbstractIMConnection {
 			if (!vCardExists()) {
 				createVCard();
 			}
-		} catch (InterruptedException | XMPPException e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
-		} catch (SmackException.NotConnectedException e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
-		} catch (SmackException.NoResponseException e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
+		} catch (InterruptedException | XMPPException | SmackException.NotConnectedException
+				| SmackException.NoResponseException e) {
+			LOGGER.log(Level.WARNING, "Could not create and set VCard: " + e, e);
 		}
 	}
 
@@ -627,7 +503,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		StanzaFilter filter = MessageTypeFilter.CHAT;
 
 		StanzaListener listener = new PrivateChatListener();
-		this.connection.addSyncStanzaListener(listener, filter);
+		this.connection.addStanzaListener(listener, filter);
 	}
 
 	private MultiUserChat getOrCreateGroupChat(GroupChatIMMessageTarget chat) throws IMException {
