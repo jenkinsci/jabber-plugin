@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
@@ -236,7 +237,8 @@ class JabberIMConnection extends AbstractIMConnection {
 			}
 			return connectingSucceeded;
 		} catch (final Exception e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
+			LOGGER.warning("Could not establish XMPP connection: " + e, e);
+			LOGGER.log(Level.WARNING, "Could not establish XMPP connection: " + e, e);
 			return false;
 		} finally {
 			unlock();
