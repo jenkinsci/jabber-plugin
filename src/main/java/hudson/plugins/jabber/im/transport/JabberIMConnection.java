@@ -624,7 +624,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		StanzaFilter filter = MessageTypeFilter.CHAT;
 
 		StanzaListener listener = new PrivateChatListener();
-		this.connection.addSyncStanzaListener(listener, filter);
+		this.connection.addStanzaListener(listener, filter);
 	}
 
 	private MultiUserChat getOrCreateGroupChat(GroupChatIMMessageTarget chat) throws IMException {
