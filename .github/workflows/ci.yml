@@ -51,6 +51,14 @@ jobs:
           unzip gradle-${GRADLE_VERSION}-all.zip
           echo "PATH_TO_GRADLE=./gradle-${GRADLE_VERSION}/bin/gradle" >> $GITHUB_ENV
 
-      # Testing
       - name: Gradle Check
         run: ${PATH_TO_GRADLE} check --stacktrace
+
+      - name: Create JPI
+        run: ${PATH_TO_GRADLE} jpi --stacktrace
+
+      - name: Archive JPI artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: jabber.hpi
+          path: build/libs/jabber.hpi
