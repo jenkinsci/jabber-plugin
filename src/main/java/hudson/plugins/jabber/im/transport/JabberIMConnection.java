@@ -531,12 +531,9 @@ class JabberIMConnection extends AbstractIMConnection {
 			if (!vCardExists()) {
 				createVCard();
 			}
-		} catch (InterruptedException | XMPPException e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
-		} catch (SmackException.NotConnectedException e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
-		} catch (SmackException.NoResponseException e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
+		} catch (InterruptedException | XMPPException | SmackException.NotConnectedException
+				| SmackException.NoResponseException e) {
+			LOGGER.log(Level.WARNING, "Could not create and set VCard: " + e, e);
 		}
 	}
 
