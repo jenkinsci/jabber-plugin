@@ -43,7 +43,6 @@ import java.util.logging.Logger;
 import javax.annotation.Nullable;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocketFactory;
 import javax.security.sasl.SaslException;
 
 import hudson.Util;
@@ -385,28 +384,7 @@ class JabberIMConnection extends AbstractIMConnection {
 						? " via proxy " + pi.getProxyType() + " " + pi.getProxyAddress() + ":" + pi.getProxyPort()
 						: ""));
 
-		boolean retryWithLegacySSL = false;
-		Exception originalException = null;
-		try {
-			this.connection.connect();
-			if (!this.connection.isConnected()) {
-				retryWithLegacySSL = true;
-			}
-		} catch (XMPPException e) {
-			retryWithLegacySSL = true;
-			originalException = e;
-		} catch (SmackException.NoResponseException e) {
-			retryWithLegacySSL = true;
-			originalException = e;
-		} catch (SmackException e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
-		} catch (IOException e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
-		}
-
-		if (retryWithLegacySSL) {
-			retryConnectionWithLegacySSL(cfg, originalException);
-		}
+		this.connection.connect();
 
 		if (this.connection.isConnected()) {
 			this.connection.login(this.desc.getUserName(), Secret.toString(this.passwd),
@@ -471,38 +449,7 @@ class JabberIMConnection extends AbstractIMConnection {
 		};
 		scheduler.scheduleAtFixedRate(keepAliveCommand, keepAlivePeriodInSeconds, keepAlivePeriodInSeconds,
 				TimeUnit.SECONDS);
-	}
 
-	/**
-	 * Transparently retries the connection attempt with legacy SSL if original attempt fails.
-	 * 
-	 * @param originalException the exception of the original attempt (may be null)
-	 * 
-	 *            See JENKINS-6863
-	 * @throws InterruptedException 
-	 */
-	private void retryConnectionWithLegacySSL(final XMPPTCPConnectionConfiguration.Builder cfg,
-			@Nullable Exception originalException) throws XMPPException, SmackException, InterruptedException {
-		try {
-			LOGGER.info("Retrying connection with legacy SSL");
-			cfg.setSocketFactory(SSLSocketFactory.getDefault());
-			this.connection = new XMPPTCPConnection(cfg.build());
-			this.connection.connect();
-		} catch (XMPPException e) {
-			if (originalException != null) {
-				// use the original connection exception as legacy SSL should only
-				// be a fallback
-				LOGGER.warning("Retrying with legacy SSL failed: " + e.getMessage());
-				throw new SmackException.SmackWrappedException("Exception of original (without legacy SSL) connection attempt",
-						originalException);
-			} else {
-				throw new SmackException.SmackWrappedException(e);
-			}
-		} catch (SmackException e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
-		} catch (IOException e) {
-			LOGGER.warning(ExceptionHelper.dump(e));
-		}
 	}
 
 	/**
