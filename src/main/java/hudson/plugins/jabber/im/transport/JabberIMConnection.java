@@ -320,12 +320,7 @@ class JabberIMConnection extends AbstractIMConnection {
 	private boolean createConnection() throws XMPPException, SaslException, SmackException, IOException,
 			NoSuchAlgorithmException, KeyManagementException, InterruptedException {
 		if (this.connection != null) {
-			try {
-				this.connection.disconnect();
-			} catch (Exception ignore) {
-				LOGGER.info("Caught an exception while disconnecting before reconnect: " + ignore.getMessage());
-				// ignore
-			}
+			this.connection.disconnect();
 		}
 
 		ProxyInfo pi = null;
